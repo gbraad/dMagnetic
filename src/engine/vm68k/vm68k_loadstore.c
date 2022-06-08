@@ -1,6 +1,6 @@
 /*
 
-Copyright 2021, dettus@dettus.net
+Copyright 2022, dettus@dettus.net
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -194,9 +194,9 @@ int vm68k_fetchoperand(tVM68k* pVM68k,tVM68k_bool extendsign,tVM68k_types size,t
 		retval=VM68K_OK;
 		switch (size)
 		{
-			case VM68K_BYTE: op= READ_INT8BE(pVM68k->pMem,ea);break;
-			case VM68K_WORD: op=READ_INT16BE(pVM68k->pMem,ea);break;
-			case VM68K_LONG: op=READ_INT32BE(pVM68k->pMem,ea);break;
+			case VM68K_BYTE: op= READ_INT8BE(pVM68k->memory,ea);break;
+			case VM68K_WORD: op=READ_INT16BE(pVM68k->memory,ea);break;
+			case VM68K_LONG: op=READ_INT32BE(pVM68k->memory,ea);break;
 			default: retval=VM68K_NOK_INVALID_PTR;break;
 		}
 	} else {	// register address

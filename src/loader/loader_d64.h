@@ -1,6 +1,6 @@
 /*
 
-Copyright 2021, dettus@dettus.net
+Copyright 2022, dettus@dettus.net
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -30,6 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 int loader_d64(char* d64name,
 		char *magbuf,int* magsize,
-		char* gfxbuf,int* gfxsize);
+		char* gfxbuf,int* gfxsize,
+		int nodoc);
 
 #endif

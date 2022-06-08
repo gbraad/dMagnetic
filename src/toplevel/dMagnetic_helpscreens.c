@@ -1,6 +1,6 @@
 /*
 
-Copyright 2021, dettus@dettus.net
+Copyright 2022, dettus@dettus.net
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -95,13 +95,13 @@ void dMagnetic_helpscreens_header()
 {
 	fprintf(stderr,"*** dMagnetic %d.%d%d\n",VERSION_MAJOR,VERSION_MINOR,VERSION_REVISION);
 	fprintf(stderr,"*** Use at your own risk\n");
-	fprintf(stderr,"*** (C)opyright 2021 by dettus@dettus.net\n");
+	fprintf(stderr,"*** (C)opyright 2022 by dettus@dettus.net\n");
 	fprintf(stderr,"*****************************************\n");	
 	fprintf(stderr,"\n");
 }
 void dMagnetic_helpscreens_license()
 {
-	printf("Copyright 2021, dettus@dettus.net\n");
+	printf("Copyright 2022, dettus@dettus.net\n");
 	printf("\n");
 	printf("Redistribution and use in source and binary forms, with or without modification,\n");
 	printf("are permitted provided that the following conditions are met:\n");
@@ -185,12 +185,13 @@ void dMagnetic_helpscreens_help(char* argv0)
 	printf("-sforce            force the resolution (ignore the aspect ratio)\n");
 
 	printf(" OTHER PARAMETERS\n");
-	printf(" -bsd shows the license\n");
-	printf(" -dumpmag GAME.mag -dumpgfx GAME.gfx writes the internal game data\n");
-	printf(" -ega prefers EGA images\n");
-	printf(" -help shows this help\n");
-	printf(" -helpini shows an example dMagnetic.ini file\n");
-	printf(" --version shows %d.%d%d\n",VERSION_MAJOR,VERSION_MINOR,VERSION_REVISION);
+	printf(" -bsd   shows the license\n");
+	printf(" -dumpmag GAME.mag -dumpgfx GAME.gfx   writes the internal game data\n");
+	printf(" -ega   prefers EGA images\n");
+	printf(" -help   shows this help\n");
+	printf(" -helpini   shows an example dMagnetic.ini file\n");
+	printf(" -nodoc   play the games with no documentation.\n");
+	printf(" --version   shows %d.%d%d\n",VERSION_MAJOR,VERSION_MINOR,VERSION_REVISION);
 
 }
 void dMagnetic_helpscreens_helpini()

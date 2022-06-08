@@ -1,6 +1,6 @@
 /*
 
-Copyright 2021, dettus@dettus.net
+Copyright 2022, dettus@dettus.net
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -134,9 +134,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	(pVM68k)->sr|=(tVM68k_uword)((transaction).nflag)<<3;	\
 	(pVM68k)->sr|=(tVM68k_uword)((transaction).xflag)<<4;
 	
-#define	READEXTENSIONBYTE(pVM68k,pNext)	READ_INT8BE((pVM68k)->pMem,(pNext)->pcr+1);(pNext)->pcr+=2;
-#define	READEXTENSIONWORD(pVM68k,pNext)	READ_INT16BE((pVM68k)->pMem,(pNext)->pcr);(pNext)->pcr+=2;
-#define	READEXTENSIONLONG(pVM68k,pNext)	READ_INT32BE((pVM68k)->pMem,(pNext)->pcr);(pNext)->pcr+=4;
+#define	READEXTENSIONBYTE(pVM68k,pNext)	READ_INT8BE((pVM68k)->memory,(pNext)->pcr+1);(pNext)->pcr+=2;
+#define	READEXTENSIONWORD(pVM68k,pNext)	READ_INT16BE((pVM68k)->memory,(pNext)->pcr);(pNext)->pcr+=2;
+#define	READEXTENSIONLONG(pVM68k,pNext)	READ_INT32BE((pVM68k)->memory,(pNext)->pcr);(pNext)->pcr+=4;
 
 #define	READEXTENSION(pVM68k,pNext,datatype,operand)	\
 	switch (datatype)	\
@@ -158,8 +158,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define	PUSHWORDTOSTACK(pVM68k,pNext,x)	{(pNext)->a[7]-=2;(pNext)->mem_addr[(pNext)->mem_we]=(pNext)->a[7];(pNext)->mem_size=VM68K_WORD;(pNext)->mem_value[(pNext)->mem_we]=x;(pNext)->mem_we++;}
 #define	PUSHLONGTOSTACK(pVM68k,pNext,x)	{(pNext)->a[7]-=4;(pNext)->mem_addr[(pNext)->mem_we]=(pNext)->a[7];(pNext)->mem_size=VM68K_LONG;(pNext)->mem_value[(pNext)->mem_we]=x;(pNext)->mem_we++;}
 
-#define	POPWORDFROMSTACK(pVM68k,pNext,x)	{tVM68k_uword y;y=READ_INT16BE((pVM68k)->pMem,(pNext)->a[7]);(pNext)->a[7]+=2;x=((x)&0xffff0000)|(y&0xffff);}
-#define	POPLONGFROMSTACK(pVM68k,pNext,x)	{x=READ_INT32BE((pVM68k)->pMem,(pNext)->a[7]);(pNext)->a[7]+=4;}
+#define	POPWORDFROMSTACK(pVM68k,pNext,x)	{tVM68k_uword y;y=READ_INT16BE((pVM68k)->memory,(pNext)->a[7]);(pNext)->a[7]+=2;x=((x)&0xffff0000)|(y&0xffff);}
+#define	POPLONGFROMSTACK(pVM68k,pNext,x)	{x=READ_INT32BE((pVM68k)->memory,(pNext)->a[7]);(pNext)->a[7]+=4;}
 
 
 #endif

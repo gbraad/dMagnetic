@@ -1,6 +1,6 @@
 /*
 
-Copyright 2021, dettus@dettus.net
+Copyright 2022, dettus@dettus.net
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -66,12 +66,14 @@ int dMagnetic_init(void** hVM68k,void** hLineA,void* pSharedMem,int memsize,char
 	}
 	*hVM68k=malloc(sizevm68k);
 	*hLineA=malloc(sizelineA);
+	memset(*hVM68k,0,sizevm68k);
+	memset(*hLineA,0,sizelineA);
 	if (*hVM68k==NULL || *hLineA==NULL) 
 	{
 		fprintf(stderr,"ERROR: unable to allocate memory for the engine\n");
 		return -1;
 	}
-	
+	pSharedMem=vm68k_getpSharedMem(*hVM68k);	
 	retval=lineA_init(*hLineA,pSharedMem,&memsize,magbuf,magsize,gfxbuf,gfxsize);
 	if (retval)
 	{
@@ -95,13 +97,12 @@ int dMagnetic_init(void** hVM68k,void** hLineA,void* pSharedMem,int memsize,char
 		fprintf(stderr,"---------------------------------------\n");
 		fprintf(stderr,"\n");
 	}
-	retval=vm68k_init(*hVM68k,pSharedMem,memsize,version);
+	retval=vm68k_init(*hVM68k,version);
 	if (retval)
 	{
 		fprintf(stderr,"ERROR: vm68k_init returned %d\n",retval);
 		return retval;
 	}
-	
 	return 0;
 }
 int main(int argc,char** argv)
@@ -130,16 +131,18 @@ int main(int argc,char** argv)
 	if (!(retrievefromcommandline(argc,argv,"--version",NULL,0)))
 	{
 		dMagnetic_helpscreens_header();
-#define	LOCNUM	14
+#define	LOCNUM	16
 		const char *locations[LOCNUM]={
 			PATH_ETC,
 			PATH_USR_LOCAL_SHARE,
 			PATH_USR_LOCAL_SHARE_GAMES,
 			PATH_USR_LOCAL_SHARE"dMagnetic/",
+			PATH_USR_LOCAL_SHARE_GAMES"dMagnetic/",
 			PATH_USR_LOCAL_GAMES,
 			PATH_USR_LOCAL_GAMES"dMagnetic/",
 			PATH_USR_SHARE,
 			PATH_USR_SHARE_GAMES,
+			PATH_USR_SHARE_GAMES"dMagnetic/",
 			PATH_USR_SHARE"dMagnetic/",
 			PATH_USR_GAMES,
 			PATH_USR_GAMES"dMagnetic/",
@@ -152,6 +155,12 @@ int main(int argc,char** argv)
 		{
 			homedir=getenv("HOME");
 			snprintf(inifilename,1023,"%s/dMagnetic.ini",homedir);
+			f_inifile=fopen(inifilename,"rb");
+		}
+		if (f_inifile==NULL)
+		{
+			homedir=getenv("HOME");
+			snprintf(inifilename,1023,"%s/.dMagnetic.ini",homedir);
 			f_inifile=fopen(inifilename,"rb");
 		}
 		for (i=0;i<LOCNUM;i++)

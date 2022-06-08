@@ -1,6 +1,6 @@
 #!/usr/bin/make -f 
 #
-#Copyright 2021, dettus@dettus.net
+#Copyright 2022, dettus@dettus.net
 #
 #Redistribution and use in source and binary forms, with or without modification,
 #are permitted provided that the following conditions are met:
@@ -34,6 +34,7 @@ AR?=ar
 CFLAGS?=-O3
 CFLAGS+=-Wall 
 #CFLAGS+=-Werror
+#CPPFLAGS+=-DEXPERIMENTAL_SAVEGAME_SLOTS
 PROJ_HOME=./
 INCFLAGS=-I$(PROJ_HOME)src/gui -I$(PROJ_HOME)src/toplevel -I$(PROJ_HOME)src/loader -I$(PROJ_HOME)src/engine/vm68k -I$(PROJ_HOME)src/engine/linea -I$(PROJ_HOME)src/engine/include 
 OBJDIR=$(PROJ_HOME)obj/

@@ -1,6 +1,6 @@
 /*
 
-   Copyright 2021, dettus@dettus.net
+   Copyright 2022, dettus@dettus.net
 
    Redistribution and use in source and binary forms, with or without modification,
    are permitted provided that the following conditions are met:
@@ -68,6 +68,8 @@ int loader_init(int argc,char** argv,FILE *f_inifile,
 	int gamenamegiven;
 	int n;
 	int retval;
+	int nodoc;
+	nodoc=0;
 
 	binType=BINTYPE_NONE;
 
@@ -104,6 +106,7 @@ int loader_init(int argc,char** argv,FILE *f_inifile,
 		char archimedesname[32];
 		char atarixlname[32];
 		char appleiiname[32];
+
 		for (i=0;i<8;i++)
 		{
 			snprintf(magname,32,"%smag",gameprefix[i]);
@@ -203,17 +206,30 @@ int loader_init(int argc,char** argv,FILE *f_inifile,
 	{
 		binType=BINTYPE_APPLEII;
 	}
+	{
+		char result[64];
+		nodoc=0;
+		if (retrievefromini(f_inifile,"[GAMEPLAY]","nodoc",result,sizeof(result)))
+		{
+			nodoc=atoi(result);
+		}
+		if (retrievefromcommandline(argc,argv,"-nodoc",NULL,0))
+		{
+			nodoc=1;
+		}
+	}
+
 	switch (binType)
 	{
 		case BINTYPE_NONE:		fprintf(stderr,"Please provide the game binaries\n");return -1;break;
 		case BINTYPE_TWORSC:		retval=loader_magneticwindows(binname,magbuf,magsize,gfxbuf,gfxsize);break;
-		case BINTYPE_D64:		retval=loader_d64(binname,magbuf,magsize,gfxbuf,gfxsize);break;
-		case BINTYPE_AMSTRADCPC:	retval=loader_dsk(binname,magbuf,magsize,gfxbuf,gfxsize,0);	break;
-		case BINTYPE_SPECTRUM:		retval=loader_dsk(binname,magbuf,magsize,gfxbuf,gfxsize,1);break;
-		case BINTYPE_ARCHIMEDES:	retval=loader_archimedes(binname,magbuf,magsize,gfxbuf,gfxsize); break;
-		case BINTYPE_ATARIXL:		retval=loader_atarixl(binname,magbuf,magsize,gfxbuf,gfxsize); break;
-		case BINTYPE_APPLEII:		retval=loader_appleii(binname,magbuf,magsize,gfxbuf,gfxsize); break;
-		case BINTYPE_MSDOS:		retval=loader_msdos(binname,magbuf,magsize,gfxbuf,gfxsize);	break;
+		case BINTYPE_D64:		retval=loader_d64(binname,magbuf,magsize,gfxbuf,gfxsize,nodoc);break;
+		case BINTYPE_AMSTRADCPC:	retval=loader_dsk(binname,magbuf,magsize,gfxbuf,gfxsize,0,nodoc);	break;
+		case BINTYPE_SPECTRUM:		retval=loader_dsk(binname,magbuf,magsize,gfxbuf,gfxsize,1,nodoc);break;
+		case BINTYPE_ARCHIMEDES:	retval=loader_archimedes(binname,magbuf,magsize,gfxbuf,gfxsize,nodoc); break;
+		case BINTYPE_ATARIXL:		retval=loader_atarixl(binname,magbuf,magsize,gfxbuf,gfxsize,nodoc); break;
+		case BINTYPE_APPLEII:		retval=loader_appleii(binname,magbuf,magsize,gfxbuf,gfxsize,nodoc); break;
+		case BINTYPE_MSDOS:		retval=loader_msdos(binname,magbuf,magsize,gfxbuf,gfxsize,nodoc);	break;
 		case BINTYPE_MAGGFX:	
 			retval=0;
 			if (magfilename[0] && !gfxfilename[0])

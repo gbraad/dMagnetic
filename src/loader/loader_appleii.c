@@ -1,6 +1,6 @@
 /*
 
-   Copyright 2021, dettus@dettus.net
+   Copyright 2022, dettus@dettus.net
 
    Redistribution and use in source and binary forms, with or without modification,
    are permitted provided that the following conditions are met:
@@ -652,7 +652,8 @@ int loader_appleii_mkmag(unsigned char* magbuf,int* magsize,int gameid,unsigned 
 
 int loader_appleii(char *appleiiname,
 			char *magbuf,int* magsize,
-			char *gfxbuf,int* gfxsize)
+			char *gfxbuf,int* gfxsize,
+			int nodoc)
 {
 	unsigned char* pDskBuf;
 	char filename[1024];
@@ -665,6 +666,7 @@ int loader_appleii(char *appleiiname,
 	int gameid;
 	int diskoffs[MAXDISKS];
 	tWozInfo wozInfo;
+	int retval;
 	FILE *f;
 
 #define	SIZE_NIBIMAGE	232960
@@ -795,9 +797,18 @@ int loader_appleii(char *appleiiname,
 	}
 
 
-	loader_appleii_mkmag((unsigned char*)magbuf,magsize,gameid,pDskBuf,diskcnt,diskoffs);	// since the memory for the gfx buffer includes the dskbuf, this is enough	
-	return loader_appleii_mkgfx((unsigned char*)gfxbuf,gfxsize,gameid,diskcnt,diskoffs);	// since the memory for the gfx buffer includes the dskbuf, this is enough	
-		
+	retval=loader_appleii_mkmag((unsigned char*)magbuf,magsize,gameid,pDskBuf,diskcnt,diskoffs);	// since the memory for the gfx buffer includes the dskbuf, this is enough	
+	retval|=loader_appleii_mkgfx((unsigned char*)gfxbuf,gfxsize,gameid,diskcnt,diskoffs);	// since the memory for the gfx buffer includes the dskbuf, this is enough	
+	if (nodoc)
+	{
+		int i;
+		unsigned char* ptr=(unsigned char*)&magbuf[0];
+		for (i=0;i<*magsize-4;i++)
+		{
+			if (ptr[i+0]==0x62 && ptr[i+1]==0x02 && ptr[i+2]==0xa2 && ptr[i+3]==0x00) {ptr[i+0]=0x4e;ptr[i+1]=0x71;}
+		}
+	}
+	return retval;
 }
 
 

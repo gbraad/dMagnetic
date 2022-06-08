@@ -1,6 +1,6 @@
 /*
 
-   Copyright 2021, dettus@dettus.net
+   Copyright 2022, dettus@dettus.net
 
    Redistribution and use in source and binary forms, with or without modification,
    are permitted provided that the following conditions are met:
@@ -141,7 +141,8 @@ int loader_huffman_unpack(char* magbuf,int* decodedbytes,FILE *f)
 }
 int loader_msdos(char* msdosdir,
 		char *magbuf,int* magsize,
-		char* gfxbuf,int* gfxsize)
+		char* gfxbuf,int* gfxsize,
+		int nodoc)
 {
 #define	OPENFILE(filename)	\
 	f=fopen((filename),"rb");	\
@@ -275,6 +276,15 @@ int loader_msdos(char* msdosdir,
 		}
 		// TODO: what about the 5?
 
+		if (nodoc)
+		{
+			int i;
+			unsigned char* ptr=(unsigned char*)&magbuf[0];
+			for (i=0;i<magidx-4;i++)
+			{
+				if (ptr[i+0]==0x62 && ptr[i+1]==0x02 && ptr[i+2]==0xa2 && ptr[i+3]==0x00) {ptr[i+0]=0x4e;ptr[i+1]=0x71;}
+			}
+		}
 		if (gameInfo[gameID].game==GAME_MYTH && magbuf[0x314a]==0x66) magbuf[0x314a]=0x60;	// final touch
 		loader_common_addmagheader((unsigned char*)magbuf,magidx,gameInfo[gameID].version,codesize,string1size,string2size,dictsize,-1);
 	

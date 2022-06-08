@@ -1,6 +1,6 @@
 *** dMagnetic
 *** Use at your own risk
-*** (C)opyright 2021 by dettus@dettus.net
+*** (C)opyright 2022 by dettus@dettus.net
 *****************************************
 
 

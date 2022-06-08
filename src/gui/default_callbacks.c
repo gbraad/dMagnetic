@@ -1,6 +1,6 @@
 /*
 
-Copyright 2021, dettus@dettus.net
+Copyright 2022, dettus@dettus.net
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -26,6 +26,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
+//#define	EXPERIMENTAL_SAVEGAME_SLOTS
+
 // the purpose of this file is to provide a callback-fallback until proper
 // user interfaces have been established. It will do ;)
 #include <stdio.h>
@@ -36,6 +38,23 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "picture.h"
 #include "configuration.h"
 #include "default_callbacks.h"
+#ifdef	 EXPERIMENTAL_SAVEGAME_SLOTS
+#include <time.h>
+typedef struct _tSaveGameSlots
+{
+	int valid;
+	char filename[65];
+	int gamelen;
+	unsigned char gamedata[131072];
+	int year;
+	int month;
+	int day;
+	
+	int hour;
+	int minute;
+	int sec;
+} tSaveGameSlots;
+#endif
 
 #define	MAGIC	0x68654879	// = yHeh, the place where I grew up ;)
 #define	MAXTEXTBUFFER	1024	// maximum number of buffered characters
@@ -85,6 +104,10 @@ typedef	struct _tContext
 	int 	screenheight;
 	int	screenwidth;
 	int	forceres;
+
+#ifdef	EXPERIMENTAL_SAVEGAME_SLOTS
+	tSaveGameSlots	saveGameSlots[10];
+#endif
 } tContext;
 
 
@@ -255,6 +278,8 @@ int default_cbOutputChar(void* context,char c,unsigned char controlD2,unsigned c
 	} else {
 		c2=c&0x7f;	// the highest bit was an end marker for the hufman tree in the dictionary.
 
+
+
 		// THE RULES FOR THE OUTPUT ARE:
 		// replace tabs and _ with space.
 		// the headline is printed in upper case letters.
@@ -264,10 +289,15 @@ int default_cbOutputChar(void* context,char c,unsigned char controlD2,unsigned c
 		// the characters ~ and ^ are to be translated into line feeds.
 		// the caracter 0xff makes the next one upper case.
 		// after a second newline comes a capital letter.
+		// the special marker '@' is either an end marker, or must be substituted by an 's', so that "He thank@ you", and "It contain@ a key" become gramatically correct.
 
 		if (c2==9 || c2=='_') c2=' ';
 		if (flag_headline && (c2==0x5f || c2==0x40)) c2=' ';	// in a headline, those are the control codes for a space.
-		if (controlD2 && c2==0x40) return 0;	// end marker
+		if (c2==0x40) 	// '@' is a special character
+		{
+			if (controlD2 || pContext->lastchar==' ') return 0;	// When D2 is set, or the last character was a whitspace, it is an end marker
+			else c2='s';						// otherwise it must be substituted for an 's'. One example would be "It contain@ a key".
+		}
 		if (c2==0x5e || c2==0x7e) c2=0x0a;	// ~ or ^ is actually a line feed.
 		if (c2==0x0a && pContext->lastchar==0x0a) 	// after two consequitive newlines comes a capital letter.
 		{
@@ -277,9 +307,9 @@ int default_cbOutputChar(void* context,char c,unsigned char controlD2,unsigned c
 		{
 			pContext->capital=1;	
 		}
-		if (((c2>='a' && c2<='z') || (c2>='A' && c2<='Z')) && (pContext->capital||flag_headline)) 
+		if (((c2>='a' && c2<='z') || (c2>='A' && c2<='Z')) && (pContext->capital||flag_headline)) 	// the first letter must be written as uppercase. As well as the headline.
 		{
-			pContext->capital=0;
+			pContext->capital=0;	// ONLY the first character
 			c2&=0x5f;	// upper case
 		}
 		newline=0;
@@ -823,6 +853,189 @@ int default_cbDrawPicture(void* context,tPicture* picture,int mode)
 
 	return 0;
 }
+#ifdef	 EXPERIMENTAL_SAVEGAME_SLOTS
+
+int default_cbSaveGame(void* context,char* filename,void* ptr,int len)
+{
+	tContext *pContext=(tContext*)context;
+	FILE *f;
+	int n;
+	int i;
+	int done;
+	int retval;
+	char line[256];
+	f=fopen("savegameslots.bin","rb");
+	retval=0;
+	if (f)
+	{
+		n=fread(pContext->saveGameSlots,sizeof(tSaveGameSlots),10,f);
+		fclose(f);
+		if (n!=10)
+		{
+			printf("*** FATAL SAVEGAME SLOTS ERROR\n");
+			exit(1);
+		}
+	} else {
+		for (i=0;i<10;i++)
+		{
+			memset(&(pContext->saveGameSlots[i]),0,sizeof(tSaveGameSlots));
+		}
+	}
+	done=0;
+	do
+	{
+		int inputlen;
+		printf("*** APOLOGIES ABOUT THE CONFUSION! *** \n");
+		printf("*** THE PREVIOUS QUESTIONS CAME FROM THE GAME.\n");
+		printf("*** This is from the interpreter.\n");
+		printf("\n");
+		printf("*** Please select slot:\n");
+		for (i=0;i<10;i++)
+		{
+			printf("<%d> ",i);
+			if (pContext->saveGameSlots[i].valid)
+			{
+				printf("%04d-%02d-%02d  %02d:%02d:%02d ",pContext->saveGameSlots[i].year,pContext->saveGameSlots[i].month,pContext->saveGameSlots[i].day,
+					pContext->saveGameSlots[i].hour, pContext->saveGameSlots[i].minute, pContext->saveGameSlots[i].sec);
+
+				printf("%32s %5d bytes\n",pContext->saveGameSlots[i].filename,pContext->saveGameSlots[i].gamelen);
+			} else {
+				printf("free\n");
+			}
+		}
+		inputlen=sizeof(line);
+		printf(":> ");
+		default_cbInputString(context,&inputlen,line);
+		if (line[0]>='0' && line[0]<='9') 
+		{
+			int slot;
+			time_t t;
+			struct tm* now;
+
+			t=time(NULL);
+			now=gmtime(&t);
+
+
+
+			slot=line[0]-'0';
+			printf("*** Thank you. Saving now\n");
+			printf("*** please disregard any warning about problems with the save.\n");
+			done=1;
+			pContext->saveGameSlots[slot].valid=1;
+			pContext->saveGameSlots[slot].year=now->tm_year+1900;
+			pContext->saveGameSlots[slot].month=now->tm_mon+1;
+			pContext->saveGameSlots[slot].day=now->tm_mday;
+
+			pContext->saveGameSlots[slot].hour=now->tm_hour;
+			pContext->saveGameSlots[slot].minute=now->tm_min;
+			pContext->saveGameSlots[slot].sec=now->tm_sec;
+
+				
+			memcpy(pContext->saveGameSlots[slot].filename,filename,64);
+			memcpy(pContext->saveGameSlots[slot].gamedata,ptr,len);
+			pContext->saveGameSlots[slot].gamelen=len;
+			retval=0;
+			f=fopen("savegameslots.bin","wb");
+			n=fwrite(pContext->saveGameSlots,sizeof(tSaveGameSlots),10,f);
+			fclose(f);
+
+		
+		}
+		else if (line[0]=='\n' || line[0]=='\r')
+		{
+			printf("*** Aborting save now.\n");
+			done=1;
+			retval=-1;
+		}
+		else
+		{
+			printf("*** What?\n\n");
+			done=0;
+		}
+	} while (!done);
+	return retval;
+	
+}
+int default_cbLoadGame(void* context,char* filename,void* ptr,int len)
+{
+	tContext *pContext=(tContext*)context;
+	FILE *f;
+	int n;
+	int i;
+	int done;
+	int retval;
+	char line[256];
+	f=fopen("savegameslots.bin","rb");
+	if (f)
+	{
+		n=fread(pContext->saveGameSlots,sizeof(tSaveGameSlots),10,f);
+		fclose(f);
+		if (n!=10) 
+		{
+			printf("*** FATAL SAVEGAME SLOTS ERROR\n");
+			exit(1);
+		}
+	} else {
+		printf("*** Nothing to load yet\n");
+		return -1;
+	}
+	done=0;
+	do
+	{
+		int inputlen;
+		printf("*** APOLOGIES ABOUT THE CONFUSION! *** \n");
+		printf("*** THE PREVIOUS QUESTIONS CAME FROM THE GAME.\n");
+		printf("*** This is from the interpreter.\n");
+		printf("\n");
+		printf("*** Please select slot:\n");
+		for (i=0;i<10;i++)
+		{
+			printf("<%d> ",i);
+			if (pContext->saveGameSlots[i].valid)
+			{
+				printf("%04d-%02d-%02d  %02d:%02d:%02d ",pContext->saveGameSlots[i].year,pContext->saveGameSlots[i].month,pContext->saveGameSlots[i].day,
+					pContext->saveGameSlots[i].hour, pContext->saveGameSlots[i].minute, pContext->saveGameSlots[i].sec);
+
+				printf("%32s %5d bytes\n",pContext->saveGameSlots[i].filename,pContext->saveGameSlots[i].gamelen);
+			} else {
+				printf("free\n");
+			}
+		}
+		inputlen=sizeof(line);
+		printf(":> ");
+		default_cbInputString(context,&inputlen,line);
+		if (line[0]>='0' && line[0]<='9') 
+		{
+			int slot;
+			slot=line[0]-'0';
+			printf("*** Thank you. Loading now\n");
+			printf("*** please disregard any warning about problems with the save.\n");
+			if (pContext->saveGameSlots[slot].valid && pContext->saveGameSlots[slot].gamelen==len)
+			{
+				memcpy(ptr,pContext->saveGameSlots[slot].gamedata,len);
+				done=1;
+				retval=0;
+			}
+		}
+		else if (line[0]=='\n' || line[0]=='\r')
+		{
+			printf("*** Aborting load now.\n");
+			done=1;
+			retval=-1;
+		}
+		else
+		{
+			printf("*** What?\n\n");
+			done=0;
+		}
+	} while (!done);
+	printf("loaded\n");
+	return retval;
+
+
+}
+
+#else
 int default_cbSaveGame(void* context,char* filename,void* ptr,int len)
 {
 	FILE *f;
@@ -854,7 +1067,7 @@ int default_cbLoadGame(void* context,char* filename,void* ptr,int len)
 	if (n==len) return 0;
 	return -1;
 }
-
+#endif
 int default_getsize(int* size)
 {
 	if (size==NULL) return DEFAULT_NOK;

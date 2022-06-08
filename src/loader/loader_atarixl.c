@@ -1,6 +1,6 @@
 /*
 
-   Copyright 2021, dettus@dettus.net
+   Copyright 2022, dettus@dettus.net
 
    Redistribution and use in source and binary forms, with or without modification,
    are permitted provided that the following conditions are met:
@@ -334,7 +334,8 @@ int loader_atarixl_mkgfx(unsigned char* gfxbuf,int *gfxbufsize,int disk1offs,int
 }
 int loader_atarixl(char* atarixlname,
 	char* magbuf,int* magbufsize,
-	char* gfxbuf,int* gfxbufsize)
+	char* gfxbuf,int* gfxbufsize,
+	int nodoc)
 {
 	int disk1offs;
 	int disk2offs;
@@ -410,6 +411,15 @@ int loader_atarixl(char* atarixlname,
 	if (loader_atarixl_mkgfx((unsigned char*)gfxbuf,gfxbufsize,disk1offs,disk2offs,&loader_atarixl_cGameInfo[detectedgame])!=LOADER_ATARIXL_OK)
 	{
 		return LOADER_ATARIXL_NOK;
+	}
+	if (nodoc)
+	{
+		int i;
+		unsigned char* ptr=(unsigned char*)&magbuf[0];
+		for (i=0;i<*magbufsize-4;i++)
+		{
+			if (ptr[i+0]==0x62 && ptr[i+1]==0x02 && ptr[i+2]==0xa2 && ptr[i+3]==0x00) {ptr[i+0]=0x4e;ptr[i+1]=0x71;}
+		}
 	}
 
 

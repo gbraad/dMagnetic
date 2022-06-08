@@ -1,6 +1,6 @@
 /*
 
-Copyright 2021, dettus@dettus.net
+Copyright 2022, dettus@dettus.net
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -207,23 +207,23 @@ int lineA_loadproperties(tLineA* pLineA,tVM68k* pVM68k,tVM68k_uword objectnum,tV
 		addr=(pLineA->properties_size-objectnum)^0xffff;	// TODO: WTF?
 		addr*=2;
 		addr+=pLineA->properties_tab;
-		objectnum=READ_INT16BE(pVM68k->pMem,addr);
+		objectnum=READ_INT16BE(pVM68k->memory,addr);
 	}
 	addr=pLineA->properties_offset+14*objectnum;
 	
 	for (i=0;i<5;i++)
 	{
-		pProperties->unknown1[i]=pVM68k->pMem[addr+i];
+		pProperties->unknown1[i]=pVM68k->memory[addr+i];
 	}	
-	pProperties->flags1=pVM68k->pMem[addr+5];
-	pProperties->flags2=pVM68k->pMem[addr+6];
-	pProperties->unknown2=pVM68k->pMem[addr+7];
-	pProperties->parentobject=READ_INT16BE(pVM68k->pMem,addr+8);
+	pProperties->flags1=pVM68k->memory[addr+5];
+	pProperties->flags2=pVM68k->memory[addr+6];
+	pProperties->unknown2=pVM68k->memory[addr+7];
+	pProperties->parentobject=READ_INT16BE(pVM68k->memory,addr+8);
 	for (i=0;i<2;i++)
 	{
-		pProperties->unknown3[i]=pVM68k->pMem[addr+i+10];
+		pProperties->unknown3[i]=pVM68k->memory[addr+i+10];
 	}
-	pProperties->endflags=READ_INT16BE(pVM68k->pMem,addr+12);
+	pProperties->endflags=READ_INT16BE(pVM68k->memory,addr+12);
 	if (retaddr!=NULL) *retaddr=addr;
 	return LINEA_OK;	
 }
@@ -355,7 +355,7 @@ int lineA_singlestep(void* hLineA,void* hVM68k,unsigned short opcode)
 		{
 			// push long to stack
 			pVM68k->a[7]-=4;
-			WRITE_INT32BE(pVM68k->pMem,pVM68k->a[7],pVM68k->pcr);
+			WRITE_INT32BE(pVM68k->memory,pVM68k->a[7],pVM68k->pcr);
 			pVM68k->pcr=(pLineA->linef_subroutine)%pVM68k->memsize;
 		}
 		else
@@ -371,17 +371,17 @@ int lineA_singlestep(void* hLineA,void* hVM68k,unsigned short opcode)
 				{
 					// push long to stack
 					pVM68k->a[7]-=4;
-					WRITE_INT32BE(pVM68k->pMem,pVM68k->a[7],pVM68k->pcr);
+					WRITE_INT32BE(pVM68k->memory,pVM68k->a[7],pVM68k->pcr);
 					pVM68k->pcr=(pLineA->linef_subroutine)%pVM68k->memsize;
 				}
 				idx=(opcode|0x0800);
 				idx^=0xffff;
-				base=READ_INT16BE(pVM68k->pMem,(pLineA->linef_tab+2*idx));	
+				base=READ_INT16BE(pVM68k->memory,(pLineA->linef_tab+2*idx));	
 				pVM68k->pcr=(pLineA->linef_tab+2*idx+base)%pVM68k->memsize;	// jump, then jump again.
 			} else {
 				// push long to stack
 				pVM68k->a[7]-=4;
-				WRITE_INT32BE(pVM68k->pMem,pVM68k->a[7],pVM68k->pcr);
+				WRITE_INT32BE(pVM68k->memory,pVM68k->a[7],pVM68k->pcr);
 				pVM68k->pcr=(pLineA->linef_subroutine)%pVM68k->memsize;
 			}
 			
@@ -434,11 +434,11 @@ int lineA_singlestep(void* hLineA,void* hVM68k,unsigned short opcode)
 				tVM68k_ubyte	picname[9];
 				tVM68k_ubyte	datatype;
 				int i;
-				datatype=READ_INT8BE(pVM68k->pMem,pVM68k->a[1]+2);
+				datatype=READ_INT8BE(pVM68k->memory,pVM68k->a[1]+2);
 
 				for (i=0;i<8;i++)
 				{
-					picname[i]=READ_INT8BE(pVM68k->pMem,pVM68k->a[1]+3+i);
+					picname[i]=READ_INT8BE(pVM68k->memory,pVM68k->a[1]+3+i);
 				}
 				picname[8]=0;
 
@@ -495,7 +495,7 @@ int lineA_singlestep(void* hLineA,void* hVM68k,unsigned short opcode)
 					{
 						c=pLineA->inputbuf[pLineA->used];
 						if (c==0) c='\n';	// apparently, the virtual machine wants its strings CR terminated.
-						WRITE_INT8BE(pVM68k->pMem,(pVM68k->a[1]+i),c);
+						WRITE_INT8BE(pVM68k->memory,(pVM68k->a[1]+i),c);
 						pLineA->used++;					// increase the read pointer for the next time.
 						i++;
 					} while (i<256  && pLineA->level>pLineA->used && c!='\n');
@@ -521,7 +521,7 @@ int lineA_singlestep(void* hLineA,void* hVM68k,unsigned short opcode)
 		case 0xa0e4:	
 			{
 					pVM68k->a[7]+=4;	// increase the stack pointer? maybe skip an entry or something?
-					pVM68k->pcr=READ_INT32BE(pVM68k->pMem,pVM68k->a[7])%pVM68k->memsize;
+					pVM68k->pcr=READ_INT32BE(pVM68k->memory,pVM68k->a[7])%pVM68k->memsize;
 					pVM68k->a[7]+=4;
 			}
 			break;
@@ -539,7 +539,7 @@ int lineA_singlestep(void* hLineA,void* hVM68k,unsigned short opcode)
 				if (opcode==0xa0e4 || opcode==0xa0e5 || opcode==0xa0e6)
 				{
 					// RTS: poplongfromstack(pcr);
-					pVM68k->pcr=READ_INT32BE(pVM68k->pMem,pVM68k->a[7])%pVM68k->memsize;
+					pVM68k->pcr=READ_INT32BE(pVM68k->memory,pVM68k->a[7])%pVM68k->memsize;
 					pVM68k->a[7]+=4;
 				}
 			}
@@ -552,7 +552,7 @@ int lineA_singlestep(void* hLineA,void* hVM68k,unsigned short opcode)
 				do
 				{
 					tmp=pLineA->pDict[pVM68k->a[1]++];
-					pVM68k->pMem[pVM68k->a[0]++]=tmp;
+					pVM68k->memory[pVM68k->a[0]++]=tmp;
 				} while (!(tmp&0x80));
 			}
 			break;
@@ -620,7 +620,7 @@ int lineA_singlestep(void* hLineA,void* hVM68k,unsigned short opcode)
 				tVM68k_uword	inputidx;
 				tVM68k_ubyte	cinput;
 				int i,n;
-				inputptr=&pVM68k->pMem[pVM68k->a[1]&0xffff];
+				inputptr=&pVM68k->memory[pVM68k->a[1]&0xffff];
 				inputidx=0;
 				n=(pVM68k->d[0])&0xffff;
 				for (i=0;i<n;i++)
@@ -669,28 +669,51 @@ int lineA_singlestep(void* hLineA,void* hVM68k,unsigned short opcode)
 			break;
 		case 0xa0f4:
 			{
+#ifdef EXPERIMENTAL_SAVEGAME_SLOTS
+				if (pLineA->pcbSaveGame!=NULL)
+				{
+					pLineA->pcbSaveGame(pLineA->contextSaveGame,
+						(char*)&pVM68k->memory[(pVM68k->a[0]&0xffff)],	// filename
+						(void*)pVM68k,	// ptr
+						sizeof(tVM68k)	// len
+					);
+				}	
+#else
 				// TODO: version 0. The filename starts at A0.
 				if (pLineA->pcbSaveGame!=NULL)
 				{
 					pLineA->pcbSaveGame(pLineA->contextSaveGame,
-						(char*)&pVM68k->pMem[(pVM68k->a[0]&0xffff)],	// filename
-						&pVM68k->pMem[(pVM68k->a[1]&0xffff)],	// ptr
+						(char*)&pVM68k->memory[(pVM68k->a[0]&0xffff)],	// filename
+						&pVM68k->memory[(pVM68k->a[1]&0xffff)],	// ptr
 						(pVM68k->d[1]&0xffff)	// len
 					);
 				}	
+
+#endif
 			}
 			break;
 		case 0xa0f5:
 			{
+#ifdef EXPERIMENTAL_SAVEGAME_SLOTS
+				if (pLineA->pcbLoadGame!=NULL)
+				{
+					pLineA->pcbLoadGame(pLineA->contextLoadGame,
+						(char*)&pVM68k->memory[(pVM68k->a[0]&0xffff)],	// filename
+						(void*)pVM68k,	// ptr
+						sizeof(tVM68k)	// len
+					);
+				}
+#else
 				// TODO: VERSION 0: filename starts at A0
 				if (pLineA->pcbLoadGame!=NULL)
 				{
 					pLineA->pcbLoadGame(pLineA->contextLoadGame,
-						(char*)&pVM68k->pMem[(pVM68k->a[0]&0xffff)],	// filename
-						&pVM68k->pMem[(pVM68k->a[1]&0xffff)],	// ptr
+						(char*)&pVM68k->memory[(pVM68k->a[0]&0xffff)],	// filename
+						&pVM68k->memory[(pVM68k->a[1]&0xffff)],	// ptr
 						(pVM68k->d[1]&0xffff)	// len
 					);
-				}	
+				}
+#endif
 			}
 			break;
 		case 0xa0f6:	// get random number (word), modulo D1.
@@ -876,10 +899,10 @@ int lineA_singlestep(void* hLineA,void* hVM68k,unsigned short opcode)
 				{
 					if (byte0word1)
 					{
-						value=READ_INT16BE(pVM68k->pMem,addr);
+						value=READ_INT16BE(pVM68k->memory,addr);
 						value&=0x3fff;
 					} else {
-						value= READ_INT8BE(pVM68k->pMem,addr);
+						value= READ_INT8BE(pVM68k->memory,addr);
 						value&=0xff;
 					}
 					addr+=14;
@@ -906,7 +929,7 @@ int lineA_singlestep(void* hLineA,void* hVM68k,unsigned short opcode)
 				dictidx=0;
 				if (pLineA->version==0 || pLineA->pDict==NULL || pLineA->dictsize==0) 
 				{
-					dictptr=&pVM68k->pMem[pVM68k->a[1]&0xffff];
+					dictptr=&pVM68k->memory[pVM68k->a[1]&0xffff];
 				} else {
 					//dictptr=pLineA->pDict;
 					dictptr=&pLineA->pDict[pVM68k->a[1]&0xffff];
@@ -934,11 +957,11 @@ int lineA_singlestep(void* hLineA,void* hVM68k,unsigned short opcode)
 				inputidx=0;
 				if (pLineA->version==0 || pLineA->pDict==NULL || pLineA->dictsize==0) 
 				{
-					dictptr=&pVM68k->pMem[pVM68k->a[0]&0xffff];	// TODO: version 0. 
+					dictptr=&pVM68k->memory[pVM68k->a[0]&0xffff];	// TODO: version 0. 
 				} else {
 					dictptr=&pLineA->pDict[pVM68k->a[0]&0xffff];
 				}
-				inputptr=&pVM68k->pMem[pVM68k->a[1]&0xffff];
+				inputptr=&pVM68k->memory[pVM68k->a[1]&0xffff];
 				n=(pVM68k->d[0])&0xffff;	
 				for (i=0;i<n;i++)
 				{
@@ -989,7 +1012,7 @@ int lineA_singlestep(void* hLineA,void* hVM68k,unsigned short opcode)
 						pVM68k->d[0]&=0xffff7fff;	
 //						objectidx=((pLineA->properties_size-(pVM68k->d[0]&0x3fff))^0xffff);	// TODO: I THINK THIS IS JUST A MODULO!!!
 						objectidx=((pVM68k->d[0]&0x3fff)-pLineA->properties_size)-1;
-						objectnum=READ_INT16BE(pVM68k->pMem,pLineA->properties_tab+objectidx*2);
+						objectnum=READ_INT16BE(pVM68k->memory,pLineA->properties_tab+objectidx*2);
 					} else {
 						if (pLineA->version>=2) 
 						{
@@ -1053,19 +1076,19 @@ int lineA_singlestep(void* hLineA,void* hVM68k,unsigned short opcode)
 						longestmatch=0;
 						flag2=0;
 
-						inputptr  =&pVM68k->pMem[pVM68k->a[6]];
+						inputptr  =&pVM68k->memory[pVM68k->a[6]];
 						if (pLineA->version==0 || pLineA->pDict==NULL || pLineA->dictsize==0) 
 						{
-							dictptr=&pVM68k->pMem[pVM68k->a[3]&0xffff];
-							dtabptr=&pVM68k->pMem[pVM68k->a[5]&0xffff];	// version>0
+							dictptr=&pVM68k->memory[pVM68k->a[3]&0xffff];
+							dtabptr=&pVM68k->memory[pVM68k->a[5]&0xffff];	// version>0
 						} else {
 							dictptr=&pLineA->pDict[pVM68k->a[3]&0xffff];
 							dtabptr=&pLineA->pDict[pVM68k->a[5]&0xffff];	// version>0
 							
 						}
-						outputptr =&pVM68k->pMem[pVM68k->a[2]];
-						objectptr =&pVM68k->pMem[pVM68k->a[1]];
-						adjptr    =&pVM68k->pMem[pVM68k->a[0]];
+						outputptr =&pVM68k->memory[pVM68k->a[2]];
+						objectptr =&pVM68k->memory[pVM68k->a[1]];
+						adjptr    =&pVM68k->memory[pVM68k->a[0]];
 						inputidx=dictidx=objectidx=outputidx=adjidx=0;
 						pVM68k->d[0]&=0xffff0000;		// this regsiter was used during the adjective search.
 						pVM68k->d[1]&=0xffff0000;		// this regsiter was used during the adjective search.

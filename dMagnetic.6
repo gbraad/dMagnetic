@@ -1,7 +1,7 @@
 .\" Process this file with
 .\" groff -man -Tascii dMagnetic.6
 .\"
-.Dd July 19th, 2021
+.Dd April 12th, 2022
 .Os OpenBSD 
 .Dt dMagnetic 6
 .
@@ -110,6 +110,7 @@ You wake up on a sunny August morning with birds singing, and the air fresh and 
 .Nm
 .Op Fl help
 .Op Fl helpini
+.Op Fl nodoc
 .Op Fl v
 .Op Fl bsd
 .Sh DESCRIPTION
@@ -337,6 +338,10 @@ Shows the detailed help.
 .Op Fl Fl helpini
 .br
 Shows an example for a working dMagnetic.ini file.
+.Pp
+.Op Fl nodoc
+.br
+Allows playing without the original documentation.
 .Pp
 .Op Fl mag Ar MAGFILE.mag
 .Op Fl gfx Ar GFXFILE.gfx

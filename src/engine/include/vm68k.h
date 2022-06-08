@@ -1,6 +1,6 @@
 /*
 
-Copyright 2021, dettus@dettus.net
+Copyright 2022, dettus@dettus.net
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -40,10 +40,12 @@ int vm68k_getsize(int* size);
 
 
 // as the name suggests, pSharedMem is shared among the cores. it typically holds the game code.
-int vm68k_init(void* hVM68k,void* pSharedMem,int sharedmemsize,int version);
+int vm68k_init(void* hVM68k,int version);
 
 int vm68k_singlestep(void *hVM68k,unsigned short opcode);
 
 int vm68k_getNextOpcode(void* hVM68k,unsigned short* opcode);
+
+void* vm68k_getpSharedMem(void* hVM68k);
 
 #endif

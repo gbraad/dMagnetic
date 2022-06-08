@@ -1,6 +1,6 @@
 /*
 
-   Copyright 2021, dettus@dettus.net
+   Copyright 2022, dettus@dettus.net
 
    Redistribution and use in source and binary forms, with or without modification,
    are permitted provided that the following conditions are met:
@@ -462,7 +462,8 @@ int loader_d64_readStrings(unsigned char* d64image,tFileEntry* pEntries,int entr
 }
 int loader_d64(char* d64name,
 		char *magbuf,int* magsize,
-		char* gfxbuf,int* gfxsize)
+		char* gfxbuf,int* gfxsize,
+		int nodoc)
 {
 	char* filename[2];
 	int i;
@@ -577,6 +578,15 @@ int loader_d64(char* d64name,
 		magidx+=string1size+string2size+dictsize;
 		loader_common_addmagheader((unsigned char*)magbuf,magidx,loader_d64_gameinfo[gameID].version,code1size+code2size,string1size,string2size,dictsize,huffmantreeidx);	
 
+		if (nodoc)
+		{
+			int i;
+			unsigned char* ptr=(unsigned char*)&magbuf[0];
+			for (i=0;i<magidx-4;i++)
+			{
+				if (ptr[i+0]==0x62 && ptr[i+1]==0x02 && ptr[i+2]==0xa2 && ptr[i+3]==0x00) {ptr[i+0]=0x4e;ptr[i+1]=0x71;}
+			}
+		}
 		if (loader_d64_gameinfo[gameID].game==GAME_MYTH && magbuf[0x3080]==0x66) magbuf[0x3080]=0x60;	// final touch
 	
 		*magsize=magidx;				

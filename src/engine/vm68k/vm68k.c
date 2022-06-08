@@ -1,6 +1,6 @@
 /*
 
-Copyright 2021, dettus@dettus.net
+Copyright 2022, dettus@dettus.net
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -110,17 +110,14 @@ int vm68k_getsize(int* size)
 	return	VM68K_OK;
 }
 
-int vm68k_init(void* hVM68k,void* pSharedMem,int sharedmemsize,int version)
+int vm68k_init(void* hVM68k,int version)
 {
 	tVM68k* pVM68k=(tVM68k*)hVM68k;
 	if (hVM68k==NULL) return VM68K_NOK_INVALID_PTR;
-	if (pSharedMem==NULL) return VM68K_NOK_INVALID_PARAMETER;
 
-	memset(hVM68k,0,sizeof(tVM68k));
 	pVM68k->magic=MAGICVALUE;
 	pVM68k->pcr=0;
-	pVM68k->pMem=pSharedMem;
-	pVM68k->memsize=sharedmemsize;
+	pVM68k->memsize=sizeof(pVM68k->memory);
 	pVM68k->a[7]=pVM68k->memsize-4;		// The stack pointer goes to the end of the memory
 
 	pVM68k->version=version;
@@ -176,7 +173,7 @@ int vm68k_singlestep(void *hVM68k,unsigned short opcode)
 			printf("\x1b[1;37;42mtrap #%d\n",opcode&0xf);
 			for (i=0;i<16;i++)
 			{
-				printf(" ** trap %d stack %2d %08X \n",opcode&0xf,i,READ_INT32BE(pVM68k->pMem,pVM68k->a[7]-i*4));
+				printf(" ** trap %d stack %2d %08X \n",opcode&0xf,i,READ_INT32BE(pVM68k->memory,pVM68k->a[7]-i*4));
 			}
 			printf("\x1b[0m\n");
 			retval=VM68K_OK;
@@ -909,9 +906,9 @@ int vm68k_singlestep(void *hVM68k,unsigned short opcode)
 #endif
 				switch(next.mem_size)
 				{
-					case 0:	WRITE_INT8BE(pVM68k->pMem, next.mem_addr[i],next.mem_value[i]&      0xff);break;
-					case 1:	WRITE_INT16BE(pVM68k->pMem,next.mem_addr[i],next.mem_value[i]&    0xffff);break;
-					case 2:	WRITE_INT32BE(pVM68k->pMem,next.mem_addr[i],next.mem_value[i]&0xffffffff);break;
+					case 0:	WRITE_INT8BE(pVM68k->memory, next.mem_addr[i],next.mem_value[i]&      0xff);break;
+					case 1:	WRITE_INT16BE(pVM68k->memory,next.mem_addr[i],next.mem_value[i]&    0xffff);break;
+					case 2:	WRITE_INT32BE(pVM68k->memory,next.mem_addr[i],next.mem_value[i]&0xffffffff);break;
 					default: retval=VM68K_NOK_UNKNOWN_INSTRUCTION;break;
 				}
 			}
@@ -927,14 +924,16 @@ int vm68k_getNextOpcode(void* hVM68k,unsigned short* opcode)
 	if (hVM68k==NULL) return VM68K_NOK_INVALID_PTR;
 	if (opcode==NULL) return VM68K_NOK_INVALID_PTR;
 	if (pVM68k->magic!=MAGICVALUE) return VM68K_NOK_INVALID_PARAMETER;
-	*opcode=READ_INT16BE(pVM68k->pMem,pVM68k->pcr);
+	*opcode=READ_INT16BE(pVM68k->memory,pVM68k->pcr);
 	pVM68k->pcr+=2;
 #ifdef	DEBUG_PRINT
 	{
+		//static int pcrcnt[65536]={0};
 		int i;
 		char tmp[64];
 		tVM68k_instruction inst;
 		printf("\n\n\n");
+		//printf("%d  ",pcrcnt[pVM68k->pcr]++);
 		printf("pcr:%06x ",pVM68k->pcr);
 		printf("INST:%04X ",*opcode);
 		printf("CVZN:%d%d%d%d ", (pVM68k->sr>>0)&1,(pVM68k->sr>>1)&1,(pVM68k->sr>>2)&1,(pVM68k->sr>>3)&1);
@@ -952,7 +951,7 @@ int vm68k_getNextOpcode(void* hVM68k,unsigned short* opcode)
 		{
 			unsigned long long sum;
 			sum=0;
-			for (i=0;i<pVM68k->memsize;i++) sum+=READ_INT32BE(pVM68k->pMem,i);
+			for (i=0;i<pVM68k->memsize;i++) sum+=READ_INT32BE(pVM68k->memory,i);
 			printf("MEMSUM:%llX ",sum);
 		}
 		inst=vm68k_decode(*opcode);
@@ -962,6 +961,11 @@ int vm68k_getNextOpcode(void* hVM68k,unsigned short* opcode)
 		fflush(stdout);
 	}
 #endif
-
 	return VM68K_OK;	
+}
+void* vm68k_getpSharedMem(void* hVM68k)
+{
+	tVM68k* pVM68k=(tVM68k*)hVM68k;
+	return (void*)&(pVM68k->memory[0]);
+
 }

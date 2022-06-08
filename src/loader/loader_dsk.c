@@ -1,6 +1,6 @@
 /*
 
-   Copyright 2021, dettus@dettus.net
+   Copyright 2022, dettus@dettus.net
 
    Redistribution and use in source and binary forms, with or without modification,
    are permitted provided that the following conditions are met:
@@ -139,7 +139,8 @@ int loader_dsk_amstradcpc_mag(unsigned char* magbuf,int* magsize,
 		unsigned char* diskimage,int diskcnt,
 		unsigned char* tmpbuf,int tmpbufsize,
 		int gamedetected,
-		tDirEntry* pDirEntries,int entrycnt,int sectorsize)
+		tDirEntry* pDirEntries,int entrycnt,int sectorsize,
+		int nodoc)
 {
 	int outputidx;
 	int version;
@@ -189,6 +190,15 @@ int loader_dsk_amstradcpc_mag(unsigned char* magbuf,int* magsize,
 	dictsize=loader_dsk_readfile(diskimage,&magbuf[outputidx],FILESUFFIX8,pDirEntries,entrycnt,sectorsize);
 	loader_dsk_descrambler(&magbuf[outputidx],dictsize,0x1803);	// the dictionary is scrambled the same way the code is
 	outputidx+=dictsize;
+	if (nodoc)
+	{
+		int i;
+		unsigned char* ptr=(unsigned char*)&magbuf[0];
+		for (i=0;i<outputidx-4;i++)
+		{
+			if (ptr[i+0]==0x62 && ptr[i+1]==0x02 && ptr[i+2]==0xa2 && ptr[i+3]==0x00) {ptr[i+0]=0x4e;ptr[i+1]=0x71;}
+		}
+	}
 
 	*magsize=outputidx;
 	return loader_common_addmagheader(magbuf,outputidx,version,code1size+code2size,string1size,string2size,dictsize,-1);
@@ -197,7 +207,8 @@ int loader_dsk_spectrum_mag(unsigned char* magbuf,int* magsize,
 		unsigned char* diskimage,int diskcnt,
 		unsigned char* tmpbuf,int tmpbufsize,
 		int gamedetected,
-		tDirEntry* pDirEntries,int entrycnt,int sectorsize)
+		tDirEntry* pDirEntries,int entrycnt,int sectorsize,
+		int nodoc)
 {
 	int codesize;
 	int string1size;
@@ -225,6 +236,15 @@ int loader_dsk_spectrum_mag(unsigned char* magbuf,int* magsize,
 	outputidx+=dictsize;
 	
 	version=loader_dsk_knownGames[gamedetected].version;
+	if (nodoc)
+	{
+		int i;
+		unsigned char* ptr=(unsigned char*)&magbuf[0];
+		for (i=0;i<outputidx-4;i++)
+		{
+			if (ptr[i+0]==0x62 && ptr[i+1]==0x02 && ptr[i+2]==0xa2 && ptr[i+3]==0x00) {ptr[i+0]=0x4e;ptr[i+1]=0x71;}
+		}
+	}
 	if (version==3 && magbuf[0x2836]==0x66) magbuf[0x2836]=0x60;	// final patch for myth
 	*magsize=outputidx;
 
@@ -310,7 +330,8 @@ int loader_dsk_amstradcpc_gfx(
 int loader_dsk(char* amstradcpcname,
 		char *magbuf,int* magsize,
 		char* gfxbuf,int* gfxsize,
-		int amstrad0spectrum1)
+		int amstrad0spectrum1,
+		int nodoc)
 {
 	char* filename[MAX_DISKS];
 	unsigned char *dskimage;
@@ -668,7 +689,8 @@ int loader_dsk(char* amstradcpcname,
 				dskimage,diskcnt,
 				(unsigned char*)gfxbuf,2*DSK_IMAGESIZE,
 				gamedetected,
-				dirEntries,entrycnt,sectorsize);
+				dirEntries,entrycnt,sectorsize,
+				nodoc);
 
 
 		*gfxsize=0;
@@ -678,7 +700,8 @@ int loader_dsk(char* amstradcpcname,
 				dskimage,diskcnt,
 				(unsigned char*)gfxbuf,2*DSK_IMAGESIZE,
 				gamedetected,
-				dirEntries,entrycnt,sectorsize);
+				dirEntries,entrycnt,sectorsize,
+				nodoc);
 		if (retval) return retval;
 
 		retval=loader_dsk_amstradcpc_gfx((unsigned char*)gfxbuf,gfxsize,

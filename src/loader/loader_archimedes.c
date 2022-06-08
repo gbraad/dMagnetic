@@ -1,6 +1,6 @@
 /*
 
-   Copyright 2021, dettus@dettus.net
+   Copyright 2022, dettus@dettus.net
 
    Redistribution and use in source and binary forms, with or without modification,
    are permitted provided that the following conditions are met:
@@ -319,7 +319,7 @@ unsigned int loader_archimedes_findfiles(unsigned char* dskimg,int dsksize,
 
 }
 int loader_archimedes_mkmag(unsigned char *dskimg,int dsksize,unsigned char* magbuf,int* magsize,
-		int gameId,int* offsets,int *lengths)
+		int gameId,int* offsets,int *lengths,int nodoc)
 {
 	int magidx;
 	int codesize;
@@ -346,7 +346,17 @@ int loader_archimedes_mkmag(unsigned char *dskimg,int dsksize,unsigned char* mag
 	} else {
 		dictsize=0;
 	}
-	
+
+	if (nodoc)	
+	{
+		int i;
+		unsigned char* ptr=(unsigned char*)&magbuf[0];
+		for (i=0;i<magidx-4;i++)
+		{
+			if (ptr[i+0]==0x62 && ptr[i+1]==0x02 && ptr[i+2]==0xa2 && ptr[i+3]==0x00) {ptr[i+0]=0x4e;ptr[i+1]=0x71;}
+		}
+	}
+
 	loader_common_addmagheader(magbuf,magidx,loader_archimedes_cGames[gameId].version,codesize,string1size,string2size,dictsize,-1);
 
 	*magsize=magidx;
@@ -383,7 +393,7 @@ int loader_archimedes_mkgfx(unsigned char *dskimg,int dsksize,unsigned char* gfx
 	return LOADER_OK;
 }
 
-int loader_archimedes(char* filename,char* magbuf,int* magsize,char* gfxbuf,int* gfxsize)
+int loader_archimedes(char* filename,char* magbuf,int* magsize,char* gfxbuf,int* gfxsize,int nodoc)
 {
 	FILE *f;
 	int newgfxsize;
@@ -410,7 +420,7 @@ int loader_archimedes(char* filename,char* magbuf,int* magsize,char* gfxbuf,int*
 	}
 
 	// since the data is in the gfx buf, we need to generate the magbuf first.	
-	if (loader_archimedes_mkmag((unsigned char*)gfxbuf,newgfxsize,(unsigned char*)magbuf,magsize, gameId,offsets,lengths)!=LOADER_OK)
+	if (loader_archimedes_mkmag((unsigned char*)gfxbuf,newgfxsize,(unsigned char*)magbuf,magsize, gameId,offsets,lengths,nodoc)!=LOADER_OK)
 	{
 		return LOADER_NOK;
 	}

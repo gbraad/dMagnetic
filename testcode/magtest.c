@@ -1,6 +1,6 @@
 /*
 
-Copyright 2021, dettus@dettus.net
+Copyright 2022, dettus@dettus.net
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -53,7 +53,7 @@ int main(int argc,char** argv)
 	
 	fprintf(stderr,"*** dMagnetic- magtest\n");
 	fprintf(stderr,"*** Use at your own risk\n");
-	fprintf(stderr,"*** (C)opyright 2021 by dettus@dettus.net\n");
+	fprintf(stderr,"*** (C)opyright 2022 by dettus@dettus.net\n");
 	fprintf(stderr,"*****************************************\n");	
 	fprintf(stderr,"\n");
 
