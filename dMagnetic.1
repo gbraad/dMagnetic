@@ -1,0 +1,261 @@
+.\" Process this file with
+.\" groff -man -Tascii dMagnetic.1
+.\"
+.Dd November 9th, 2019
+.Os OpenBSD 
+.Dt dMagnetic 1
+.
+.Sh NAME
+.Nm dMagnetic
+.Nd A Magnetic Scrolls Interpreter
+.
+.
+.Sh INTRODUCTION
+You wake up on a sunny August morning with birds singing, and the air fresh and clear. However, your joints are stiff and you have not woken up in your bedroom as you would have expected. Trying to recall what happened the night before, you manage to piece together a few brief glimpses to give the following account...
+.Sh SYNOPSIS
+.
+.Nm
+.Op Fl mag Ar MAGFILE.mag
+.Op Fl gfx Ar GFXFILE.gfx
+.br
+.Nm
+.Op Fl ini Ar ini-file 
+.Op GAME
+.br
+.Nm
+.Op Fl ini Ar ini-file 
+.Op GAME
+.Op Fl vrows Ar ROWS
+.Op Fl vcols Ar COLUMNS
+.br
+.Nm
+.Op Fl ini Ar ini-file 
+.Op GAME
+.Op Fl vmode Ar none
+.br
+.Nm
+.Op Fl ini Ar ini-file 
+.Op GAME
+.Op Fl vmode Ar monochrome
+.br
+.Nm
+.Op Fl ini Ar ini-file 
+.Op GAME
+.Op Fl vmode Ar low_ansi
+.br
+.Nm
+.Op Fl ini Ar ini-file 
+.Op GAME
+.Op Fl vmode Ar high_ansi
+.br
+.Nm
+.Op Fl ini Ar ini-file 
+.Op GAME
+.Op Fl valign Ar left
+.br
+.Nm
+.Op Fl vlog Ar LOGFILE 
+.Op Fl vecho
+.Nm
+.Op Fl help
+.Op Fl helpini
+.Op Fl v
+.Op Fl bsd
+.Sh DESCRIPTION
+.Nm
+is an interpreter for classic text adventure games, or interactive fiction, such as "The Pawn" or "The Guild of Thieves". The following games are being supported:
+.Bl -tag -width 10
+.It "The Pawn"
+.It "The Guild of Thieves"
+.It "Jinxter"
+.It "Fish!"
+.It "Myth"
+.It "Corruption"
+.It "Wonderland"
+.El
+.
+.Sh GAME BINARIES
+Currently, only binaries in the .mag and .gfx format from the 
+magnetic scrolls memorial at
+https://msmemorial.if-legends.org/memorial.php 
+are being supported. 
+Once downloaded, their position has to be made available to 
+.Nm
+by editing dMagnetic.ini first. 
+.Sh STARTING THE GAME
+Once the game(s) have been downloaded, the .mag and .gfx files can be provided via
+.Pp
+.Nm
+-mag pawn.mag -gfx pawn.gfx
+.Pp 
+It is also possible to edit thedMagnetic.ini file and start a specific game, by using one of
+.Pp
+.Nm
+-ini dMagnetic.ini pawn
+.br
+.Nm
+-ini dMagnetic.ini guild
+.br
+.Nm
+-ini dMagnetic.ini jinxter
+.br
+.Nm
+-ini dMagnetic.ini corruption
+.br
+.Nm
+-ini dMagnetic.ini fish
+.br
+.Nm
+-ini dMagnetic.ini myth
+.br
+.Nm
+-ini dMagnetic.ini wonderland
+.Pp
+When you see the prompt, the game is ready to accept your commands. For example EXAMINE CLOTHES. Or GO EAST. Or ASK KRONOS ABOUT THE WRISTBAND.
+.br
+.Sh LEAVING THE GAME
+Type in "QUIT". Duh!
+.Sh SAVING/LOADING PROGRESS
+The game can be saved at any type by typing SAVE, and loaded by typing LOAD. Followed by a filename.
+.Pp
+SAVE myprogress1.sav
+.br
+LOAD myprogress1.sav
+.Sh TEXT ALIGNMENT
+Changing the alignment of the output text can be done with the .ini file or the commandline.
+.br
+.Nm Fl valign Ar left
+.br
+.Nm Fl valign Ar block
+.br
+.Nm Fl valign Ar right
+.br
+.Sh GRAPHIC MODES
+.Nm
+has been developed with ANSI-consoles in mind. To select a video output that best suits your needs, please try one of the following
+.
+.Pp
+.Nm
+.Op Fl ini Ar ini-file 
+.Op GAME
+.Op Fl vmode Ar none
+.br
+.Nm
+.Op Fl ini Ar ini-file 
+.Op GAME
+.Op Fl vmode Ar monochrome
+.br
+.Nm
+.Op Fl ini Ar ini-file 
+.Op GAME
+.Op Fl vmode Ar low_ansi
+.br
+.Nm
+.Op Fl ini Ar ini-file 
+.Op GAME
+.Op Fl vmode Ar high_ansi
+.Pp
+To change the number of rows/columns to render the images, use
+.Pp
+.Nm
+.Op Fl ini Ar ini-file 
+.Op GAME
+.Op Fl vcols Ar COLUMNS
+.br
+.Nm
+.Op Fl ini Ar ini-file 
+.Op GAME
+.Op Fl vrows Ar ROWS
+.Sh GRAPHICS IN WONDERLAND
+Before you can see the beautiful graphics in wonderland, you have to type in "graphics" to enable them.
+.Sh COMMAND LINE OPTIONS
+.Op Fl bsd
+.br
+Shows the license.
+.Pp
+.Op Fl Fl help
+.br
+Shows the detailed help.
+.Pp
+.Op Fl Fl helpini
+.br
+Shows an example for a working dMagnetic.ini file.
+.Pp
+.Op Fl mag Ar MAGFILE.mag
+.Op Fl gfx Ar GFXFILE.gfx
+.br
+.Nm
+is a Magnetic Scrolls Interpreter. To actually play the games, their binaries have to be provided in the .mag and .gfx format from https://msmemorial.if-legends.org/magnetic.php. This command says where the .mag and .gfx file can be found.
+.Pp
+.Op Fl ini Ar dMagnetic.ini pawn
+.br
+.Op Fl ini Ar dMagnetic.ini guild
+.br
+.Op Fl ini Ar dMagnetic.ini jinxter
+.br
+.Op Fl ini Ar dMagnetic.ini corruption
+.br
+.Op Fl ini Ar dMagnetic.ini fish
+.br
+.Op Fl ini Ar dMagnetic.ini pawn
+.br
+.Op Fl ini Ar dMagnetic.ini myth
+.br
+.Op Fl ini Ar dMagnetic.ini wonderland
+.br
+An alternative way to provide the location of the .mag and .gfx is through a dMagnetic.ini file. See helpini or
+.Xr dMagneticini 5
+for an example of a working dMagnetic.ini file.
+.br
+IT SHOULD BE NOTED that the default location for dMagnetic.ini is in the user's home directory. If the file is located there, "The Pawn", for example, can be started by typing
+.br
+.Nm
+pawn
+.br
+.Pp
+.Op Fl vrows Ar ROWS
+.br
+.Op Fl vcols Ar COLUMNS
+.br
+.Nm
+has been designed with terminal windows as main output in mind. The terminal window has a fixed number of rows and columns to print out text. Its size is limited, but it is used by 
+.Nm
+to render the beautiful BEAUTIFUL pictures as well. To restrict the space in which they are rendered (in glorious ANSI art), those command set the upper limits.
+.br
+.Pp
+.Op Fl vecho
+.br
+When trying to run
+.Nm
+and redirecting the output into a file, the inputs are missing. This option reprints what was typed in, to allow for a spoilery script.
+.Pp
+.Op Fl vlog Ar LOGFILE.log
+.br
+Sort of a travel journal, this option lets you write the commands that where typed into a file.
+.br
+.Pp
+.Op Fl vmode Ar none
+.br
+.Op Fl vmode Ar monochrome
+.br
+.Op Fl vmode Ar low_ansi
+.br
+.Op Fl vmode Ar high_ansi
+.br
+This option allows for selecting a different mode to render the images, should the actual one prove to be unsuitable for the preferred terminal program.
+.br
+.Pp
+.Op Fl version
+.br
+Shows the current version of
+.Nm
+.
+.Sh BUGS
+Report bugs to
+.An Aq dettus@dettus.net .
+Make sure to include DMAGNETIC somewhere in the subject.
+.Sh AUTHOR
+Written by
+.An Thomas Dettbarn
+.Sh SEE ALSO
+.Xr dMagneticini 5

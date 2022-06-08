@@ -1,0 +1,79 @@
+\usepackage{times,a4}
+\usepackage{fancyhdr}
+\usepackage{pictex}
+\usepackage{graphics}
+\usepackage{supertabular,longtable,array}
+\usepackage{nomencl,makeidx}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{3pt plus 1pt minus 0pt}
+\frenchspacing
+
+\pagestyle{headings}
+%\pagestyle{fancy}
+%\addtolength{\headheight}{\baselineskip}
+
+\newcommand\glosname{Glossar}
+\DeclareRobustCommand\nomname{
+  \chapter*{\glosname}
+  \markboth{\MakeUppercase\glosname}{\MakeUppercase\glosname}
+}
+
+\setcounter{LTchunksize}{50}
+
+\newlength{\spaceleftwidth}
+\newcommand\spaceleft[2]{
+  \settowidth{\spaceleftwidth}{#1}
+  \setlength{\spaceleftwidth}{-\spaceleftwidth}
+  \addtolength{\spaceleftwidth}{-#2}
+  \addtolength{\spaceleftwidth}{\linewidth}
+}
+\renewcommand\maketitle
+{
+\begin{titlepage}
+\null\vfil
+\vskip 60pt
+\begin{center}
+\parbox{44mm}{
+\beginpicture
+\setcoordinatesystem units <5ex,5ex>
+\setplotarea x from 0 to 9, y from 0 to 9
+\plot 0 0 0 9 7 9 9 7 9 0 0 0 /
+\plot 2 9 2 7 6 7 6 9 /
+\plot 4 9 4 7.2 5 7.2 5 9 /
+\plot 1 0 1 6 8 6 8 0 /
+\put {{\Huge\tt\bf dMagnetic}} at 4.5 3
+
+\endpicture
+}
+\vskip 3em
+{\huge \bf
+ dMagnetic - \titlename
+}
+\vskip 3.5em
+{\large
+ \lineskip .75em
+ \begin{tabular}{lr}
+ Thomas Dettbarn    & \tt \small dettus@dettus.net \\
+ \end{tabular}\par
+}
+\vskip 1.5em
+\vskip 2.5em
+{\large \today \par}
+%\vskip 6em
+\end{center}\par
+\vfil\null
+\end{titlepage}
+}
+\newcommand{\dMagnetic}{{\tt dMagnetic} }
+\newcommand{\dmagnetic}{{\tt dMagnetic}}
+\newcommand{\scriptzero}{{\tt 0\underline{$\;\;$}getit.sh}}
+\newcommand{\scriptone}{{\tt 1\underline{$\;\;$}buildtools.sh}}
+\newcommand{\scripttwo}{{\tt 2\underline{$\;\;$}basesystem.sh}}
+\newcommand{\scriptthreea}{{\tt 3a\underline{$\;\;$}comppackages.sh}}
+\newcommand{\scriptthreeb}{{\tt 3b\underline{$\;\;$}ownpackages.sh}}
+\newcommand{\scriptfour}{{\tt 4\underline{$\;\;$}mksdcard.sh}}
+\newcommand{\dirname}[1]{{\tt #1/}}
+\newcommand{\filename}[1]{{\tt #1}}
+\newcommand{\underscore}{\underline{$\;\;$}}
+
