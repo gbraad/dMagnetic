@@ -574,7 +574,7 @@ int loader_d64(char* d64name,
 					magbuf[magidx+i+0]==0x01 && magbuf[magidx+i+1]==0x02 && magbuf[magidx+i+2]==0x03) huffmantreeidx=i;	// the sector with the huffmann tree starts with 0x01 0x02 0x03
 			}
 		}
-		
+
 		magidx+=string1size+string2size+dictsize;
 		loader_common_addmagheader((unsigned char*)magbuf,magidx,loader_d64_gameinfo[gameID].version,code1size+code2size,string1size,string2size,dictsize,huffmantreeidx);	
 
@@ -585,10 +585,11 @@ int loader_d64(char* d64name,
 			for (i=0;i<magidx-4;i++)
 			{
 				if (ptr[i+0]==0x62 && ptr[i+1]==0x02 && ptr[i+2]==0xa2 && ptr[i+3]==0x00) {ptr[i+0]=0x4e;ptr[i+1]=0x71;}
+				if (ptr[i+0]==0xa4 && ptr[i+1]==0x06 && ptr[i+2]==0xaa && ptr[i+3]==0xdf) {ptr[i+0]=0x4e;ptr[i+1]=0x71;}
 			}
 		}
 		if (loader_d64_gameinfo[gameID].game==GAME_MYTH && magbuf[0x3080]==0x66) magbuf[0x3080]=0x60;	// final touch
-	
+
 		*magsize=magidx;				
 		/////////// MAG IS FINISHED ////////////////////////////////
 	}	

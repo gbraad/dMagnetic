@@ -197,6 +197,7 @@ int loader_dsk_amstradcpc_mag(unsigned char* magbuf,int* magsize,
 		for (i=0;i<outputidx-4;i++)
 		{
 			if (ptr[i+0]==0x62 && ptr[i+1]==0x02 && ptr[i+2]==0xa2 && ptr[i+3]==0x00) {ptr[i+0]=0x4e;ptr[i+1]=0x71;}
+			if (ptr[i+0]==0xa4 && ptr[i+1]==0x06 && ptr[i+2]==0xaa && ptr[i+3]==0xdf) {ptr[i+0]=0x4e;ptr[i+1]=0x71;}
 		}
 	}
 
@@ -243,6 +244,7 @@ int loader_dsk_spectrum_mag(unsigned char* magbuf,int* magsize,
 		for (i=0;i<outputidx-4;i++)
 		{
 			if (ptr[i+0]==0x62 && ptr[i+1]==0x02 && ptr[i+2]==0xa2 && ptr[i+3]==0x00) {ptr[i+0]=0x4e;ptr[i+1]=0x71;}
+			if (ptr[i+0]==0xa4 && ptr[i+1]==0x06 && ptr[i+2]==0xaa && ptr[i+3]==0xdf) {ptr[i+0]=0x4e;ptr[i+1]=0x71;}
 		}
 	}
 	if (version==3 && magbuf[0x2836]==0x66) magbuf[0x2836]=0x60;	// final patch for myth
