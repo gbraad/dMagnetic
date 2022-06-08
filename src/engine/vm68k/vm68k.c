@@ -919,12 +919,11 @@ int vm68k_singlestep(void *hVM68k,unsigned short opcode)
 }
 int vm68k_getNextOpcode(void* hVM68k,unsigned short* opcode)
 {
-	
+
 	tVM68k* pVM68k=(tVM68k*)hVM68k;
 	if (hVM68k==NULL) return VM68K_NOK_INVALID_PTR;
 	if (opcode==NULL) return VM68K_NOK_INVALID_PTR;
 	if (pVM68k->magic!=MAGICVALUE) return VM68K_NOK_INVALID_PARAMETER;
-	
 	*opcode=READ_INT16BE(pVM68k->pMem,pVM68k->pcr);
 	pVM68k->pcr+=2;
 #ifdef	DEBUG_PRINT
@@ -937,9 +936,15 @@ int vm68k_getNextOpcode(void* hVM68k,unsigned short* opcode)
 		printf("INST:%04X ",*opcode);
 		printf("CVZN:%d%d%d%d ", (pVM68k->sr>>0)&1,(pVM68k->sr>>1)&1,(pVM68k->sr>>2)&1,(pVM68k->sr>>3)&1);
 		printf("D:");
-		for (i=0;i<8;i++) printf("%08X:",pVM68k->d[i]);
+		for (i=0;i<8;i++) 
+		{
+			printf("%08X:",pVM68k->d[i]);
+		}
 		printf(" A:");
-		for (i=0;i<8;i++) printf("%08X:",pVM68k->a[i]);
+		for (i=0;i<8;i++) 
+		{
+			printf("%08X:",pVM68k->a[i]);
+		}
 
 		{
 			unsigned long long sum;

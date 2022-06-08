@@ -166,6 +166,8 @@ int default_render_lowansi(char* allowed,tPicture* picture,int rows,int cols)
 				// at some point, there are enough to print one character.
 		if (accuy>=picture->height)
 		{
+			int lastmaxp;
+			lastmaxp=-1;
 			accux=0;
 			x=0;
 			for (j=0;j<picture->width;j++)
@@ -246,7 +248,8 @@ int default_render_lowansi(char* allowed,tPicture* picture,int rows,int cols)
 					}
 	
 					maxp=maxplut[maxp];
-					printf("\x1b[%d;%dm",maxp/8,30+maxp%8);
+					if (maxp!=lastmaxp) printf("\x1b[%d;%dm",maxp/8,30+maxp%8);
+					lastmaxp=maxp;
 					if (maxc<32 || maxc>=127) printf(" ");
 					else printf("%c",maxc);
 					accux-=picture->width;
@@ -272,7 +275,6 @@ int default_render_lowansi2(char* allowed,tPicture* picture,int rows,int cols)
 	cnt0=0;
 	// render the picture. use the color and the character that best represents a 8x8 block.
 
-
 	y=0;
 	accux=accuy=0;
 	lasty=0;
@@ -282,6 +284,8 @@ int default_render_lowansi2(char* allowed,tPicture* picture,int rows,int cols)
 				// at some point, there are enough to print one character.
 		if (accuy>=picture->height)
 		{
+			int lastmaxp;
+			lastmaxp=-1;
 			accux=0;
 			x=0;
 			lastx=0;
@@ -387,7 +391,8 @@ int default_render_lowansi2(char* allowed,tPicture* picture,int rows,int cols)
 						}
 					}
 	
-					printf("\x1b[%d;%dm",maxp2/8,30+maxp2%8);
+					if (maxp2!=lastmaxp) printf("\x1b[%d;%dm",maxp2/8,30+maxp2%8);
+					lastmaxp=maxp2;
 					if (maxc<32 || maxc>=127) printf(" ");
 					else printf("%c",maxc);
 					accux-=picture->width;
@@ -424,6 +429,10 @@ int default_render_monochrome(char* greyscales,int inverted,tPicture* picture,in
 	mingrey=maxgrey=0;
 	for (pass=0;pass<2;pass++)
 	{	
+		if (pass==1 && mingrey==maxgrey)
+		{
+			maxgrey++;
+		}
 		y_up=0;
 		accux=accuy=0;
 		for (i=0;i<picture->height;i++)

@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "version.h"
 
 #define	NUMGAMES	7
-#define	NUMPLATFORMS	9
+#define	NUMPLATFORMS	10
 
 #define	PLATFORM_MAG		(1<<0)
 #define	PLATFORM_GFX		(1<<1)
@@ -43,6 +43,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define	PLATFORM_SPECTRUM	(1<<6)
 #define	PLATFORM_ARCHIMEDES	(1<<7)
 #define	PLATFORM_ATARIXL	(1<<8)
+#define	PLATFORM_APPLEII	(1<<9)
 
 typedef	struct _tPlatformInfo
 {
@@ -75,13 +76,14 @@ const tPlatformInfo	cdMagnetic_platformInfo[NUMPLATFORMS]={
 	{"amstradcpc",	"/dsk/amstradcpc/",				".DSK"	,1,0,2,0,	PLATFORM_AMSTRADCPC,	"-amstradcpc IMAGE1.DSK,IMAGE2.DSK"},
 	{"spectrum",	"/dsk/spectrum/",				".DSK"	,0,0,1,0,	PLATFORM_SPECTRUM,	"-spectrum IMAGE.DSK"},
 	{"archimedes",	"/adf/",					".adf"	,0,0,1,0,	PLATFORM_ARCHIMEDES,	"-archimedes IMAGE.adf"},
-	{"atarixl",	"/atr/",					".ATR"	,1,0,2,0,	PLATFORM_ATARIXL,	"-atarixl IMAGE1.atr,IMAGE2.atr"}
+	{"atarixl",	"/atr/",					".ATR"	,1,0,2,0,	PLATFORM_ATARIXL,	"-atarixl IMAGE1.atr,IMAGE2.atr"},
+	{"appleii",	"/appleii/",					".NIB"	,1,0,3,0,	PLATFORM_APPLEII,	"-appleii IMAGE1.NIB,IMAGE2.NIB,IMAGE3.NIB"}
 };
 const tGameInfo		cdMagnetic_gameInfo[NUMGAMES]={
-	{"pawn",	"The Pawn",		2,0,""			,PLATFORM_MAG|PLATFORM_GFX|PLATFORM_MSDOS|PLATFORM_D64|PLATFORM_AMSTRADCPC|PLATFORM_SPECTRUM|PLATFORM_ARCHIMEDES|PLATFORM_ATARIXL                },
-	{"guild",	"The Guild of Thieves",	2,1,"MSC/G"		,PLATFORM_MAG|PLATFORM_GFX|PLATFORM_MSDOS|PLATFORM_D64|PLATFORM_AMSTRADCPC|PLATFORM_SPECTRUM|PLATFORM_ARCHIMEDES|PLATFORM_ATARIXL|PLATFORM_TWORSC},
-	{"jinxter",	"Jinxter",		2,0,""			,PLATFORM_MAG|PLATFORM_GFX|PLATFORM_MSDOS|PLATFORM_D64|PLATFORM_AMSTRADCPC|PLATFORM_SPECTRUM|PLATFORM_ARCHIMEDES|PLATFORM_ATARIXL                },
-	{"corruption",	"Corruption",		2,1,"MSC/C"		,PLATFORM_MAG|PLATFORM_GFX|PLATFORM_MSDOS|PLATFORM_D64|PLATFORM_AMSTRADCPC|PLATFORM_SPECTRUM|PLATFORM_ARCHIMEDES                 |PLATFORM_TWORSC},
+	{"pawn",	"The Pawn",		2,0,""			,PLATFORM_MAG|PLATFORM_GFX|PLATFORM_MSDOS|PLATFORM_D64|PLATFORM_AMSTRADCPC|PLATFORM_SPECTRUM|PLATFORM_ARCHIMEDES|PLATFORM_ATARIXL                |PLATFORM_APPLEII},
+	{"guild",	"The Guild of Thieves",	2,1,"MSC/G"		,PLATFORM_MAG|PLATFORM_GFX|PLATFORM_MSDOS|PLATFORM_D64|PLATFORM_AMSTRADCPC|PLATFORM_SPECTRUM|PLATFORM_ARCHIMEDES|PLATFORM_ATARIXL|PLATFORM_TWORSC|PLATFORM_APPLEII},
+	{"jinxter",	"Jinxter",		2,0,""			,PLATFORM_MAG|PLATFORM_GFX|PLATFORM_MSDOS|PLATFORM_D64|PLATFORM_AMSTRADCPC|PLATFORM_SPECTRUM|PLATFORM_ARCHIMEDES|PLATFORM_ATARIXL                |PLATFORM_APPLEII},
+	{"corruption",	"Corruption",		3,1,"MSC/C"		,PLATFORM_MAG|PLATFORM_GFX|PLATFORM_MSDOS|PLATFORM_D64|PLATFORM_AMSTRADCPC|PLATFORM_SPECTRUM|PLATFORM_ARCHIMEDES                 |PLATFORM_TWORSC|PLATFORM_APPLEII},
 	{"fish",	"Fish!",		2,1,"MSC/F"		,PLATFORM_MAG|PLATFORM_GFX|PLATFORM_MSDOS|PLATFORM_D64|PLATFORM_AMSTRADCPC|PLATFORM_SPECTRUM|PLATFORM_ARCHIMEDES                 |PLATFORM_TWORSC},
 	{"myth",	"Myth",			1,0,""			,PLATFORM_MAG|PLATFORM_GFX|PLATFORM_MSDOS|PLATFORM_D64|PLATFORM_AMSTRADCPC|PLATFORM_SPECTRUM                                                     },
 	{"wonderland",	"Wonderland",		1,1,"wonderland/"	,PLATFORM_MAG|PLATFORM_GFX                                                                                                       |PLATFORM_TWORSC},
@@ -136,17 +138,18 @@ void dMagnetic_helpscreens_help(char* argv0)
 	printf("\n");
 	printf("\n");
 	printf("PARAMETERS TO RUN THE GAME\n");
-	printf("-ini dMagnetic.ini       to provide an inifile\n");
-	printf("-mag MAGFILE.mag         to provide the game binary directly\n");
-	printf("-gfx GFXFILE.gfx         to provide the game graphics directly\n");
-	printf("-msdosdir DIR/           to provide the game binaries from MSDOS\n");
-	printf("-tworsc DIR/TWO.RSC      to use resource files from Wonderland\n");
-	printf("                         or The Magnetic Scrolls Collection Vol.1\n");
-	printf("-d64 m1.d64,m2.d64       or use the D64 images. (Separated by ,)\n");
-	printf("-amstradcpc 1.DSK,2.DSK  or use the DSK images. (Separated by ,)\n");
-	printf("-spectrum image.DSK      or use DSK images from the Spectrum+3\n");
-	printf("-archimedes image.adf    or use adf/adl images from the Archimedes\n");
-	printf("-atarixl 1.ATR,2.ATR     or use .atr images from the AtariXL\n");
+	printf("-ini dMagnetic.ini          to provide an inifile\n");
+	printf("-mag MAGFILE.mag            to provide the game binary directly\n");
+	printf("-gfx GFXFILE.gfx            to provide the game graphics directly\n");
+	printf("-msdosdir DIR/              to provide the game binaries from MSDOS\n");
+	printf("-tworsc DIR/TWO.RSC         to use resource files from Wonderland\n");
+	printf("                            or The Magnetic Scrolls Collection Vol.1\n");
+	printf("-d64 m1.d64,m2.d64          or use the D64 images. (Separated by ,)\n");
+	printf("-amstradcpc 1.DSK,2.DSK     or use the DSK images. (Separated by ,)\n");
+	printf("-spectrum image.DSK         or use DSK images from the Spectrum+3\n");
+	printf("-archimedes image.adf       or use adf/adl images from the Archimedes\n");
+	printf("-atarixl 1.ATR,2.ATR        or use .atr images from the AtariXL\n");
+	printf("-appleii 1.NIB,2.NIB,3.NIB  or use .nib images for the Apple ][\n");
 	printf("\n");
 	printf("OPTIONAL PARAMETERS\n");
 	printf("-rmode RANDOMMODE  where mode is one of\n  [");
@@ -173,9 +176,13 @@ void dMagnetic_helpscreens_help(char* argv0)
 	printf("-vlog LOGFILE      to write a log of the commands used\n");
 	printf("-vecho             to reprint the commands (useful for | tee)\n");
 	printf("\n");
+	printf("The sixel output mode can be customized with the following parameters\n");
+	printf("-sres 1024x768     render the pictures in this resolution\n");
+	printf("-sforce            force the resolution (ignore the aspect ratio)\n");
 
 	printf(" OTHER PARAMETERS\n");
 	printf(" -bsd shows the license\n");
+	printf(" -dumpmag GAME.mag -dumpgfx GAME.gfx writes the internal game data\n");
 	printf(" -ega prefers EGA images\n");
 	printf(" -help shows this help\n");
 	printf(" -helpini shows an example dMagnetic.ini file\n");
@@ -255,6 +262,7 @@ void dMagnetic_helpscreens_helpini()
 	printf("low_ansi_characters=\\\\/|=L#TX\n");
 	printf("monochrome_characters=\\ .,-=oxOX@$\n");
 	printf("sixel_resolution=800x600\n");
+	printf("sixel_forceresolution=No\n");
 	printf(";-------------------------------------------------------------------------------\n");
 }
 void dMagnetic_helpscreens_loaderfailed(char* argv0)

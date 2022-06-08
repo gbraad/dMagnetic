@@ -25,12 +25,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 */
+#ifndef	LOADER_APPLEII_H
+#define	LOADER_APPLEII_H
 
+int loader_appleii(char* appleiiname,
+		char *magbuf,int* magsize,
+		char* gfxbuf,int* gfxsize);
 
-#ifndef	VERSION_H
-#define	VERSION_H
-
-#define	VERSION_MAJOR		0
-#define	VERSION_MINOR		3
-#define	VERSION_REVISION	1
 #endif

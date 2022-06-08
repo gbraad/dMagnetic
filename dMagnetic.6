@@ -3,7 +3,7 @@
 .\"
 .Dd December 24th,2020
 .Os OpenBSD 
-.Dt dMagnetic 1
+.Dt dMagnetic 6
 .
 .Sh NAME
 .Nm dMagnetic
@@ -94,6 +94,7 @@ You wake up on a sunny August morning with birds singing, and the air fresh and 
 .Op GAME
 .Op Fl vmode Ar sixel
 .Op Fl sres Ar 1024x768
+.Op Fl sforce
 .br
 .Nm
 .Op Fl ini Ar ini-file 
@@ -296,9 +297,11 @@ Sixels are a signalling mode for some terminal emulators (like mlterm, or xterm 
 .Op GAME
 .Op Fl vmode Ar sixel
 .Op Fl sres Ar 1024x768
+.Op Fl sforce
 .Pp
 where the -sres 
-option offers a way to scale the images. The maximum allowed width is 1024 pixels.
+option offers a way to scale the images. The maximum allowed width is 4096 pixels. Instead of automatically using a matching aspect ratio, the -sforce
+option can be used to force the resolution.
 .Sh GRAPHICS IN WONDERLAND AND THE MAGNETIC SCROLLS COLLECTION
 Before you can see the beautiful graphics in "Wonderland", or from the Magnetic Scrolls Collection, you have to type in "graphics" to enable them.
 .Sh COMMAND LINE OPTIONS
@@ -417,6 +420,7 @@ Sort of a travel journal, this option lets you write the commands that where typ
 .br
 .Op Fl vmode Ar sixel
 .Op Fl sres Ar 1024x768
+.Op Fl sforce
 .br
 This option allows for selecting a different mode to render the images, should the actual one prove to be unsuitable for the preferred terminal program.
 .br

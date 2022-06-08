@@ -1,10 +1,10 @@
 *** dMagnetic
 *** Use at your own risk
-*** (C)opyright 2020 by dettus@dettus.net
+*** (C)opyright 2021 by dettus@dettus.net
 *****************************************
 
 
-Welcome, brave adventurer. This is Version 0.29.
+Welcome, brave adventurer. This is Version 0.31.
 If you are interested in playing "The Pawn", just follow these simple steps.
 
 STEP 1: BUILD
@@ -39,6 +39,9 @@ STEP 4: CONFIGURE
 edit dMagnetic.ini, especially the lines that start with one of ????mag= and 
 ???gfx=, ???msdosdir= or ???tworsc=. Make sure that only one of those methods
 is being commented in.
+To see an example of the .ini file, type in
+
+% ./dMagnetic -helpini
 
 
 STEP 5: RUN
@@ -89,6 +92,12 @@ image files in the DSK format.
 For the Spectrum+3/Spectrum128 releases, the commandline would be this one:
 
 % ./dMagnetic -ini dMagnetic.ini -spectrum DISKIMAGE.DSK
+
+For the Apple ][ releases, both the .nib and .2mg format can be used:
+
+% ./dMagnetic -ini dMagnetic.ini -appleii PAWN.NIB
+% ./dMagnetic -ini dMagnetic.ini -appleii CorrA.2mg,CorrB.2mg,CorrC.2mg
+
 
 
 STEP 6: GRAPHICS

@@ -40,6 +40,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define	MAGIC	0x68654879	// = yHeh, the place where I grew up ;)
 #define	MAXTEXTBUFFER	1024	// maximum number of buffered characters
 #define	MAXHEADLINEBUFFER	256	// maximum number of buffered headline characters
+#define	MAX_SRESX		4096
 typedef enum _tMode
 {
 	eMODE_NONE,
@@ -80,8 +81,10 @@ typedef	struct _tContext
 	int	headlineidx;
 	char	headlineoutput[MAXHEADLINEBUFFER];
 
+// sixel parameter
 	int 	screenheight;
 	int	screenwidth;
+	int	forceres;
 } tContext;
 
 
@@ -521,10 +524,17 @@ int default_cbDrawPicture(void* context,tPicture* picture,int mode)
 		int x,y;
 		int screenheight;
 		int screenwidth;
+		int forceres;
+		int minval;
+		int minpos;
+		int maxval;
+		int maxpos;
+		int paletteorder[16];
 		x=0;y=0;
 		accux=accuy=0;
 		screenheight=pContext->screenheight;
 		screenwidth=pContext->screenwidth;
+		forceres=pContext->forceres;
 
 		// find a good aspect ratio
 		{
@@ -532,21 +542,64 @@ int default_cbDrawPicture(void* context,tPicture* picture,int mode)
 			#define	MAGICFIXPOINT	1800	// magic factor was chosen when I removed the float code. simply because it worked with the check and it did not cause overflows with 32 bit machines
 
 			ratiox=(MAGICFIXPOINT*screenwidth)/(picture->width);
-			ratioy=(MAGICFIXPOINT*screenheight)/(picture->height);
+			ratioy=(MAGICFIXPOINT*screenheight)/(picture->height-1);
 
-			if (ratiox<ratioy) ratioy=ratiox; else ratiox=ratioy;
+			if (!forceres)
+			{
+				if (ratiox<ratioy) ratioy=ratiox; else ratiox=ratioy;
+			}
 
 			screenwidth =(int)((ratiox*picture->width)/MAGICFIXPOINT);
-			screenheight=(int)((ratioy*picture->height)/MAGICFIXPOINT);
+			screenheight=(int)((ratioy*(picture->height-1))/MAGICFIXPOINT);
+			if (!forceres)
+			{
+				while (screenheight%6) screenheight++;	// make sure that the last line consists of a full block of sixels. 
+			}
+		}
+		// find the darkest and the brightest color. 
+		// move them to pallette position 0 or 15, to deal with an issue that james found
+		{
+			for (i=0;i<16;i++)
+			{
+				unsigned int red,green,blue;
+				unsigned int rgb;
+				int val;
+				paletteorder[i]=i;
+				rgb=picture->palette[i];
+				red  =PICTURE_GET_RED(rgb);
+				green=PICTURE_GET_GREEN(rgb);
+				blue =PICTURE_GET_BLUE(rgb);
+
+				val=red+green+blue;	// just add the values. luminance correction would be overkill
+				if (i==0 || minval>val)
+				{
+					minval=val;
+					minpos=i;
+				}	
+
+				if (i==0 || maxval<val)
+				{
+					maxval=val;
+					maxpos=i;
+				}	
+			}
+			// according to james, the background colour will be changed in some terminals
+			// as well as the default foreground value. presumably, because they only had
+			// memory for 16 rgb values. on those, the default foreground is being over-
+			// written with the sixth colour being defined. and the default background,
+			// when the 15th colour comes. ("a last ressort", as james put it)
+
+			paletteorder[minpos]^=paletteorder[15];paletteorder[15]^=paletteorder[minpos];paletteorder[minpos]^=paletteorder[15];	// the darkest colour is now the background
+			paletteorder[maxpos]^=paletteorder[ 6];paletteorder[ 6]^=paletteorder[maxpos];paletteorder[maxpos]^=paletteorder[ 6];	// the brightest one becomes the foreground
 		}
 
-		printf("\n\x1bPq\n");
+		printf("\n\x1bP9;1q\"1;1;%d;%d", screenwidth, screenheight);
 		for (i=0;i<16;i++)
 		{
 			unsigned int red,green,blue;
 			unsigned int rgb;
 
-			rgb=picture->palette[i];
+			rgb=picture->palette[paletteorder[i]];
 			red  =PICTURE_GET_RED(rgb);
 			green=PICTURE_GET_GREEN(rgb);
 			blue =PICTURE_GET_BLUE(rgb);
@@ -555,12 +608,11 @@ int default_cbDrawPicture(void* context,tPicture* picture,int mode)
 			green/=PICTURE_MAX_RGB_VALUE;
 			blue /=PICTURE_MAX_RGB_VALUE;
 
-			printf("#%02d;2;%d;%d;%d",i,red,green,blue);
+			printf("#%02d;2;%d;%d;%d",paletteorder[i],red,green,blue);
 		}
-		printf("\n");
 
 
-		while (y<picture->height)
+		while (y<(picture->height-1))
 		{
 			int y0;
 			int accuy0;
@@ -583,12 +635,12 @@ int default_cbDrawPicture(void* context,tPicture* picture,int mode)
 					{
 						bitmask>>=1;
 						if (curpixel==i) bitmask|=0x20;
-						accuy+=picture->height;
-						if (accuy>=screenheight)
+						accuy+=(picture->height-1);
+						while (accuy>=screenheight)
 						{
 							accuy-=screenheight;
 							y++;
-							if (y<picture->height) 
+							if (y<(picture->height-1)) 
 							{
 								curpixel=picture->pixels[y*picture->width+x];
 							} else {
@@ -604,11 +656,11 @@ int default_cbDrawPicture(void* context,tPicture* picture,int mode)
 					accux-=screenwidth;
 					x++;
 				}
-				printf("$\n");
+				printf("$");
 			}
-			printf("-\n");
+			printf("-");
 		}
-		printf("\x1b\\\n");
+		printf("\x1b\\\x1b[0m\n");
 	}
 	if (pContext->mode==eMODE_UTF) 	// utf
 	{
@@ -816,6 +868,7 @@ int default_open(void* hContext,FILE *f_inifile,int argc,char** argv)
 
 	pContext->screenwidth=320;
 	pContext->screenheight=200;
+	pContext->forceres=0;
 
 	memcpy(pContext->low_ansi_characters,default_low_ansi_characters,sizeof(default_low_ansi_characters));
 	memcpy(pContext->monochrome_characters,default_monochrome_characters,sizeof(default_monochrome_characters));
@@ -861,6 +914,10 @@ int default_open(void* hContext,FILE *f_inifile,int argc,char** argv)
 		} else {
 			memcpy(pContext->monochrome_characters,default_monochrome_characters,DEFAULT_MONOCHROME_CHARACTERS);
 		}
+		if (retrievefromini(f_inifile,"[DEFAULTGUI]","sixel_forceresolution",result,sizeof(result)))
+		{
+			if (result[0]=='y' || result[0]=='Y' || result[0]=='t' || result[0]=='T' || result[0]=='1') pContext->forceres=1;	// set it to one if the entry reads "yes"/"True"/1
+		}
 		if (retrievefromini(f_inifile,"[DEFAULTGUI]","sixel_resolution",result,sizeof(result)))
 		{
 			int i;
@@ -876,7 +933,7 @@ int default_open(void* hContext,FILE *f_inifile,int argc,char** argv)
 					pContext->screenheight=atoi(&result[i+1]);
 				}
 			}
-			if (pContext->screenwidth==0 || pContext->screenwidth>1024 || pContext->screenheight==0) 
+			if (pContext->screenwidth==0 || pContext->screenwidth>MAX_SRESX || pContext->screenheight==0) 
 			{
 				printf("illegal parameter for sixelresultion. please use something like 1024x768\n");
 				return DEFAULT_NOK;
@@ -979,11 +1036,15 @@ int default_open(void* hContext,FILE *f_inifile,int argc,char** argv)
 					pContext->screenheight=atoi(&result[i+1]);
 				}
 			}
-			if (pContext->screenwidth==0 || pContext->screenwidth>1024 || pContext->screenheight==0) 
+			if (pContext->screenwidth==0 || pContext->screenwidth>MAX_SRESX || pContext->screenheight==0) 
 			{
 				printf("illegal parameter for -sres. please use something like 1024x768\n");
 				return DEFAULT_NOK;
 			}
+		}
+		if (retrievefromcommandline(argc,argv,"-sforce",result,sizeof(result)))
+		{
+			pContext->forceres=1;
 		}
 	}
 	return DEFAULT_OK;

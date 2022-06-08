@@ -1329,8 +1329,149 @@ int gfxloader_gfx7(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPic
 
 
 }
+// Apple II picture loader
+int gfxloader_gfx8(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPicture* pPicture)
+{
+	unsigned int apple2_palette[16]={// 10 bit per channel
+		0x00000000,
+		0x1814E2F6,
+		0x000A3581,
+		0x050CFBF6,
 
+		0x1817240C,
+		0x2719C671,
+		0x050F58F0,
+		0x1C9FFF42,
 
+		0x38E1E181,
+		0x3FF443F6,
+		0x2719C671,
+		0x342C3BFF,
+
+		0x3FF6A4F0,
+		0x3FFA0742,
+		0x342DDA35,
+		0x3FFFFFFF,
+	};
+	int retval;
+	int i;
+	unsigned int treeoffs;
+	int hotfix;
+	int outidx;
+	int treeidx;
+	unsigned char lastterm;
+	unsigned char mask;
+	unsigned char byte;
+	unsigned char* unhuffptr;
+	int pixidx;
+	int offs4,offs3,offs2,offs1;
+	int bitidx;
+
+	retval=0;	
+	treeoffs=READ_INT32BE(gfxbuf,4*picnum+4);
+	
+	for (i=0;i<16;i++)
+	{
+		pPicture->palette[i]=apple2_palette[i];
+	}
+	pPicture->height=192-32;
+	pPicture->width=140;
+	hotfix=(treeoffs&0xc0000000);
+	if (hotfix==0x80000000) hotfix=-1;
+	if (hotfix==0x40000000) hotfix= 1;
+	treeoffs&=0x3ffffff;
+	treeoffs+=1;
+
+	// step 1: unhuffing with the RLE
+	outidx=0;
+	treeidx=0;
+	bitidx=treeoffs+gfxbuf[treeoffs-1]+2+hotfix;
+
+	lastterm=1;
+	mask=0;
+	byte=0;
+	unhuffptr=(unsigned char*)&(pPicture->pixels[pPicture->height*pPicture->width]);	
+
+	while (outidx<16384 && bitidx<=gfxsize)
+	{
+		unsigned char branchl,branchr;
+		unsigned char branch;
+	
+		if (mask==0)
+		{
+			mask=0x80;
+			byte=gfxbuf[bitidx++];
+		}	
+		branchl=gfxbuf[treeoffs+0+2*treeidx];
+		branchr=gfxbuf[treeoffs+1+2*treeidx];
+		branch=(byte&mask)?branchl:branchr;mask>>=1;
+		if (branch&0x80)
+		{
+			unsigned char terminal;
+			int n;
+			terminal=branch&0x7f;
+			if (lastterm==0 && outidx>3)
+			{
+				n=terminal-1;
+				terminal=0;
+				lastterm=1;
+			} else {
+				n=1;
+				lastterm=terminal;
+			}
+			for (i=0;i<n && outidx<16384;i++)
+			{
+				unhuffptr[outidx++]=terminal;
+			}
+			treeidx=0;
+		} else {
+			treeidx=branch;
+		}
+	}
+	// at the unhuffptr, there is now the content which would have
+	// been written into the Apple II Videoram at $2000.
+	// the first 8192 bytes are the AUX memory bank.
+	// the second 8192 bytes are the MAIN memory bank
+
+	// step 2: translate the extracted buffer into pixels	
+	pixidx=0;
+	for (offs4=0;offs4<120;offs4+=40)
+	{
+		for (offs3=0x0;offs3<0x400;offs3+=0x100)
+		{
+			for (offs2=0x0;offs2<0x100;offs2+=0x80)
+			{
+				for (offs1=0x0000;offs1<0x2000;offs1+=0x400)
+				{
+					//memory interleaving was weird, but it saved some Chips.
+					for (i=0;i<40;i+=2)
+					{
+						unsigned int bitreg;
+						int p;
+						int j;
+						p=i+offs1+offs2+offs3+offs4;
+						bitreg =((((unhuffptr[p+0x0000]>>0)&0xf))<< 0); 				// pixel 0: A0 A1 A2 A3
+						bitreg|=((((unhuffptr[p+0x0000]>>4)&0x7)|((unhuffptr[p+0x2000]&0x1)<<3))<< 4); 	// pixel 1: A4 A5 A6 M0
+						bitreg|=((((unhuffptr[p+0x2000]>>1)&0xf))<< 8); 		   		// pixel 2: M1 M2 M3 M4
+						bitreg|=((((unhuffptr[p+0x2000]>>5)&0x3)|((unhuffptr[p+0x0001]&0x3)<<2))<<12); 	// pixel 3: M5 M6 B0 B1
+						bitreg|=((((unhuffptr[p+0x0001]>>2)&0xf))<<16); 	   			// pixel 4: B2 B3 B4 B5
+						bitreg|=((((unhuffptr[p+0x0001]>>6)&0x1)|((unhuffptr[p+0x2001]&0x7)<<1))<<20); 	// pixel 5: B6 N0 N1 N2
+						bitreg|=((((unhuffptr[p+0x2001]>>3)&0xf))<<24); 	   			// pixel 6: N3 N4 N5 N6
+						
+						for (j=0;j<7;j++)
+						{
+							unsigned char col;
+					
+							col=bitreg&0xf;bitreg>>=4;
+							pPicture->pixels[pixidx++]=col;
+						}						
+					}
+				}
+			}
+		}
+	}
+	return retval;
+}
 
 
 
@@ -1354,6 +1495,7 @@ int gfxloader_unpackpic(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte v
 			case '5':	retval=gfxloader_gfx5(gfxbuf,gfxsize,version,picnum,pPicture);break;		// C64
 			case '6':	retval=gfxloader_gfx6(gfxbuf,gfxsize,version,picnum,pPicture);break;		// Amstrad CPC
 			case '7':	retval=gfxloader_gfx7(gfxbuf,gfxsize,version,picnum,pPicture);break;		// AtariXL
+			case '8':	retval=gfxloader_gfx8(gfxbuf,gfxsize,version,picnum,pPicture);break;		// Apple II
 			default:
 					break;
 		}

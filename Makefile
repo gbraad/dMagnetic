@@ -48,6 +48,7 @@ SOURCES_LOADER=	\
 	src/loader/loader_dsk.c		\
 	src/loader/loader_archimedes.c	\
 	src/loader/loader_atarixl.c	\
+	src/loader/loader_appleii.c	\
 	src/loader/maggfxloader.c
 
 SOURCES_LINEA=	\
@@ -87,18 +88,18 @@ clean:
 	rm -rf $(OBJ_GUI)
 	rm -rf $(OBJ_TOPLEVEL)
 
-install: all dMagnetic.1 dMagneticini.5
-	mkdir -p $(INSTALLBIN)
-	mkdir -p $(INSTALLMAN)/man1
-	mkdir -p $(INSTALLMAN)/man5
-	mkdir -p $(INSTALLSHARE)/dMagnetic
+install: all dMagnetic.6 dMagneticini.5
+	mkdir -p $(INSTALLBIN)		
+	mkdir -p $(INSTALLMAN)/man6/
+	mkdir -p $(INSTALLMAN)/man5/	
+	mkdir -p $(INSTALLSHARE)/dMagnetic/
 
 	cp dMagnetic $(INSTALLBIN)
-	cp dMagnetic.1 $(INSTALLMAN)/man1
-	cp dMagneticini.5 $(INSTALLMAN)/man5
-	cp README.txt $(INSTALLSHARE)/dMagnetic
-	cp LICENSE.txt $(INSTALLSHARE)/dMagnetic
-	cp dMagnetic.ini $(INSTALLSHARE)/dMagnetic
+	cp dMagnetic.6 $(INSTALLMAN)/man6/
+	cp dMagneticini.5 $(INSTALLMAN)/man5/
+	cp README.txt $(INSTALLSHARE)/dMagnetic/
+	cp LICENSE.txt $(INSTALLSHARE)/dMagnetic/
+	cp dMagnetic.ini $(INSTALLSHARE)/dMagnetic/
 
 
 dMagnetic:	$(OBJ_LOADER) $(OBJ_LINEA) $(OBJ_VM68K) $(OBJ_GUI) $(OBJ_TOPLEVEL)

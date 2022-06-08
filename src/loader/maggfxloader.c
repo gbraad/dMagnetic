@@ -39,6 +39,7 @@
 #include "loader_dsk.h"
 #include "loader_archimedes.h"
 #include "loader_atarixl.h"
+#include "loader_appleii.h"
 
 
 typedef	enum _eBinType
@@ -51,7 +52,8 @@ typedef	enum _eBinType
 	BINTYPE_AMSTRADCPC,
 	BINTYPE_SPECTRUM,
 	BINTYPE_ARCHIMEDES,
-	BINTYPE_ATARIXL
+	BINTYPE_ATARIXL,
+	BINTYPE_APPLEII
 } eBinType;
 int loader_init(int argc,char** argv,FILE *f_inifile,
 		char *magbuf,int* magsize,
@@ -93,22 +95,26 @@ int loader_init(int argc,char** argv,FILE *f_inifile,
 		char* gameprefix[]={"pawn","guild","jinxter","corruption","fish","myth","wonderland"};
 		char magname[32];
 		char gfxname[32];
+		char tworscname[32];
 		char msdosname[32];
 		char d64name[32];
 		char amstradcpcname[32];
 		char spectrumname[32];
 		char archimedesname[32];
 		char atarixlname[32];
+		char appleiiname[32];
 		for (i=0;i<7;i++)
 		{
 			snprintf(magname,32,"%smag",gameprefix[i]);
 			snprintf(gfxname,32,"%sgfx",gameprefix[i]);
+			snprintf(tworscname,32,"%stworsc",gameprefix[i]);
 			snprintf(msdosname,32,"%smsdos",gameprefix[i]);
 			snprintf(d64name,32,"%sd64",gameprefix[i]);
 			snprintf(amstradcpcname,32,"%samstradcpc",gameprefix[i]);
 			snprintf(spectrumname,32,"%sspectrum",gameprefix[i]);
 			snprintf(archimedesname,32,"%sarchimedes",gameprefix[i]);
 			snprintf(atarixlname,32,"%satarixl",gameprefix[i]);
+			snprintf(appleiiname,32,"%sappleii",gameprefix[i]);
 
 			if (retrievefromcommandline(argc,argv,gameprefix[i],NULL,0))
 			{
@@ -117,6 +123,10 @@ int loader_init(int argc,char** argv,FILE *f_inifile,
 						retrievefromini(f_inifile,"[FILES]",gfxname,gfxfilename,sizeof(gfxfilename)))
 				{
 					binType=BINTYPE_MAGGFX;
+				}
+				else if (retrievefromini(f_inifile,"[FILES]",tworscname,binname,sizeof(binname)))
+				{
+					binType=BINTYPE_TWORSC;
 				}
 				else if (retrievefromini(f_inifile,"[FILES]",msdosname,binname,sizeof(binname)))
 				{
@@ -141,6 +151,10 @@ int loader_init(int argc,char** argv,FILE *f_inifile,
 				else if (retrievefromini(f_inifile,"[FILES]",atarixlname,binname,sizeof(binname)))
 				{
 					binType=BINTYPE_ATARIXL;
+				}
+				else if (retrievefromini(f_inifile,"[FILES]",appleiiname,binname,sizeof(binname)))
+				{
+					binType=BINTYPE_APPLEII;
 				}
 			}
 		}
@@ -184,6 +198,10 @@ int loader_init(int argc,char** argv,FILE *f_inifile,
 	{
 		binType=BINTYPE_ATARIXL;
 	}
+	if (retrievefromcommandline(argc,argv,"-appleii",binname,sizeof(binname)))
+	{
+		binType=BINTYPE_APPLEII;
+	}
 	switch (binType)
 	{
 		case BINTYPE_NONE:		fprintf(stderr,"Please provide the game binaries\n");return -1;break;
@@ -193,6 +211,7 @@ int loader_init(int argc,char** argv,FILE *f_inifile,
 		case BINTYPE_SPECTRUM:		retval=loader_dsk(binname,magbuf,magsize,gfxbuf,gfxsize,1);break;
 		case BINTYPE_ARCHIMEDES:	retval=loader_archimedes(binname,magbuf,magsize,gfxbuf,gfxsize); break;
 		case BINTYPE_ATARIXL:		retval=loader_atarixl(binname,magbuf,magsize,gfxbuf,gfxsize); break;
+		case BINTYPE_APPLEII:		retval=loader_appleii(binname,magbuf,magsize,gfxbuf,gfxsize); break;
 		case BINTYPE_MSDOS:		retval=loader_msdos(binname,magbuf,magsize,gfxbuf,gfxsize);	break;
 		case BINTYPE_MAGGFX:	
 			retval=0;
@@ -279,7 +298,32 @@ int loader_init(int argc,char** argv,FILE *f_inifile,
 			break;
 	}
 	// at this point, they are stored in magbuf and gfxbuf.
-
+	{
+		FILE *f;
+		int finish;
+		finish=0;
+		if (retrievefromcommandline(argc,argv,"-dumpmag",magfilename,sizeof(magfilename)))
+		{
+			finish=1;
+			printf("Writing new .mag file [%s]\n",magfilename);
+			f=fopen(magfilename,"wb");
+			fwrite(magbuf,sizeof(char),*magsize,f);
+			fclose(f);
+		}
+		if (retrievefromcommandline(argc,argv,"-dumpgfx",gfxfilename,sizeof(gfxfilename)))
+		{
+			finish=1;
+			printf("Writing new .gfx file [%s]\n",gfxfilename);
+			f=fopen(gfxfilename,"wb");
+			fwrite(gfxbuf,sizeof(char),*gfxsize,f);
+			fclose(f);
+		}
+		if (finish)
+		{
+			printf("finishing now\n");
+			exit(0);
+		}
+	}
 	return retval;
 
 
