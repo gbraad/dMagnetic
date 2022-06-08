@@ -36,13 +36,13 @@
 #include "vm68k_macros.h"
 
 // the purpose of this function is to use the naming of the "???one.rsc" file as a blueprint.
-int loader_mw_substituteOne(char* two_rsc,int num,char* output)
+int loader_mw_substituteTwoRsc(char* two_rsc,int num,char* output)
 {
 	int i;
 	int l;
 	int onestart;
 	int uppercase;
-	char *names[10]={"zero","one","two","three","four","five","six","seven","eight","nine"};
+	char *names[12]={"zero","one","two","three","four","five","six","seven","eight","nine","title.vga","title.ega"};
 
 	l=strlen(two_rsc);
 	onestart=-1;
@@ -52,14 +52,17 @@ int loader_mw_substituteOne(char* two_rsc,int num,char* output)
 		if (two_rsc[i+0]=='t'  && two_rsc[i+1]=='w' && two_rsc[i+2]=='o' && two_rsc[i+3]=='.') {onestart=i;uppercase=0;}
 		if (two_rsc[i+0]=='T'  && two_rsc[i+1]=='W' && two_rsc[i+2]=='O' && two_rsc[i+3]=='.') {onestart=i;uppercase=1;}
 	}
-	if (onestart==-1 || num>=10 || num<0) return 0;
+	if (onestart==-1 || num>=12 || num<0) return 0;
 	memcpy(output,two_rsc,strlen(two_rsc));
-	memcpy(&output[onestart],&names[num][0],strlen(names[num]));
+	memcpy(&output[onestart],&names[num][0],strlen(names[num])+1);
 	if (uppercase)
 	{
-		for (i=0;i<strlen(names[num]);i++) output[onestart+i]&=0x5f;
+		for (i=0;i<strlen(names[num]);i++) if (output[onestart+i]!='.') output[onestart+i]&=0x5f;
 	}
-	memcpy(&output[onestart+strlen(names[num])],&two_rsc[onestart+3],strlen(two_rsc)-onestart+4);
+	if (num<10)
+	{
+		memcpy(&output[onestart+strlen(names[num])],&two_rsc[onestart+3],strlen(two_rsc)-onestart+4);
+	}
 
 	return 1;
 }
@@ -73,7 +76,7 @@ int loader_mw_collectSizes(char* two_rsc,int* sizes,char* gfxbuf)
 	sum=0;
 	for (i=0;i<10;i++)
 	{
-		loader_mw_substituteOne(two_rsc,i,filename);
+		loader_mw_substituteTwoRsc(two_rsc,i,filename);
 		f=fopen(filename,"rb");
 		sizes[i]=0;
 		if (f)
@@ -115,7 +118,7 @@ int loader_mw_readresource(char* two_rsc,int* sizes,int offset,char* buf,int n)
 	while (bidx<n && firstresource<10)
 	{
 		FILE *f;
-		loader_mw_substituteOne(two_rsc,firstresource,filename);
+		loader_mw_substituteTwoRsc(two_rsc,firstresource,filename);
 
 		f=fopen(filename,"rb");
 		if (f)
@@ -153,6 +156,8 @@ int loader_mw_mkgfx(char* two_rsc,int* sizes,char* gfxbuf,int* bytes)
 		int length7;
 	} tImageEntry;
 	int entrynum;
+	int gfxsize0;
+	gfxsize0=*bytes;
 	tImageEntry	imageEntries[MAXIMAGES];
 	
 	memset(imageEntries,0,sizeof(imageEntries));
@@ -215,12 +220,10 @@ int loader_mw_mkgfx(char* two_rsc,int* sizes,char* gfxbuf,int* bytes)
 			}
 		}
 	}
-	diridx=4;
-	WRITE_INT16LE(gfxbuf,diridx,imagecnt);
-	diridx+=2;
 
-	// copy the information from the resource file into the gfxbuf container
-	outidx=(imagecnt+1)*(DIRENTRYSIZE)+HEADERSIZE+MARGIN;
+	diridx=6;
+	// copy the information from the resource file into the gfxbuf container. leave room for the title screens (if they are available
+	outidx=(imagecnt+1+2)*(DIRENTRYSIZE)+HEADERSIZE+MARGIN;
 	for (i=0;i<entrynum;i++)
 	{
 		//		int unknown;
@@ -236,9 +239,34 @@ int loader_mw_mkgfx(char* two_rsc,int* sizes,char* gfxbuf,int* bytes)
 		loader_mw_readresource(two_rsc,sizes,imageEntries[i].offset7,&gfxbuf[outidx],imageEntries[i].length7);outidx+=imageEntries[i].length7;      // first the tree (ALWAYS 609 bytes)
 		loader_mw_readresource(two_rsc,sizes,imageEntries[i].offset6,&gfxbuf[outidx],imageEntries[i].length6);outidx+=imageEntries[i].length6;      // then the palette/size/width/height and bitstream
 	}
+	{
+		char filename[1024];
+		FILE *f;
+		int i,j;
+		int len;
+		char *names[2]={"titlev","titlee"};
+		for (i=0;i<2;i++)
+		{
+			loader_mw_substituteTwoRsc(two_rsc,i+10,filename);
+			f=fopen(filename,"rb");
+			if (f)
+			{
+				len=fread(&gfxbuf[outidx],sizeof(char),gfxsize0-outidx,f);
+				fclose(f);
+				for (j=0;j<NAMELENGTH;j++) gfxbuf[diridx++]=names[i][j];
+				WRITE_INT32LE(gfxbuf,diridx,outidx);diridx+=4;  // offset within the new mag file
+				WRITE_INT32LE(gfxbuf,diridx,len);diridx+=4; // length within the new mag file
+				outidx+=len;
+				imagecnt++;
+			}	
+		}
+	}
+
 	// and the finishing touch
 	WRITE_INT32LE(gfxbuf,diridx,0x23232323);diridx+=MARGIN;
 	WRITE_INT32LE(gfxbuf,outidx,0x42424242);outidx+=4;
+	diridx=4;
+	WRITE_INT16LE(gfxbuf,diridx,imagecnt);
 
 	*bytes=outidx;
 	return 1;
@@ -345,8 +373,6 @@ int loader_magneticwindows(char* two_rsc,
 {
 	int bytes;
 	int sizes[10]={0};
-	*magsize=0;
-	*gfxsize=0;
 	printf("Pondering...\n");
 	if (!loader_mw_collectSizes(two_rsc,sizes,gfxbuf))
 	{
@@ -358,9 +384,11 @@ int loader_magneticwindows(char* two_rsc,
 	if (loader_mw_mkmag(two_rsc,sizes,magbuf,&bytes))
 	{
 		*magsize=bytes;
+		loader_mw_mkgfx(two_rsc,sizes,gfxbuf,gfxsize);
+	} else {
+		*magsize=0;
+		*gfxsize=0;
 	}
-	loader_mw_mkgfx(two_rsc,sizes,gfxbuf,&bytes);
-	*gfxsize=bytes;
 	return 0;
 }
 

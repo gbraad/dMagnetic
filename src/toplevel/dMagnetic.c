@@ -245,7 +245,7 @@ int main(int argc,char** argv)
 		printf("-msdosdir DIR/      to provide the game binaries from MSDOS\n");
 		printf("-tworsc DIR/TWO.RSC to use resource files from Wonderland\n");
 		printf("                    or The Magnetic Scrolls Collection Vol.1\n");
-		printf("-d64 m1.d64,m2.d64  or use the D64 images. (Seperated by ,)\n");
+		printf("-d64 m1.d64,m2.d64  or use the D64 images. (Separated by ,)\n");
 		printf("\n");
 		printf("OPTIONAL PARAMETERS\n");
 		printf("-rmode RANDOMMODE  where mode is one of\n  [");

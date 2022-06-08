@@ -71,9 +71,23 @@ int gfxloader_gfx1(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte versio
 	curpixel=0;
 	width=READ_INT16BE(gfxbuf,picoffs+4)-READ_INT16BE(gfxbuf,picoffs+2);
 	height=READ_INT16BE(gfxbuf,picoffs+6);
+	// this particular graphics format has 3 bits per RGB channel
 	for (i=0;i<16;i++)
 	{
-		pPicture->palette[i]=READ_INT16BE(gfxbuf,picoffs+0x1c+2*i);
+		unsigned short s;
+		unsigned int red,green,blue;		
+		s=READ_INT16BE(gfxbuf,picoffs+0x1c+2*i);
+	
+		red	=(s>>8)&0xf;
+		green	=(s>>4)&0xf;
+		blue	=(s>>0)&0xf;
+
+		red*=PICTURE_MAX_RGB_VALUE;green*=PICTURE_MAX_RGB_VALUE;blue*=PICTURE_MAX_RGB_VALUE;
+		red/=7;green/=7;blue/=7;
+
+		pPicture->palette[i]=(red<<(2*PICTURE_BITS_PER_RGB_CHANNEL))|(green<<(1*PICTURE_BITS_PER_RGB_CHANNEL))|blue;
+
+		
 	}
 	tablesize=READ_INT16BE(gfxbuf,picoffs+0x3c);	// size of the huffman table
 	datasize =READ_INT32BE(gfxbuf,picoffs+0x3e);	// size of the bitstream
@@ -202,7 +216,18 @@ int gfxloader_gfx2(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte versio
 
 		for (i=0;i<16;i++)
 		{
-			pPicture->palette[i]=READ_INT16LE(gfxbuf,offset+4+2*i);
+			unsigned short s;
+			unsigned int red,green,blue;		
+			s=READ_INT16LE(gfxbuf,offset+4+2*i);
+
+			red	=(s>>8)&0xf;
+			green	=(s>>4)&0xf;
+			blue	=(s>>0)&0xf;
+
+			red*=PICTURE_MAX_RGB_VALUE;green*=PICTURE_MAX_RGB_VALUE;blue*=PICTURE_MAX_RGB_VALUE;
+			red/=7;green/=7;blue/=7;
+
+			pPicture->palette[i]=(red<<(2*PICTURE_BITS_PER_RGB_CHANNEL))|(green<<(1*PICTURE_BITS_PER_RGB_CHANNEL))|blue;
 		}
 		datasize=READ_INT32ME(gfxbuf,offset+38);
 		pPicture->width=READ_INT16LE(gfxbuf,offset+42);
@@ -470,17 +495,23 @@ int gfxloader_gfx3(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte versio
 	// the other image formats have 9 bit wide rgb values.
 	for (i=0;i<16;i++)
 	{
+		unsigned char halftonelut[4]={0,2,5,7};
 		unsigned int red,green,blue;
+
+
+
+		
 		red  =(rgbbuf[i]>>4)&0x3;
 		green=(rgbbuf[i]>>2)&0x3;
 		blue =(rgbbuf[i]>>0)&0x3;
-		// the rgb palette for the halftone images has only 2 bits dynamic, whereas the other images have 3 bit.
-		// the renderer will have to take care of that.
-		red&=0x7;green&=0x7;blue&=0x7;
 
-		pPicture->palette[i] =(  red<<8);
-		pPicture->palette[i]|=(green<<4);
-		pPicture->palette[i]|=( blue<<0);
+		red	=(halftonelut[red]*PICTURE_MAX_RGB_VALUE)/7;
+		green	=(halftonelut[green]*PICTURE_MAX_RGB_VALUE)/7;
+		blue	=(halftonelut[blue]*PICTURE_MAX_RGB_VALUE)/7;
+		
+
+		pPicture->palette[i]=(red<<(2*PICTURE_BITS_PER_RGB_CHANNEL))|(green<<(1*PICTURE_BITS_PER_RGB_CHANNEL))|blue;
+	
 	}
 	
 
@@ -642,7 +673,22 @@ int gfxloader_gfx4(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte versio
 		// bytes 0x04..0x23: RGB values
 		for (i=0;i<16;i++)
 		{
-			pPicture->palette[i]=READ_INT16LE(gfxbuf,picstart+0x4+i*2);
+			unsigned short s;
+			unsigned int red,green,blue;		
+			s=READ_INT16LE(gfxbuf,picstart+0x4+i*2);
+
+			red	=(s>>8)&0xf;
+			green	=(s>>4)&0xf;
+			blue	=(s>>0)&0xf;
+
+			red*=PICTURE_MAX_RGB_VALUE;green*=PICTURE_MAX_RGB_VALUE;blue*=PICTURE_MAX_RGB_VALUE;
+			red/=7;green/=7;blue/=7;
+
+
+			
+
+			pPicture->palette[i]=(red<<(2*PICTURE_BITS_PER_RGB_CHANNEL))|(green<<(1*PICTURE_BITS_PER_RGB_CHANNEL))|blue;
+
 		}
 		// bytes 0x24,0x25= width
 		// bytes 0x26,0x27= height
@@ -783,10 +829,10 @@ int gfxloader_gfx5(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPic
 		green=rgbvalues[i][1];
 		blue=rgbvalues[i][2];
 
-		red*=8;green*=8;blue*=8;
+		red*=PICTURE_MAX_RGB_VALUE;green*=PICTURE_MAX_RGB_VALUE;blue*=PICTURE_MAX_RGB_VALUE;
 		red/=255;green/=255;blue/=255;
-		red&=0xf;green&=0xf;blue&=0xf;
-		pPicture->palette[i]=(red<<8)|(green<<4)|(blue);
+
+		pPicture->palette[i]=(red<<(2*PICTURE_BITS_PER_RGB_CHANNEL))|(green<<(1*PICTURE_BITS_PER_RGB_CHANNEL))|blue;
 	}
 
 

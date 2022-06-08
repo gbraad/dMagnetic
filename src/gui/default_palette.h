@@ -30,8 +30,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "picture.h"
 
-// the purpose of those functions is to transform the RGB palette into ANSI colors.
-unsigned short default_2bit_to_3bitconverstion(ePictureType pictureType,unsigned short rgb);
 
 // one strategy could be to find the center of 16 clusters that could be interpreted as "red", for example
 int default_findrgbcluster(int red,int green,int blue);

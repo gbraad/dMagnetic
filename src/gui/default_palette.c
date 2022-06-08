@@ -53,26 +53,8 @@ const unsigned short rgblut[]={
 };
 #define	RGBLUTSIZE	213
 // another strategy would be to calculate the center of the clusters that make up the 16 colors.
+#if 0
 const unsigned short rgbcenters[16]={0x111,0x311,0x131,0x321,0x113,0x313,0x133,0x443,0x222,0x532,0x352,0x552,0x335,0x635,0x455,0x665};
-
-
-
-unsigned short default_2bit_to_3bitconverstion(ePictureType pictureType,unsigned short rgb)
-{
-	// halftone images have 2 bits per color channel. the others 3.
-	// the projection into the 3 bits in a linear fashion results in darkened colors.
-	int red,green,blue;
-	unsigned char halftonelut[4]={0,2,5,7};
-	if (pictureType!=PICTURE_HALFTONE) return rgb;
-	
-	red  =halftonelut[(rgb>>8)&0x3];
-	green=halftonelut[(rgb>>4)&0x3];
-	blue =halftonelut[(rgb>>0)&0x3];
-
-	rgb=(red<<8)|(green<<4)|(blue<<0);
-	return rgb;
-}
-
 int default_findrgbcluster(int red,int green,int blue)
 {
 	int i;
@@ -83,12 +65,15 @@ int default_findrgbcluster(int red,int green,int blue)
 	r0=red;
 	g0=green;
 	b0=blue;
-	
+
 	for (i=0;i<16;i++)
 	{
 		r1=(rgbcenters[i]>>8)&0xf;
 		g1=(rgbcenters[i]>>4)&0xf;
 		b1=(rgbcenters[i]>>0)&0xf;
+
+		r1*=PICTURE_MAX_RGB_VALUE;g1*=PICTURE_MAX_RGB_VALUE;b1*=PICTURE_MAX_RGB_VALUE;
+		r1/=7;g1/=7;b1/=7;
 	
 		delta =(r0-r1)*(r0-r1);
 		delta+=(g0-g1)*(g0-g1);
@@ -102,9 +87,76 @@ int default_findrgbcluster(int red,int green,int blue)
 	}	
 	return closest;
 }
+#else
+const unsigned int rgbcenters[16]={0x0aa36cc2,0x217380c2,0x0f77049d,0x20f678b2,0x0c23cdb6,0x1b6249b6,0x107789c5,0x2799e638,0x16d57924,0x3487fd74,0x236c457f,0x366ba166,0x1be82eda,0x3ad81f1b,0x26dcbeda,0x36ce6323};
+int default_findrgbcluster(int red,int green,int blue)
+{
+	int i;
+	int closest=0;
+	int mindelta=-1;
+	int delta;
+	int r0,r1,g0,g1,b0,b1;
 
+	r0=red;
+	g0=green;
+	b0=blue;
+#if 0
+	{
+		int rgbsums[16][3]={{0}};
+		int colcnt[16]={0};
+		for (i=0;i<RGBLUTSIZE;i++)
+		{
+			int col;
+			col	=(rgblut[i]>>12)&0xf;
+			red	=(rgblut[i]>> 8)&0xf;
+			green	=(rgblut[i]>> 4)&0xf;
+			blue	=(rgblut[i]>> 0)&0xf;
 
-#if 1
+			rgbsums[col][0]+=red;
+			rgbsums[col][1]+=green;
+			rgbsums[col][2]+=blue;
+			colcnt[col]+=7;
+		}
+		printf("const unsigned int rgbcenters[16]={");
+		for (i=0;i<16;i++)
+		{
+			rgbsums[i][0]*=PICTURE_MAX_RGB_VALUE;
+			rgbsums[i][1]*=PICTURE_MAX_RGB_VALUE;
+			rgbsums[i][2]*=PICTURE_MAX_RGB_VALUE;
+
+			rgbsums[i][0]/=(colcnt[i]);
+			rgbsums[i][1]/=(colcnt[i]);
+			rgbsums[i][2]/=(colcnt[i]);
+
+			rgbcenters[i]=(rgbsums[i][0]<<20)|(rgbsums[i][1]<<10)|(rgbsums[i][2]);
+
+			printf("0x%08x,",rgbcenters[i]);
+		}
+		printf("};\n");
+	}
+#endif
+	for (i=0;i<16;i++)
+	{
+		r1=(rgbcenters[i]>>20)&0x3ff;
+		g1=(rgbcenters[i]>>10)&0x3ff;
+		b1=(rgbcenters[i]>> 0)&0x3ff;
+
+			
+		delta =(r0-r1)*(r0-r1);
+		delta+=(g0-g1)*(g0-g1);
+		delta+=(b0-b1)*(b0-b1);
+		if (delta<mindelta || i==0)
+		{
+			closest=i;
+			mindelta=delta;
+			
+		}
+			
+	}
+	return closest;
+}
+#endif
+
 int default_palette(tPicture* picture,unsigned char* maxplut)
 {
 	int i,j;
@@ -126,9 +178,23 @@ int default_palette(tPicture* picture,unsigned char* maxplut)
 	// step 1: collect the alternatives
 	for (i=0;i<16;i++)
 	{
-		unsigned short rgb;
-		rgb=default_2bit_to_3bitconverstion(picture->pictureType,picture->palette[i]);
+		unsigned int rgb;
+		rgb=picture->palette[i];
 
+		{
+			int red,green,blue;
+			red=	PICTURE_GET_RED(rgb);
+			green=	PICTURE_GET_GREEN(rgb);
+			blue=	PICTURE_GET_BLUE(rgb);
+
+			red*=7;green*=7;blue*=7;
+			red+=(PICTURE_MAX_RGB_VALUE/2);
+			green+=(PICTURE_MAX_RGB_VALUE/2);
+			blue+=(PICTURE_MAX_RGB_VALUE/2);
+			red/=PICTURE_MAX_RGB_VALUE;green/=PICTURE_MAX_RGB_VALUE;blue/=PICTURE_MAX_RGB_VALUE;
+			
+			rgb=(red<<8)|(green<<4)|blue;
+		}
 
 		numcols[i]=0;
 		for (j=0;j<RGBLUTSIZE;j++)
@@ -143,7 +209,7 @@ int default_palette(tPicture* picture,unsigned char* maxplut)
 		// plan B: if there has been no direct match, make sure there is at least one alternative
 		if (numcols[i]==0)
 		{
-			ansicols[i][numcols[i]++]=default_findrgbcluster((rgb>>8)&0xf,(rgb>>4)&0xf,(rgb>>0)&0xf);
+			ansicols[i][numcols[i]++]=default_findrgbcluster(PICTURE_GET_RED(picture->palette[i]),PICTURE_GET_GREEN(picture->palette[i]),PICTURE_GET_BLUE(picture->palette[i]));
 		}
 		total*=numcols[i];
 		if (total>=16777216) total=16777216;	// arbitrary upper limit. i do not want to do the "pondering..." for too long.
@@ -188,65 +254,4 @@ int default_palette(tPicture* picture,unsigned char* maxplut)
 }
 
 
-#else
-int default_palette(tPicture* picture,unsigned char* maxplut)
-{
 
-	int i;
-	int j;
-	unsigned short foundmask;
-	unsigned char firstplut[16];
-	int cntfirst,cntmax;
-	// when looking for a substitute palette, the mapping from RGB to an ansi color is not really injective.
-	// thus, i am looking for two substitutes here.
-	// the firstplut contains the first occurance of the matching RGB values.
-	// the maxplut is constantly being updated.
-	// 
-	
-		
-	foundmask=0;
-	for (i=0;i<RGBLUTSIZE;i++)
-	{
-		unsigned short mask;
-		unsigned short rgb;
-		mask=1;
-		for (j=0;j<16;j++)
-		{
-			rgb=default_2bit_to_3bitconverstion(picture->pictureType,picture->palette[j]);
-			if ((rgblut[i]&0xfff)==rgb)
-			{
-				unsigned char col;
-
-				col=(rgblut[i]>>12)&0xf;
-				maxplut[j]=col;			// last palette
-				if (foundmask!=0xffff) firstplut[j]=col;	// first palette
-				foundmask|=mask;
-			}
-			mask<<=1;
-		}
-	}
-	// figure out if the first palette or the last palette is more nuanced
-	cntfirst=cntmax=0;
-	for (i=0;i<16;i++)
-	{
-		int foundfirst;
-		int foundmax;
-		foundfirst=-1;
-		foundmax=-1;
-		for (j=1;j<i;j++)
-		{
-			if (firstplut[i]==firstplut[j]) foundfirst=j;
-			if (maxplut[i]==maxplut[j]) foundmax=j;
-		}
-		if (foundfirst==-1) cntfirst++;
-		if (foundmax==-1) cntmax++;
-	}
-	if (cntfirst>cntmax)	// better results with the first occurances of the RGB values
-	{
-		for (i=0;i<16;i++) maxplut[i]=firstplut[i];
-		cntmax=cntfirst;
-	}
-
-	return 0;
-}
-#endif

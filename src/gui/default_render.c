@@ -301,11 +301,11 @@ int default_render_lowansi2(char* allowed,tPicture* picture,int rows,int cols)
 					{
 						for (l=lasty;l<=i;l++)
 						{
-							int p;
-							p=default_2bit_to_3bitconverstion(picture->pictureType,picture->palette[(int)picture->pixels[k+l*picture->width]]);
-							redsum  +=(p>>8)&0xf;
-							greensum+=(p>>4)&0xf;
-							bluesum +=(p>>0)&0xf;
+							unsigned int p;
+							p=picture->palette[(int)picture->pixels[k+l*picture->width]];
+							redsum  +=(PICTURE_GET_RED(p));
+							greensum+=(PICTURE_GET_GREEN(p));
+							bluesum +=(PICTURE_GET_BLUE(p));
 							pixcnt++;
 						}
 					}
@@ -445,9 +445,11 @@ int default_render_monochrome(char* greyscales,int inverted,tPicture* picture,in
 						for (l=x_left;l<x_right;l++)
 						{
 							p=picture->pixels[k*picture->width+l];
-							grey+=(picture->palette[p]>>8)&0x7;	// red
-							grey+=(picture->palette[p]>>4)&0x7;	// green
-							grey+=(picture->palette[p]>>0)&0x7;	// blue
+
+							grey+=(PICTURE_GET_RED(picture->palette[p]));
+							grey+=(PICTURE_GET_GREEN(picture->palette[p]));
+							grey+=(PICTURE_GET_BLUE(picture->palette[p]));
+
 							pixcnt++;
 						}
 					}
@@ -492,9 +494,9 @@ int default_render_monochrome(char* greyscales,int inverted,tPicture* picture,in
 						for (l=x_left;l<x_right;l++)
 						{
 							p=picture->pixels[k*picture->width+l];
-							grey+=(picture->palette[p]>>8)&0x7;	// red
-							grey+=(picture->palette[p]>>4)&0x7;	// green
-							grey+=(picture->palette[p]>>0)&0x7;	// blue
+							grey+=(PICTURE_GET_RED(picture->palette[p]));
+							grey+=(PICTURE_GET_GREEN(picture->palette[p]));
+							grey+=(PICTURE_GET_BLUE(picture->palette[p]));
 							pixcnt++;
 						}
 					}

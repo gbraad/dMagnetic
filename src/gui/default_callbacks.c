@@ -443,16 +443,16 @@ int default_cbDrawPicture(void* context,tPicture* picture,int mode)
 						{
 							for (x=lastx;x<=j;x++)
 							{
-								int p;
-								p=default_2bit_to_3bitconverstion(picture->pictureType,picture->palette[(int)(picture->pixels[y*(picture->width)+x])]);
-								redsum  +=(p>>8)&0xf;
-								greensum+=(p>>4)&0xf;
-								bluesum +=(p>>0)&0xf;
+								unsigned int p;
+								p=picture->palette[(int)(picture->pixels[y*(picture->width)+x])];
+								redsum  +=(PICTURE_GET_RED(p));
+								greensum+=(PICTURE_GET_GREEN(p));
+								bluesum +=(PICTURE_GET_BLUE(p));
 								pixcnt++;
 							}
 						}
 						redsum*=255;greensum*=255;bluesum*=255;
-						pixcnt*=7;
+						pixcnt*=PICTURE_MAX_RGB_VALUE;
 						redsum/=pixcnt;greensum/=pixcnt;bluesum/=pixcnt;
 						if (redsum>255) redsum=255;
 						if (greensum>255) greensum=255;
@@ -488,17 +488,17 @@ int default_cbDrawPicture(void* context,tPicture* picture,int mode)
 					accux+=pContext->columns;
 					if (accux>=picture->width || j==picture->width-1)
 					{
-						rgb=default_2bit_to_3bitconverstion(picture->pictureType,picture->palette[(int)(picture->pixels[i*(picture->width)+j])]);
+						rgb=picture->palette[(int)(picture->pixels[i*(picture->width)+j])];
 						if (rgb!=lastrgb)
 						{
 							int red,green,blue;
-							red  =(rgb>>8)&0xf;
-							green=(rgb>>4)&0xf;
-							blue =(rgb>>0)&0xf;
+							red  =PICTURE_GET_RED(rgb);
+							green=PICTURE_GET_GREEN(rgb);
+							blue =PICTURE_GET_BLUE(rgb);
 							red*=255;green*=255;blue*=255;
-							red  /=7;
-							green/=7;
-							blue /=7;
+							red  /=PICTURE_MAX_RGB_VALUE;
+							green/=PICTURE_MAX_RGB_VALUE;
+							blue /=PICTURE_MAX_RGB_VALUE;
 							printf("\x1b[48;2;%d;%d;%dm",
 									red,green,blue);
 						}
@@ -538,7 +538,8 @@ int default_cbDrawPicture(void* context,tPicture* picture,int mode)
 		}
 
 		printf("\n\x1bPq\n");
-		if (picture->pictureType==PICTURE_C64)
+//		if (picture->pictureType==PICTURE_C64)
+		if (0)
 		{
 			// the C64 had a fixed colour palette.
 			// Brix suggested the following values as approximations:
@@ -561,17 +562,17 @@ int default_cbDrawPicture(void* context,tPicture* picture,int mode)
 		} else {
 			for (i=0;i<16;i++)
 			{
-				int red,green,blue;
-				unsigned short rgb;
-				rgb=default_2bit_to_3bitconverstion(picture->pictureType,picture->palette[i]);
-				red=(rgb>>8)&0xf;
-				green=(rgb>>4)&0xf;
-				blue=(rgb>>0)&0xf;
+				unsigned int red,green,blue;
+				unsigned int rgb;
 
+				rgb=picture->palette[i];
+				red  =PICTURE_GET_RED(rgb);
+				green=PICTURE_GET_GREEN(rgb);
+				blue =PICTURE_GET_BLUE(rgb);
 				red*=100;green*=100;blue*=100;
-				red/=7;
-				green/=7;
-				blue/=7;
+				red  /=PICTURE_MAX_RGB_VALUE;
+				green/=PICTURE_MAX_RGB_VALUE;
+				blue /=PICTURE_MAX_RGB_VALUE;
 
 				printf("#%02d;2;%d;%d;%d",i,red,green,blue);
 			}

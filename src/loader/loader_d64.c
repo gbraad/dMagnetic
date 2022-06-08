@@ -85,18 +85,19 @@ typedef struct _tGameInfo
 	char magicword[5];		// the word, that is hidden in the second sector of the disk image
 	int version;			// the virtual machine's version
 	char name[32];			// human readable
-	unsigned int FIXME;		// WHERE DO THOSE NUMBERS COME FROM, EXACTLY???
 	signed char order[32];		// the order in which the pictures can be found in the images are not the same as in other releases.
 } tGameInfo;
 
 const tGameInfo loader_d64_gameinfo[6]=
 {
-	{GAME_JINXTER	,2,"ARSE",2,"Jinxter",			0x13100, { 4, 0, 5, 6, 7,-1, 8, 1, 9,10,11,12, 13,14,15,16, 17, 2, 3,27, 18,19,20,21, 22,23,24,25, 26,27,26,26}},
-	{GAME_CORRUPTION,2,"COKE",3,"Corruption",		0x16100, { 24, 8, 9,25, 10,13,15,16, 17, 1,18,23, 21, 6, 5, 4, 12,14, 2, 3, 11,20, 7,22, 19, 0,-1,-1, -1,-1,-1,-1 }},
-	{GAME_FISH	,2,"GLUG",3,"Fish!",			0x14E00, { 3,21, 8,11, 18,16,17, 4, 2, 5, 1, 6, 9,10,14,20, 22,24,25, 0, 15,23, 7,19, 13,-1,26,-1, -1,-1,-1,-1 }},
-	{GAME_MYTH	,1,"GODS",3,"Myth",			0x08B00, { 0, 1, 2, 3,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1}},
-	{GAME_PAWN	,2,"PAWN",0,"The Pawn",			0x0B400, { 4,26,13,23, 0, 8,29, 5, 18,19, 3, 9, 12,11,16,22, 17,21,28, 6, 27,25,24, 2, 1,20,14, 7, 15,10,-1,-1 }},
-	{GAME_GUILD	,2,"SWAG",1,"The Guild of Thieves",	0x0F100, { 9,17,20, 0,26,19,11,12, 4, 5, 2,13,14, 8, 6, 1,15,16, 3,24,21,28,22,25,18,23, 7,10,27,-1,-1,-1}},
+								// the pictures are ordered different from the other releases. there, this list would have been 0 1 2 3 4...
+								// but the C64 had only a limited amount of floppy disk space.
+	{GAME_JINXTER	,2,"ARSE",2,"Jinxter",			 { 4, 0, 5, 6, 7,-1, 8, 1, 9,10,11,12, 13,14,15,16, 17, 2, 3,27, 18,19,20,21, 22,23,24,25, 26,27,26,26}},
+	{GAME_CORRUPTION,2,"COKE",3,"Corruption",		 { 24, 8, 9,25, 10,13,15,16, 17, 1,18,23, 21, 6, 5, 4, 12,14, 2, 3, 11,20, 7,22, 19, 0,-1,-1, -1,-1,-1,-1 }},
+	{GAME_FISH	,2,"GLUG",3,"Fish!",			 { 3,21, 8,11, 18,16,17, 4, 2, 5, 1, 6, 9,10,14,20, 22,24,25, 0, 15,23, 7,19, 13,-1,26,-1, -1,-1,-1,-1 }},
+	{GAME_MYTH	,1,"GODS",3,"Myth",			 { 0, 1, 2, 3,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1}},
+	{GAME_PAWN	,2,"PAWN",0,"The Pawn",			 { 4,26,13,23, 0, 8,29, 5, 18,19, 3, 9, 12,11,16,22, 17,21,28, 6, 27,25,24, 2, 1,20,14, 7, 15,10,-1,-1 }},
+	{GAME_GUILD	,2,"SWAG",1,"The Guild of Thieves",	 { 9,17,20, 0,26,19,11,12, 4, 5, 2,13,14, 8, 6, 1,15,16, 3,24,21,28,22,25,18,23, 7,10,27,-1,-1,-1}},
 };
 
 int loader_d64_detectgame(unsigned char* diskram)
@@ -177,11 +178,11 @@ void loader_d64_readEntries(unsigned char* d64image,int d64size,tFileEntry* pEnt
 		unsigned char len;
 		int newoffs;
 
-		// 1, entry, 4 bytes.
-		track=d64image[512+i*4+0];
-		sect =d64image[512+i*4+1];
-		len  =d64image[512+i*4+2];
-		side =d64image[512+i*4+3]&3;
+		// 1, entry, 4 bytes. in sector 2.
+		track=d64image[2*D64_SECTORSIZE+i*4+0];
+		sect =d64image[2*D64_SECTORSIZE+i*4+1];
+		len  =d64image[2*D64_SECTORSIZE+i*4+2];
+		side =d64image[2*D64_SECTORSIZE+i*4+3]&3;
 
 
 		if (len)
@@ -568,6 +569,7 @@ int loader_d64(char* d64name,
 
 
 	{
+		int huffmantreeidx;
 		int magidx;
 		////////////////// LOAD THE MAG BUFFER /////////////////
 		magidx=42;	// leave some room for the header
@@ -576,10 +578,26 @@ int loader_d64(char* d64name,
 		loader_d64_readCode2(d64image,entries,entryNum,(unsigned char*)&magbuf[magidx],&code2size);
 		magidx+=code2size;
 		loader_d64_readStrings(d64image,entries,entryNum,(unsigned char*)&magbuf[magidx],&string1size,&string2size,&dictsize);
+		huffmantreeidx=0;
+
+		// within the string buffer, there is the beginning of the huffman tree
+		if (loader_d64_gameinfo[gameID].version<=1) 
+		{
+			huffmantreeidx=string1size;		// the PAWN and GUILD of Thieves had the beginning of the huffman tree in the second string buffer.
+		} else {
+			int i;
+			// there might be a better way to look for it, but in every C64 game, it starts with 01 02 03.
+			// and before that, there are a handful of bytes that are =0.
+			// in addition to this, it is aligned to sectors, so its indes has to be a multiple of 256.
+			for (i=0x100;i<string1size+string2size;i+=0x100)
+			{
+				if (	magbuf[magidx+i-3]==0x00 && magbuf[magidx+i-2]==0x00 && magbuf[magidx+i-1]==0x00 &&			// the previous sector ends with 0x00
+					magbuf[magidx+i+0]==0x01 && magbuf[magidx+i+1]==0x02 && magbuf[magidx+i+2]==0x03) huffmantreeidx=i;	// the sector with the huffmann tree starts with 0x01 0x02 0x03
+			}
+		}
+		
 		magidx+=string1size+string2size+dictsize;
-
-
-		if (loader_d64_gameinfo[gameID].game==GAME_MYTH && magbuf[0x3080]==0x66) magbuf[0x3080]=0x60;	// final touch
+		
 		// now the information is complete, write the header	
 		magbuf[0]='M';magbuf[1]='a';magbuf[2]='S';magbuf[3]='c';	//  0.. 3: the magic word
 		WRITE_INT32BE(magbuf, 4 ,magidx);				//  4.. 7: the total size
@@ -589,10 +607,11 @@ int loader_d64(char* d64name,
 		WRITE_INT32BE(magbuf,18 ,string1size);			// 18..21 the size of the string1
 		WRITE_INT32BE(magbuf,22 ,string2size);			// 22..25 the size of the string2
 		WRITE_INT32BE(magbuf,26 ,dictsize);			// 26..29 the size of the dictionary
-		WRITE_INT32BE(magbuf,30 ,loader_d64_gameinfo[gameID].FIXME)			// 30..33 I do not know where those numbers are coming from.
+		WRITE_INT32BE(magbuf,30 ,huffmantreeidx)		// 30..33 the beginning of the huffman tree within the string buffer
 		WRITE_INT32BE(magbuf,34 ,0);				//  34..37: undo size
 		WRITE_INT32BE(magbuf,38 ,0);				//  38..41: undo pc
 
+		if (loader_d64_gameinfo[gameID].game==GAME_MYTH && magbuf[0x3080]==0x66) magbuf[0x3080]=0x60;	// final touch
 	
 		*magsize=magidx;				
 		/////////// MAG IS FINISHED ////////////////////////////////

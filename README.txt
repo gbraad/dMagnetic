@@ -4,7 +4,7 @@
 *****************************************
 
 
-Welcome, brave adventurer. This is Version 0.22.
+Welcome, brave adventurer. This is Version 0.25.
 If you are interested in playing "The Pawn", just follow these simple steps.
 
 STEP 1: BUILD
@@ -19,6 +19,13 @@ run
 % ./dMagnetic -mag testcode/minitest.mag 
 
 you should see a colourful X and the request to press enter.
+Alternatively, on OpenBSD, NetBSD or FreeBSD you could simply run
+
+% make check
+
+On Linux, the command would be
+
+% make SHA256_CMD=sha256sum check
 
 
 STEP 3: GET THE BINARIES
@@ -37,35 +44,57 @@ methods (mag&gfx, msdosdir, tworsc) is being commented in.
 STEP 5: RUN
 run one of
 
-./dMagnetic -ini dMagnetic.ini pawn
-./dMagnetic -ini dMagnetic.ini guild
-./dMagnetic -ini dMagnetic.ini jinxter
-./dMagnetic -ini dMagnetic.ini corruption
-./dMagnetic -ini dMagnetic.ini fish
-./dMagnetic -ini dMagnetic.ini myth
-./dMagnetic -ini dMagnetic.ini wonderland
+% ./dMagnetic -ini dMagnetic.ini pawn
+% ./dMagnetic -ini dMagnetic.ini guild
+% ./dMagnetic -ini dMagnetic.ini jinxter
+% ./dMagnetic -ini dMagnetic.ini corruption
+% ./dMagnetic -ini dMagnetic.ini fish
+% ./dMagnetic -ini dMagnetic.ini myth
+% ./dMagnetic -ini dMagnetic.ini wonderland
 
 Remember that for some games you have to type in GRAPHICS before you see them.
 
 Alternatively, you can select the .mag files like this:
 
-./dMagnetic -ini dMagnetic.ini -mag /usr/local/share/games/pawn.mag
+% ./dMagnetic -ini dMagnetic.ini -mag /usr/local/share/games/pawn.mag
 
 TO SEE GRAPHICS IN WONDERLAND OR ANY GAME FROM THE MAGNETIC SCROLLS COLLECTION,
 you have to type in 'GRAPHICS'. To see the EGA version of those pictures, run
 
-./dMagnetic -ega -ini dMagnetic.ini wonderland
+% ./dMagnetic -ega -ini dMagnetic.ini wonderland
+
+To play using the binaries from the MS DOS release, simply run
+
+% ./dMagnetic -ini dMagnetic.ini -msdosdir /C/GAMES/THEPAWN/
+
+To play using the resource files from the Magnetic Scrolls Collection or
+Wonderland, the parameter -tworsc can be used to provide the location of the
+most important resource file
+
+% ./dMagnetic -ini dMagnetic.ini -tworsc /C/GAMES/WONDER/TWO.RSC
+% ./dMagnetic -ini dMagnetic.ini -tworsc /C/GAMES/MSC/CTWO.RSC
+% ./dMagnetic -ini dMagnetic.ini -tworsc /C/GAMES/MSC/FTWO.RSC
+% ./dMagnetic -ini dMagnetic.ini -tworsc /C/GAMES/MSC/GTWO.RSC
+
+If you wish to play using .d64 images from the Commodore 64 (C64) releases,
+you have to provide both sides of the floppy disks as filenames:
+
+% ./dMagnetic -ini dMagnetic.ini -d64 pawn1.d64,pawn2.d64
+
+
 
 
 STEP 6: GRAPHICS
 You can select output modes by using one of the following parameters:
 
-./dMagnetic -ini dMagnetic.ini pawn -vmode none       -vrows 40 -vcols 120
-./dMagnetic -ini dMagnetic.ini pawn -vmode monochrome -vrows 40 -vcols 120
-./dMagnetic -ini dMagnetic.ini pawn -vmode low_ansi   -vrows 40 -vcols 120
-./dMagnetic -ini dMagnetic.ini pawn -vmode high_ansi  -vrows 40 -vcols 120
-./dMagnetic -ini dMagnetic.ini pawn -vmode high_ansi2 -vrows 40 -vcols 120
-./dMagnetic -ini dMagnetic.ini pawn -vmode sixel -sres 1024x768 -vcols 120
+% ./dMagnetic -ini dMagnetic.ini pawn -vmode none           -vrows 40 -vcols 120
+% ./dMagnetic -ini dMagnetic.ini pawn -vmode monochrome     -vrows 40 -vcols 120
+% ./dMagnetic -ini dMagnetic.ini pawn -vmode monochrome_inv -vrows 40 -vcols 120
+% ./dMagnetic -ini dMagnetic.ini pawn -vmode low_ansi       -vrows 40 -vcols 120
+% ./dMagnetic -ini dMagnetic.ini pawn -vmode low_ansi2      -vrows 40 -vcols 120
+% ./dMagnetic -ini dMagnetic.ini pawn -vmode high_ansi      -vrows 40 -vcols 120
+% ./dMagnetic -ini dMagnetic.ini pawn -vmode high_ansi2     -vrows 40 -vcols 120
+% ./dMagnetic -ini dMagnetic.ini pawn -vmode sixel     -sres 1024x768 -vcols 120
 
 The defaut mode is "low_ansi", since it works on most terminals. The mode 
 called "high_ansi" provides the richest amount of colors, even though the 
@@ -74,7 +103,9 @@ mode is recommended.
 if your terminal does not support them, please try one of the others. 
 
 The sixel mode can be used in certain terminal emulators, such as mlterm, or
-some variants of xterm, when run with xterm -ti vt340.
+some variants of xterm, when run with 
+
+% xterm -ti vt340.
 
 STEP 6: LOGGING
 In case you would like to retrace our steps, you can use -vlog LOGFILE.log and
@@ -125,5 +156,37 @@ Afterwards, run
 and open a new xterm window. In this, you can play dMagnetic with proper colors.
   
 -------------------------------------------------------------------------------
+ABOUT THE CHECKS
+-------------------------------------------------------------------------------
 
+
+They are being run in the check.mk file, so that they can be easily patched
+out of the Makefile if they are not necessary. They require three programs:
+SHA256, AWK and ECHO.
+
+They way the work is by piping an input through dMagnetic, and checking the
+SHA256 sum of the output. Since the program to calculate a SHA256 sum differs
+between operating systems, I decided to make them parameterizable to the 
+test. 
+
+The default run would be the equivalent of 
+
+% make SHA256_CMD=sha256 ECHO_CMD=echo AWK_CMD=awk check
+
+On Linux, the checks may have to be invoked via
+
+% make SHA256_CMD=sha256sum ECHO_CMD=echo AWK_CMD=awk check
+
+And on some BSD derivates, where awk behaves differently, it could be
+
+% make SHA256_CMD=sha256sum ECHO_CMD=echo AWK_CMD=gawk check
+
+Why awk? Because the output of SHA256 also behaves slightly different. 
+Sometimes, if simply prints out the sum, sometimes it adds a "-" at the
+end. And that breaks the check.
+
+
+
+-------------------------------------------------------------------------------
+Thomas Dettbarn <dettus@dettus.net>
 
