@@ -1,6 +1,6 @@
 /*
 
-Copyright 2019, dettus@dettus.net
+Copyright 2020, dettus@dettus.net
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #include <string.h>
 #include "default_render.h"
+#include "default_palette.h"
 #include "picture.h"
 #include "configuration.h"
 #include "default_callbacks.h"
@@ -39,13 +40,23 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define	MAGIC	0x68654879	// = yHeh, the place where I grew up ;)
 #define	MAXTEXTBUFFER	1024	// maximum number of buffered characters
 #define	MAXHEADLINEBUFFER	256	// maximum number of buffered headline characters
+typedef enum _tMode
+{
+	eMODE_NONE,
+	eMODE_MONOCHROME,
+	eMODE_LOW_ANSI,
+	eMODE_LOW_ANSI2,
+	eMODE_HIGH_ANSI,
+	eMODE_HIGH_ANSI2,
+	eMODE_SIXEL
+} tMode;
 typedef	struct _tContext
 {
 	unsigned int magic;
 	// ansi output
 	int	columns;
 	int	rows;
-	int	mode;	// 0=none. 1=ascii art. 2=ansi art. 3=high ansi. 4=high ansi2
+	tMode	mode;	// 0=none. 1=ascii art. 2=ansi art. 3=high ansi. 4=high ansi2
 	// log the input
 	FILE* f_logfile;
 	int	echomode;
@@ -56,6 +67,7 @@ typedef	struct _tContext
 	int headlineflagged;
 	char	low_ansi_characters[128];	// characters that are allowed for low ansi rendering
 	char	monochrome_characters[128];	// characters that are allowed for monochrome rendering
+	int	monochrome_inverted;
 
 // this is the line buffer.
 // text is stored here, before
@@ -214,31 +226,21 @@ int default_cbOutputChar(void* context,char c,unsigned char controlD2,unsigned c
 		}
 
 		// second, print the ----[HEADLINE]-
-		for (i=0;i<pContext->columns-pContext->headlineidx-3;i++)
+		if (pContext->mode==eMODE_NONE)
 		{
-			printf("-");
+			printf("\n[%s]\n",pContext->headlineoutput);
+		} else {
+			for (i=0;i<pContext->columns-pContext->headlineidx-3;i++)
+			{
+				printf("-");
+			}
+			if (pContext->mode==eMODE_LOW_ANSI || pContext->mode==eMODE_HIGH_ANSI)	// high or low ansi -> make the headline text pop out
+				printf("[\x1b[0;30;47m%s\x1b[0m]-\n",pContext->headlineoutput);
+			else 
+				printf("[%s]-\n",pContext->headlineoutput);
 		}
-		if (pContext->mode==2 || pContext->mode==3)	// high or low ansi -> make the headline text pop out
-			printf("[\x1b[0;30;47m%s\x1b[0m]-\n",pContext->headlineoutput);
-		else 
-			printf("[%s]-\n",pContext->headlineoutput);
 			
 
-/*		// second, print the >>>> HEADLINE <
-		for (i=0;i<pContext->columns-pContext->headlineidx-3;i++)
-		{
-			printf(">");
-		}
-		printf(" %s <\n",pContext->headlineoutput);
-*/
-/*
-		// second, print the //// HEADLINE /
-		for (i=0;i<pContext->columns-pContext->headlineidx-3;i++)
-		{
-			printf("/");
-		}
-		printf(" %s /\n",pContext->headlineoutput);
-*/
 	}
 	pContext->headlineflagged=flag_headline;
 
@@ -384,99 +386,137 @@ int default_cbDrawPicture(void* context,tPicture* picture,int mode)
 	tContext *pContext=(tContext*)context;
 	int lastrgb;
 
-	if (pContext->mode==0) return 0;
+	if (pContext->mode==eMODE_NONE) return 0;
 	// flush the output buffer
 	default_cbOutputChar(context,'\n',0,0);
-	if (pContext->mode==1)
+	if (pContext->mode==eMODE_MONOCHROME)
 	{
-		default_render_monochrome(pContext->monochrome_characters,picture,pContext->rows,pContext->columns);	
+		default_render_monochrome(pContext->monochrome_characters,pContext->monochrome_inverted,picture,pContext->rows,pContext->columns);	
 	}
 
-	if (pContext->mode==2)
+	if (pContext->mode==eMODE_LOW_ANSI)
 	{
 		default_render_lowansi(pContext->low_ansi_characters,picture,pContext->rows,pContext->columns);	
 	}
 
-	if (pContext->mode==3 || pContext->mode==4)
+	if (pContext->mode==eMODE_LOW_ANSI2)
 	{
-		if (picture->halftones && pContext->mode==4)
+		default_render_lowansi2(pContext->low_ansi_characters,picture,pContext->rows,pContext->columns);	
+	}
+
+	if (pContext->mode==eMODE_HIGH_ANSI2)
+	{
+		int redsum,greensum,bluesum;
+		int lastx;
+		int lasty;
+		int pixcnt;
+
+		redsum=0;
+		greensum=0;
+		bluesum=0;
+
+		lastx=lasty=0;
+		pixcnt=0;
+
+
+
+		accux=accuy=0; 
+
+		for (i=0;i<picture->height;i++)
 		{
-			accux=accuy=0; 
-			for (i=1;i<picture->height-1;i+=2)
+			accuy+=pContext->rows;
+			lastrgb=-1;
+			if (accuy>=picture->height || i==picture->height-1)
 			{
-				accuy+=pContext->rows*2;
-				lastrgb=-1;
-				if (accuy>=picture->height || i==picture->height-1)
+				accuy-=picture->height;
+				accux=0;
+				lastx=0;
+				for (j=0;j<picture->width;j++)
 				{
-					accux=0;
-					for (j=1;j<picture->width-1;j+=2)
+					accux+=pContext->columns;
+					if (accux>=picture->width || j==picture->width-1)
 					{
-						accux+=pContext->columns*2;
-						if (accux>=picture->width || j==picture->width-1)
+						int x,y;
+						redsum=0;
+						greensum=0;
+						bluesum=0;
+						accux-=picture->width;
+						pixcnt=0;
+						for (y=lasty;y<=i;y++)
 						{
-							unsigned int rgb1,rgb2,rgb3,rgb4;
-							int red,green,blue;
-							rgb1=picture->palette[(int)(picture->pixels[(i+0)*(picture->width)+j+0])];
-							rgb2=picture->palette[(int)(picture->pixels[(i+1)*(picture->width)+j+1])];
-							rgb3=picture->palette[(int)(picture->pixels[(i+0)*(picture->width)+j+1])];
-							rgb4=picture->palette[(int)(picture->pixels[(i+1)*(picture->width)+j+0])];
-							red=((rgb1>>8)&0xf)+((rgb2>>8)&0xf)+((rgb3>>8)&0xf)+((rgb4>>8)&0xf);
-							green=((rgb1>>4)&0xf)+((rgb2>>4)&0xf)+((rgb3>>4)&0xf)+((rgb4>>4)&0xf);
-							blue=((rgb1>>0)&0xf)+((rgb2>>0)&0xf)+((rgb3>>0)&0xf)+((rgb4>>0)&0xf);
-							red/=4;green/=4;blue/=4;
-							red*=32;green*=32;blue*=32;
-							rgb=(red<<16)|(green<<8)|blue;
-							if (rgb!=lastrgb)
+							for (x=lastx;x<=j;x++)
 							{
-								printf("\x1b[48;2;%d;%d;%dm",
-										red,green,blue);
+								int p;
+								p=default_2bit_to_3bitconverstion(picture->halftones,picture->palette[(int)(picture->pixels[y*(picture->width)+x])]);
+								redsum  +=(p>>8)&0xf;
+								greensum+=(p>>4)&0xf;
+								bluesum +=(p>>0)&0xf;
+								pixcnt++;
 							}
-							printf(" ");
-							lastrgb=rgb;
-							accux-=picture->width;
 						}
-					}		
-
-					accuy-=picture->height;	
-					printf("\x1b[0m\n");
-				}		
-			}
-			
-		} else {
-			accux=accuy=0; 
-			for (i=0;i<picture->height;i++)
-			{
-				accuy+=pContext->rows;
-				lastrgb=-1;
-				if (accuy>=picture->height || i==picture->height-1)
-				{
-					accux=0;
-					for (j=0;j<picture->width;j++)
-					{
-						accux+=pContext->columns;
-						if (accux>=picture->width || j==picture->width-1)
+						redsum*=255;greensum*=255;bluesum*=255;
+						pixcnt*=7;
+						redsum/=pixcnt;greensum/=pixcnt;bluesum/=pixcnt;
+						if (redsum>255) redsum=255;
+						if (greensum>255) greensum=255;
+						if (bluesum>255) bluesum=255;
+						rgb=(redsum<<16)|(greensum<<8)|bluesum;
+						if (rgb!=lastrgb)
 						{
-							rgb=picture->palette[(int)(picture->pixels[i*(picture->width)+j])];
-							if (rgb!=lastrgb)
-							{
-								printf("\x1b[48;2;%d;%d;%dm",
-										((rgb>>8)&0xf)*0x18,
-										((rgb>>4)&0xf)*0x18,
-										((rgb>>0)&0xf)*0x18);
-							}
-							printf(" ");
+							printf("\x1b[48;2;%d;%d;%dm",
+									redsum,greensum,bluesum);
 							lastrgb=rgb;
-							accux-=picture->width;
 						}
-					}		
-
-					accuy-=picture->height;	
-					printf("\x1b[0m\n");
-				}		
+						printf(" ");
+						lastx=j;
+					}
+				}
+				printf("\x1b[0m\n");
+				lasty=i;
 			}
 		}
 	}
-	if (pContext->mode==5) 	// sixels
+	if (pContext->mode==eMODE_HIGH_ANSI)
+	{
+		accux=accuy=0; 
+		for (i=0;i<picture->height;i++)
+		{
+			accuy+=pContext->rows;
+			lastrgb=-1;
+			if (accuy>=picture->height || i==picture->height-1)
+			{
+				accux=0;
+				for (j=0;j<picture->width;j++)
+				{
+					accux+=pContext->columns;
+					if (accux>=picture->width || j==picture->width-1)
+					{
+						rgb=default_2bit_to_3bitconverstion(picture->halftones,picture->palette[(int)(picture->pixels[i*(picture->width)+j])]);
+						if (rgb!=lastrgb)
+						{
+							int red,green,blue;
+							red  =(rgb>>8)&0xf;
+							green=(rgb>>4)&0xf;
+							blue =(rgb>>0)&0xf;
+							red*=255;green*=255;blue*=255;
+							red  /=7;
+							green/=7;
+							blue /=7;
+							printf("\x1b[48;2;%d;%d;%dm",
+									red,green,blue);
+						}
+						printf(" ");
+						lastrgb=rgb;
+						accux-=picture->width;
+					}
+				}		
+
+				accuy-=picture->height;	
+				printf("\x1b[0m\n");
+			}		
+		}
+	}
+	if (pContext->mode==eMODE_SIXEL) 	// sixels
 	{		
 		int i,j;
 		int accux,accuy;
@@ -487,12 +527,16 @@ int default_cbDrawPicture(void* context,tPicture* picture,int mode)
 		for (i=0;i<16;i++)
 		{
 			int red,green,blue;
-			red=(picture->palette[i]>>8)&0xf;
-			green=(picture->palette[i]>>4)&0xf;
-			blue=(picture->palette[i]>>0)&0xf;
+			unsigned short rgb;
+			rgb=default_2bit_to_3bitconverstion(picture->halftones,picture->palette[i]);
+			red=(rgb>>8)&0xf;
+			green=(rgb>>4)&0xf;
+			blue=(rgb>>0)&0xf;
 
 			red*=100;green*=100;blue*=100;
-			red/=0x7;green/=0x7;blue/=0x7;
+			red/=7;
+			green/=7;
+			blue/=7;
 
 			printf("#%02d;2;%d;%d;%d",i,red,green,blue);
 		}
@@ -508,7 +552,7 @@ int default_cbDrawPicture(void* context,tPicture* picture,int mode)
 			float ratiox,ratioy;
 			ratiox=(float)screenwidth/(float)(picture->width);
 			ratioy=(float)screenheight/(float)(picture->height);
-			
+
 			if (ratiox<ratioy) ratioy=ratiox; else ratiox=ratioy;
 
 			screenwidth=(int)(ratiox*(float)picture->width);
@@ -610,9 +654,9 @@ int default_open(void* hContext,FILE *f_inifile,int argc,char** argv)
 {
 	tContext *pContext=(tContext*)hContext;
 	char result[1024];
-	#define	DEFAULT_LOW_ANSI_CHARACTERS 8
+#define	DEFAULT_LOW_ANSI_CHARACTERS 8
 	const char default_low_ansi_characters[DEFAULT_LOW_ANSI_CHARACTERS]="\\/|=L#T";
-	#define	DEFAULT_MONOCHROME_CHARACTERS 14
+#define	DEFAULT_MONOCHROME_CHARACTERS 14
 	const char default_monochrome_characters[DEFAULT_MONOCHROME_CHARACTERS]=" .:-=+*x#/@$X";
 
 	if (pContext==NULL) return DEFAULT_NOK;
@@ -625,7 +669,7 @@ int default_open(void* hContext,FILE *f_inifile,int argc,char** argv)
 
 	pContext->rows=40;
 	pContext->columns=120;
-	pContext->mode=2;	// 0=none. 1=monochrome. 2=low_ansi. 3=high_ansi. 4=high_ansi2, 5=sixel
+	pContext->mode=eMODE_LOW_ANSI;	// 0=none. 1=monochrome. 2=low_ansi. 3=high_ansi. 4=high_ansi2, 5=sixel
 	pContext->f_logfile=NULL;
 	pContext->echomode=0;
 	pContext->textalign=1;
@@ -634,7 +678,7 @@ int default_open(void* hContext,FILE *f_inifile,int argc,char** argv)
 
 	pContext->screenwidth=320;
 	pContext->screenheight=200;
-	
+
 	memcpy(pContext->low_ansi_characters,default_low_ansi_characters,sizeof(default_low_ansi_characters));
 	memcpy(pContext->monochrome_characters,default_monochrome_characters,sizeof(default_monochrome_characters));
 
@@ -651,12 +695,14 @@ int default_open(void* hContext,FILE *f_inifile,int argc,char** argv)
 		}
 		if (retrievefromini(f_inifile,"[DEFAULTGUI]","mode",result,sizeof(result)))
 		{
-			if (strncmp(result,"none",4)==0) pContext->mode=0;	
-			if (strncmp(result,"monochrome",10)==0) pContext->mode=1;
-			if (strncmp(result,"low_ansi",8)==0) pContext->mode=2;
-			if (strncmp(result,"high_ansi2",10)==0) pContext->mode=4;
-			if (strncmp(result,"sixel",5)==0) pContext->mode=5;
-			else if (strncmp(result,"high_ansi",9)==0) pContext->mode=3;
+			if (strncmp(result,"none",4)==0) pContext->mode=eMODE_NONE;	
+			if (strncmp(result,"monochrome",10)==0) pContext->mode=eMODE_MONOCHROME;
+			if (strncmp(result,"monochrome_inv",14)==0) {pContext->mode=eMODE_MONOCHROME;pContext->monochrome_inverted=1;}
+			if (strncmp(result,"low_ansi",8)==0) pContext->mode=eMODE_LOW_ANSI;
+			if (strncmp(result,"low_ansi2",9)==0) pContext->mode=eMODE_LOW_ANSI2;
+			if (strncmp(result,"high_ansi2",10)==0) pContext->mode=eMODE_HIGH_ANSI2;
+			if (strncmp(result,"sixel",5)==0) pContext->mode=eMODE_SIXEL;
+			else if (strncmp(result,"high_ansi",9)==0) pContext->mode=eMODE_HIGH_ANSI;
 		}
 		if (retrievefromini(f_inifile,"[DEFAULTGUI]","align",result,sizeof(result)))
 		{
@@ -666,7 +712,7 @@ int default_open(void* hContext,FILE *f_inifile,int argc,char** argv)
 		}
 		if (retrievefromini(f_inifile,"[DEFAULTGUI]","low_ansi_characters",pContext->low_ansi_characters,sizeof(pContext->low_ansi_characters)))
 		{
-		
+
 		} else {
 			memcpy(pContext->low_ansi_characters,default_low_ansi_characters,DEFAULT_LOW_ANSI_CHARACTERS);
 		}
@@ -719,17 +765,20 @@ int default_open(void* hContext,FILE *f_inifile,int argc,char** argv)
 		}
 		if (retrievefromcommandline(argc,argv,"-vmode",result,sizeof(result)))
 		{
-			if (strncmp(result,"none",4)==0) pContext->mode=0;	
-			else if (strncmp(result,"monochrome",10)==0) pContext->mode=1;
-			else if (strncmp(result,"low_ansi",8)==0) pContext->mode=2;
-			else if (strncmp(result,"high_ansi2",10)==0) pContext->mode=4;
-			else if (strncmp(result,"sixel",5)==0) pContext->mode=5;
-			else if (strncmp(result,"high_ansi",9)==0) pContext->mode=3;
+			if (strncmp(result,"none",4)==0) pContext->mode=eMODE_NONE;	
+			else if (strncmp(result,"monochrome_inv",14)==0) {pContext->mode=eMODE_MONOCHROME;pContext->monochrome_inverted=1;}
+			else if (strncmp(result,"monochrome",10)==0) pContext->mode=eMODE_MONOCHROME;
+			else if (strncmp(result,"low_ansi2",9)==0) pContext->mode=eMODE_LOW_ANSI2;
+			else if (strncmp(result,"low_ansi",8)==0) pContext->mode=eMODE_LOW_ANSI;
+			else if (strncmp(result,"high_ansi2",10)==0) pContext->mode=eMODE_HIGH_ANSI2;
+			else if (strncmp(result,"high_ansi",9)==0) pContext->mode=eMODE_HIGH_ANSI;
+			else if (strncmp(result,"sixel",5)==0) pContext->mode=eMODE_SIXEL;
 			else {
 				printf("unknown parameter for -vmode. please use one of\n");
 				printf("none ");
 				printf("monochrome ");
 				printf("low_ansi ");
+				printf("low_ansi2 ");
 				printf("high_ansi ");
 				printf("high_ansi2 ");
 				printf("sixel ");

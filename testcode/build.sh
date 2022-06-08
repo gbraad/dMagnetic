@@ -1,5 +1,5 @@
 #!/bin/sh
-#Copyright 2019, dettus@dettus.net
+#Copyright 2020, dettus@dettus.net
 #
 #Redistribution and use in source and binary forms, with or without modification,
 #are permitted provided that the following conditions are met:
@@ -34,7 +34,7 @@ export LDFLAGS="-L"$OBJDIR" -L."
 (
  cd ../
  sh build.sh
-	ar rs testcode/libdmagnetic.a src/loader/maggfxloader.o src/engine/linea/gfx1loader.o src/engine/linea/gfx2loader.o src/engine/linea/linea.o src/engine/vm68k/vm68k.o src/engine/vm68k/vm68k_decode.o src/engine/vm68k/vm68k_loadstore.o src/gui/default_callbacks.o src/gui/default_render.o src/toplevel/configuration.o src/toplevel/dMagnetic.o
+	ar rs testcode/libdmagnetic.a src/loader/maggfxloader.o src/engine/linea/gfx1loader.o src/engine/linea/gfx2loader.o src/engine/linea/linea.o src/engine/vm68k/vm68k.o src/engine/vm68k/vm68k_decode.o src/engine/vm68k/vm68k_loadstore.o src/gui/default_callbacks.o src/gui/default_render.o src/gui/default_palette.o src/toplevel/configuration.o src/toplevel/dMagnetic.o
 )
 mkdir -p $OBJDIR
 

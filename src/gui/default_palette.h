@@ -22,28 +22,23 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, 
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
 */
+#ifndef	DEFAULT_PALETTE_H
+#define	DEFAULT_PALETTE_H
 
-#ifndef	VM68K_H
-#define	VM68K_H
+#include "picture.h"
 
+// the purpose of those functions is to transform the RGB palette into ANSI colors.
+unsigned short default_2bit_to_3bitconverstion(int halftones,unsigned short rgb);
 
-// the return value is =0, when everything is okay.
-#define	VM68K_OK			0
-#define	VM68K_NOK_UNKNOWN_INSTRUCTION	1
-#define	VM68K_NOK_INVALID_PTR		-1
-#define	VM68K_NOK_INVALID_PARAMETER	-2
+// one strategy could be to find the center of 16 clusters that could be interpreted as "red", for example
+int default_findrgbcluster(int red,int green,int blue);
 
+// the other involves heavy experimentation.
+int default_palette(tPicture* picture,unsigned char* maxplut);
 
-// this function tells how much memory needs to be mallocated for the handle;
-int vm68k_getsize(int* size);
-
-
-// as the name suggests, pSharedMem is shared among the cores. it typically holds the game code.
-int vm68k_init(void* hVM68k,void* pSharedMem,int sharedmemsize,int version);
-
-int vm68k_singlestep(void *hVM68k,unsigned short opcode);
-
-int vm68k_getNextOpcode(void* hVM68k,unsigned short* opcode);
 
 #endif
+

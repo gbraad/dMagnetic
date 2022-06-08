@@ -1,5 +1,5 @@
 #!/bin/sh
-#Copyright 2019, dettus@dettus.net
+#Copyright 2020, dettus@dettus.net
 #
 #Redistribution and use in source and binary forms, with or without modification,
 #are permitted provided that the following conditions are met:
@@ -37,7 +37,7 @@ PROJ_HOME=./
 INCFLAGS=-I$(PROJ_HOME)src/gui -I$(PROJ_HOME)src/toplevel -I$(PROJ_HOME)src/loader -I$(PROJ_HOME)src/engine/vm68k -I$(PROJ_HOME)src/engine/linea -I$(PROJ_HOME)src/engine/include 
 OBJDIR=$(PROJ_HOME)obj/
 LINK=$(CC)
-LDFLAGS="-L"$(OBJDIR)
+LDFLAGS+="-L"$(OBJDIR)
 
 SOURCES_LOADER=	\
 	src/loader/maggfxloader.c
@@ -54,6 +54,7 @@ SOURCES_VM68K=	\
 
 SOURCES_GUI=	\
 	src/gui/default_callbacks.c	\
+	src/gui/default_palette.c	\
 	src/gui/default_render.c
 
 SOURCES_TOPLEVEL=	\

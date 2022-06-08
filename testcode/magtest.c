@@ -1,6 +1,6 @@
 /*
 
-Copyright 2019, dettus@dettus.net
+Copyright 2020, dettus@dettus.net
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -49,10 +49,11 @@ int main(int argc,char** argv)
 	void *hGUI;
 	unsigned char* sharedMem;
 	int unknownopcode;
+	int sharedmemsize;
 	
 	fprintf(stderr,"*** dMagnetic- magtest\n");
 	fprintf(stderr,"*** Use at your own risk\n");
-	fprintf(stderr,"*** (C)opyright 2019 by dettus@dettus.net\n");
+	fprintf(stderr,"*** (C)opyright 2020 by dettus@dettus.net\n");
 	fprintf(stderr,"*****************************************\n");	
 	fprintf(stderr,"\n");
 
@@ -92,9 +93,9 @@ int main(int argc,char** argv)
 	sharedMem=malloc(65536);fprintf(stderr,"allocating %7d bytes for shared mem\n",65536);
 	
 
-		
+	sharedmemsize=65536;	
 	retval=vm68k_init(hVM68k,sharedMem,65536,0);
-	retval=lineA_init(hLineA,sharedMem,65536,magloader,magsize,gfxloader,gfxsize);
+	retval=lineA_init(hLineA,sharedMem,&sharedmemsize,magloader,magsize,gfxloader,gfxsize);
 	retval=default_open(hGUI,NULL,argc,argv);
 
 	retval=lineA_setCBoutputChar(hLineA,default_cbOutputChar,	hGUI);

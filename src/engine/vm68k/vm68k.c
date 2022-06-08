@@ -1,6 +1,6 @@
 /*
 
-Copyright 2019, dettus@dettus.net
+Copyright 2020, dettus@dettus.net
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -170,7 +170,7 @@ int vm68k_singlestep(void *hVM68k,unsigned short opcode)
 	direction=(opcode>>8)&0x1;
 
 	INITNEXT(pVM68k,next);	
-	
+	result=0;	
 	switch(instruction)
 	{
 		case VM68K_INST_ADD:
@@ -367,7 +367,7 @@ int vm68k_singlestep(void *hVM68k,unsigned short opcode)
 			tVM68k_types	datatype2;
 			tVM68k_ubyte	addrmode_dest;
 			tVM68k_slong	ea_dest;
-
+			datatype2=VM68K_UNKNOWN;
 			retval=VM68K_OK;
 			switch ((opcode>>12)&0x3)
 			{
@@ -617,7 +617,7 @@ int vm68k_singlestep(void *hVM68k,unsigned short opcode)
 			tVM68k_bool lsb;
 			tVM68k_ubyte bitnum;
 			direction=(opcode>>8)&1;	// 0=right. 1=left.
-
+			bitnum=8;
 			if (datatype==VM68K_UNKNOWN)	// memory shift
 			{
 				datatype2=VM68K_WORD;

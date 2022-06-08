@@ -1,6 +1,6 @@
 /*
 
-Copyright 2019, dettus@dettus.net
+Copyright 2020, dettus@dettus.net
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -45,7 +45,7 @@ int main(int argc,char** argv)
 	tPicture picture;
 	fprintf(stderr,"*** dMagnetic- magtest\n");
 	fprintf(stderr,"*** Use at your own risk\n");
-	fprintf(stderr,"*** (C)opyright 2019 by dettus@dettus.net\n");
+	fprintf(stderr,"*** (C)opyright 2020 by dettus@dettus.net\n");
 	fprintf(stderr,"*****************************************\n");	
 	fprintf(stderr,"\n");
 
@@ -61,37 +61,9 @@ int main(int argc,char** argv)
 	gfxsize=fread(gfxloader,sizeof(char),MAXGFXSIZE,f);		
 	fclose(f);
 
-	gfxloader_unpackpic(gfxloader,gfxsize,0,picnum,NULL,&picture);
+	gfxloader_unpackpic(gfxloader,gfxsize,0,picnum,NULL,&picture,0);
 	xpm=malloc(MAXXPM);
 	gfxloader_picture2xpm(&picture,xpm,MAXXPM);
-#if 0
-	printf("/* XPM */\n");
-	printf("static char *xpm[] = {\n");
-	printf("/* columns rows colors chars-per-pixel */\n");
-	printf("\"%d %d 16 1 \",\n",picture.width,picture.height);
-
-	for (i=0;i<16;i++)
-	{
-		printf("\"%c c #",i+'A');
-		printf("%02X",((picture.palette[i]>>8)&0x7)*0x24);
-		printf("%02X",((picture.palette[i]>>4)&0x7)*0x24);
-		printf("%02X",((picture.palette[i]>>0)&0x7)*0x24);
-		printf("\",\n");
-	}
-	printf("/* pixels */\n");
-	for (i=0;i<picture.height;i++)
-	{
-		printf("\"");
-		for (j=0;j<picture.width;j++)
-		{
-			printf("%c",picture.pixels[i*picture.width+j]+'A');
-		}
-		printf("\"");
-		if (i!=(picture.height-1)) printf(",");
-		printf("\n");
-	}
-	printf("};\n");
-#endif
 	printf("%s\n",xpm);
 	free(xpm);
 	return 0;

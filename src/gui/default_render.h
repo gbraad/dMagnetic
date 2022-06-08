@@ -1,6 +1,6 @@
 /*
 
-Copyright 2019, dettus@dettus.net
+Copyright 2020, dettus@dettus.net
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -30,7 +30,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "picture.h"
 int default_render_lowansi(char* allowed,tPicture* picture,int rows,int cols);
-int default_render_monochrome(char* greyscales,tPicture* picture,int rows,int cols);
+int default_render_lowansi2(char* allowed,tPicture* picture,int rows,int cols);
+int default_render_monochrome(char* greyscales,int inverted,tPicture* picture,int rows,int cols);
 
 
 #endif

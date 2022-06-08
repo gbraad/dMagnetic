@@ -1,6 +1,6 @@
 /*
 
-Copyright 2019, dettus@dettus.net
+Copyright 2020, dettus@dettus.net
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -160,6 +160,7 @@ int gfxloader_gfx2(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte versio
 	retval=0;	
 	// step 1: find the correct filename
 	found=0;
+	offset=-1;
 	for (i=0;i<directorysize && !found;i+=16)
 	{
 		// each entry in the directory is 16 bytes long. 8 bytes "filename", 4 bytes offset, 4 bytes length. filenames are 0-terminated.
@@ -182,7 +183,7 @@ int gfxloader_gfx2(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte versio
 		}
 	}
 	// TODO: sanity check. is length-48==height*width/2?
-	if (found)
+	if (found && offset!=-1)
 	{
 		// each picture has the following format:
 		// @0: 4 bytes UNKNOWN
@@ -296,6 +297,8 @@ int gfxloader_gfx3(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte versio
 	int state_cnt;
 	int height,width;
 
+	if (!gfxsize) return 0;		// there is no picture data available. nothing to do.
+
 	picnum&=0xffff;
 	pPicture->halftones=1;	// this format offers half tones.
 
@@ -315,13 +318,18 @@ int gfxloader_gfx3(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte versio
 	// in case the offset is -1, it must be in the other one.
 	offs1=(tVM68k_slong)READ_INT32LE(gfxbuf,indexoffs+picnum*4);
 	offs2=(tVM68k_slong)READ_INT32LE(gfxbuf,indexoffs+indexlen/2+picnum*4);
-	if (picnum!=30 && offs1!=-1 && offs2!=-1) offs1=-1;	// in case one picture is stored on both disks, prefer the second one. (due to reasons.)
+	if (picnum!=30 && offs1!=-1 && offs2!=-1) offs2=-1;	// in case one picture is stored on both disks, prefer the first one.
 
 	if (picnum==30 && offs1==-1 && offs2==-1) offs1=0;	// special case: the title screen for the GUILD of thieves is the first picture in DISK1.PIX
 	if (offs1!=-1) offset=offs1+disk1offs;			// in case the index was found in the first half, use disk1
 	else if (offs2!=-1) offset=offs2+disk2offs;		// in case the index was found in the second half, use disk2
 	else return -1;	///  otherwise: ERROR
 
+
+	if (offset>gfxsize) 	// this is MYTH: there is only a single image file.
+	{
+		offset=offs1;		
+	}
 	
 	// the picture is stored in layers.
 	// the first layer is a hufman table.
@@ -348,7 +356,7 @@ int gfxloader_gfx3(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte versio
 	state_cnt=0;
 	max_stipple=last_stipple=0;
 
-	while (unhufcnt<unpackedsize && (pixelcnt<(2*width*height)))
+	while (unhufcnt<unpackedsize && (pixelcnt<(2*width*height)) && byteidx<gfxsize)
 	{
 		// first layer: the bytes for the unhuf buf are stored as a bitstream, which are used to traverse a hufman table.
 		unsigned char bleft,bright,b;
@@ -477,15 +485,8 @@ int gfxloader_gfx3(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte versio
 		red  =(rgbbuf[i]>>4)&0x3;
 		green=(rgbbuf[i]>>2)&0x3;
 		blue =(rgbbuf[i]>>0)&0x3;
-
-		red*=  0x7;
-		green*=0x7;
-		blue*= 0x7;
-		
-		red/=  0x3;
-		green/=0x3;
-		blue/= 0x3;
-	
+		// the rgb palette for the halftone images has only 2 bits dynamic, whereas the other images have 3 bit.
+		// the renderer will have to take care of that.
 		red&=0x7;green&=0x7;blue&=0x7;
 
 		pPicture->palette[i] =(  red<<8);
@@ -662,7 +663,7 @@ int gfxloader_gfx4(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte versio
 		size=READ_INT16LE(gfxbuf,picstart+0x2a);
 		j=0;
 		treeidx=0;
-		mask=0;
+		mask=0;byte=0;
 		i=0;	
 		rlestate=0;
 		repnum=1;
@@ -780,6 +781,7 @@ int gfxloader_picture2xpm(tPicture* pPicture,char* xpm,int xpmspace)
 	int pixelidx;
 	int xpmidx;
 	int i;
+	char *hex="0123456789abcdef";
 
 	if (xpm==NULL) return -1;	// invalid pointer
 	
@@ -797,7 +799,7 @@ int gfxloader_picture2xpm(tPicture* pPicture,char* xpm,int xpmspace)
 		red=(pPicture->palette[i]>>8)&0xf;
 		green=(pPicture->palette[i]>>4)&0xf;
 		blue=(pPicture->palette[i]>>0)&0xf;
-		snprintf(&xpm[xpmidx],19,"\"%c c #%02X%02X%02X\",\n",i+'A',red*0x20,green*0x20,blue*0x20);
+		snprintf(&xpm[xpmidx],19,"\"%c c #%02X%02X%02X\",\n",hex[i],0x20*red,0x20*green,0x20*blue);
 		xpmidx+=15;
 	}
 	snprintf(&xpm[xpmidx],14,"/* pixels */\n");
@@ -808,7 +810,7 @@ int gfxloader_picture2xpm(tPicture* pPicture,char* xpm,int xpmspace)
 		xpm[xpmidx++]='"';
 		for (col=0;col<pPicture->width;col++)
 		{
-			xpm[xpmidx++]='A'+pPicture->pixels[pixelidx++];
+			xpm[xpmidx++]=hex[(int)pPicture->pixels[pixelidx++]];
 		}
 		xpm[xpmidx++]='"';
 		if (row!=pPicture->height-1) xpm[xpmidx++]=',';

@@ -1,6 +1,6 @@
 /*
 
-Copyright 2019, dettus@dettus.net
+Copyright 2020, dettus@dettus.net
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -129,11 +129,12 @@ int main(int argc,char** argv)
 	{
 		fprintf(stderr,"*** dMagnetic %d.%d%d\n",VERSION_MAJOR,VERSION_MINOR,VERSION_REVISION);
 		fprintf(stderr,"*** Use at your own risk\n");
-		fprintf(stderr,"*** (C)opyright 2019 by dettus@dettus.net\n");
+		fprintf(stderr,"*** (C)opyright 2020 by dettus@dettus.net\n");
 		fprintf(stderr,"*****************************************\n");	
 		fprintf(stderr,"\n");
-#define	LOCNUM	12
-		const char *locations[LOCNUM]={"/etc/","/usr/local/share/","/usr/local/share/games/","/usr/local/share/dMagnetic/","/usr/local/games/","/usr/local/games/dMagnetic/","/usr/share/","/usr/share/games/","/usr/share/dMagnetic/","/usr/games/","/usr/games/dMagnetic/","./"};
+#define	LOCNUM	14
+		const char *locations[LOCNUM]={"/etc/","/usr/local/share/","/usr/local/share/games/","/usr/local/share/dMagnetic/","/usr/local/games/","/usr/local/games/dMagnetic/","/usr/share/","/usr/share/games/","/usr/share/dMagnetic/","/usr/games/","/usr/games/dMagnetic/","/usr/share/doc/dmagnetic/","/usr/pkg/share/doc/dMagnetic/",
+		"./"};	// this should always be the last one.
 
 		f_inifile=NULL;
 		if (f_inifile==NULL)
@@ -153,7 +154,6 @@ int main(int argc,char** argv)
 
 		if (f_inifile) 
 		{
-			fprintf(stderr,"Using %s\n",inifilename);		
 			fclose(f_inifile);
 		}
 	}	
@@ -187,7 +187,7 @@ int main(int argc,char** argv)
 	}
 	if (retrievefromcommandline(argc,argv,"-bsd",NULL,0))
 	{
-		printf("Copyright 2019, dettus@dettus.net\n");
+		printf("Copyright 2020, dettus@dettus.net\n");
 		printf("\n");
 		printf("Redistribution and use in source and binary forms, with or without modification,\n");
 		printf("are permitted provided that the following conditions are met:\n");
@@ -250,10 +250,12 @@ int main(int argc,char** argv)
 		printf("-vmode MODE        where mode is one of\n  [");
 			printf("none ");
 			printf("monochrome ");
+			printf("monochrome_inv ");
 			printf("low_ansi ");
-			printf("high_ansi ");
+			printf("low_ansi2 ");
+			printf("high_ansi\n   ");
 			printf("high_ansi2 ");
-			printf("sixel ");
+			printf("sixel");
 			printf("]");
 		printf("\n");
 		printf("-vlog LOGFILE      to write a log of the commands used\n");
@@ -311,7 +313,9 @@ int main(int argc,char** argv)
 		printf(";align=right\n");
 		printf(";mode=none\n");
 		printf(";mode=monochrome\n");
+		printf(";mode=monochrome_inv\n");
 		printf(";mode=low_ansi\n");
+		printf(";mode=low_ansi2\n");
 		printf("mode=high_ansi\n");
 		printf(";mode=high_ansi2\n");
 		printf("low_ansi_characters=\\\\/|=\n");
@@ -322,6 +326,7 @@ int main(int argc,char** argv)
 	if (retrievefromcommandline(argc,argv,"-ini",inifilename,sizeof(inifilename))) 
 	{
 	}
+	fprintf(stderr,"Using .ini file: %s\n",inifilename);		
 	f_inifile=fopen(inifilename,"rb");
 	sharedmemsize=98304;
 	pSharedMem=malloc(sharedmemsize);
