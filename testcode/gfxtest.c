@@ -28,7 +28,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #include <string.h>
 #include "picture.h"
-#include "gfxloader.h"
+#include "gfx1loader.h"
 
 #define	MAXGFXSIZE	(1<<22)
 
@@ -61,7 +61,7 @@ int main(int argc,char** argv)
 	gfxsize=fread(gfxloader,sizeof(char),MAXGFXSIZE,f);		
 	fclose(f);
 
-	gfxloader_unpackpic(gfxloader,gfxsize,0,picnum,&picture);
+	gfxloader_unpackpic(gfxloader,gfxsize,0,picnum,NULL,&picture);
 	xpm=malloc(MAXXPM);
 	gfxloader_picture2xpm(&picture,xpm,MAXXPM);
 #if 0

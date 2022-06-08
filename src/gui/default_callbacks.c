@@ -52,6 +52,7 @@ typedef	struct _tContext
 
 	int	capital;	// =1 if the next character should be a capital letter.
 	int	lastchar;	
+	int	jinxterslide;	// THIS workaround makes the sliding puzzle in Jinxter solvable
 	int headlineflagged;
 	char	low_ansi_characters[128];	// characters that are allowed for low ansi rendering
 	char	monochrome_characters[128];	// characters that are allowed for monochrome rendering
@@ -274,7 +275,7 @@ int default_cbOutputChar(void* context,char c,unsigned char controlD2,unsigned c
 		}
 		newline=0;
 		if (
-				(pContext->lastchar=='.' || pContext->lastchar=='!' || pContext->lastchar==':' || pContext->lastchar=='?'|| pContext->lastchar==',' || pContext->lastchar==';') 	// a sentence as ended
+				(pContext->lastchar=='.' || pContext->lastchar=='!' || /*pContext->lastchar==':' ||*/ pContext->lastchar=='?'|| pContext->lastchar==',' || pContext->lastchar==';') 	// a sentence as ended
 				&&  ((c2>='A' && c2<='Z') ||(c2>='a' && c2<='z') ||(c2>='0' && c2<='9'))) 	// and a new one is beginning.
 		{
 			if (flag_headline) 
@@ -291,11 +292,14 @@ int default_cbOutputChar(void* context,char c,unsigned char controlD2,unsigned c
 			}
 			pContext->lastchar=' ';
 		}
-		if (pContext->textidx>0 && pContext->lastchar==' ' && (c2==',' || c2==':' || c2==';' || c2=='.' || c2=='!'))	// there have been some glitches with extra spaces, right before a komma. which , as you can see , looks weird.
+		if (pContext->textidx>0 && pContext->lastchar==' ' && (c2==',' || c2==';' || c2=='.' || c2=='!'))	// there have been some glitches with extra spaces, right before a komma. which , as you can see , looks weird.
 		{
 			pContext->textidx--;	
 		}
-		if (pContext->lastchar!=' ' || c2!=' ')	// combine multiple spaces into a single one.
+		if (	//allow multiple spaces in certain scenarios
+			flag_headline ||
+			pContext->jinxterslide ||
+			pContext->lastchar!=' ' || c2!=' ')	// combine multiple spaces into a single one.
 		{	
 			if (c2==0x0a || (c2>=32 && c2<127 && c2!='@')) 
 			{
@@ -304,6 +308,8 @@ int default_cbOutputChar(void* context,char c,unsigned char controlD2,unsigned c
 					if (pContext->headlineidx<MAXHEADLINEBUFFER-1)
 					pContext->headlineoutput[pContext->headlineidx++]=c2&0x7f;
 				} else if (pContext->textidx<MAXTEXTBUFFER-1) {
+					if (c2==':' || c2=='-' || (c2>='0'  && c2<='9')) pContext->jinxterslide=1;		// a workaround regarding the sliding puzzle in jinxter.
+					else if (c2!=' ') pContext->jinxterslide=0;				// sometimes multiple spaces are bad, but in this case it is not.
 					if (c2==' ') pContext->textlastspace=pContext->textidx;
 					pContext->textoutput[pContext->textidx++]=c2;
 

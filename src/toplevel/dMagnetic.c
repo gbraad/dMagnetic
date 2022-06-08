@@ -354,7 +354,7 @@ int main(int argc,char** argv)
 		printf("mode=high_ansi\n");
 		printf(";mode=high_ansi2\n");
 		printf("low_ansi_characters=\\\\/|=\n");
-		printf("monochrome_characters= .:-=+*x#@$X\n");
+		printf("monochrome_characters= .-=+*x#@$X\n");
 		printf("--------------------------------------------------------------------------------\n");
 		return 1;
 	}

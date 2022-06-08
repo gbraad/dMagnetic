@@ -93,7 +93,7 @@ int main(int argc,char** argv)
 	
 
 		
-	retval=vm68k_init(hVM68k,sharedMem,65536);
+	retval=vm68k_init(hVM68k,sharedMem,65536,0);
 	retval=lineA_init(hLineA,sharedMem,65536,magloader,magsize,gfxloader,gfxsize);
 	retval=default_open(hGUI,NULL,argc,argv);
 

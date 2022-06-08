@@ -4,7 +4,7 @@
 *****************************************
 
 
-Welcome, brave adventurer. This is Version 0.16. 
+Welcome, brave adventurer. This is Version 0.20.
 If you are interested in playing "The Pawn", just follow these simple steps.
 
 STEP 1: BUILD
@@ -12,16 +12,27 @@ just run
 
 % make all
 
-STEP 2: GET THE BINARIES
+
+STEP 2: CHECK BASE FUNCTIONALITY
+run
+
+% ./dMagnetic -mag testcode/minitest.mag 
+
+you should see a colourful X and the request to press enter.
+
+
+STEP 3: GET THE BINARIES
 Get the files pawn.mag and pawn.gfx. For example from this excellent website 
 https://msmemorial.if-legends.org/games.htm/pawn.php
 Alternatively, if you have the MS-DOS version of the games, copy them onto
 your harddrive. 
 
-STEP 3: CONFIGURE
+
+STEP 4: CONFIGURE
 edit dMagnetic.ini, especially the lines ????mag= and ???gfx=, or ???msdosdir=.
 
-STEP 4: RUN
+
+STEP 5: RUN
 run one of
 
 ./dMagnetic -ini dMagnetic.ini pawn
@@ -105,4 +116,5 @@ Afterwards, run
 and open a new xterm window. In this, you can play dMagnetic with proper colors.
   
 -------------------------------------------------------------------------------
+
 

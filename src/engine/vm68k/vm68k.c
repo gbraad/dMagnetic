@@ -155,7 +155,6 @@ int vm68k_singlestep(void *hVM68k,unsigned short opcode)
 	retval=VM68K_NOK_UNKNOWN_INSTRUCTION;
 
 	instruction=vm68k_decode(opcode);
-
 	// decode the opcode
 	reg1=(opcode>>9)&0x7;
 	addrmode=(opcode>>3)&0x7;
@@ -919,6 +918,8 @@ int vm68k_getNextOpcode(void* hVM68k,unsigned short* opcode)
 #ifdef	DEBUG_PRINT
 	{
 		int i;
+		char tmp[16];
+		tVM68k_instruction inst;
 		printf("\n\n\npcr:%06x ",pVM68k->pcr);
 		printf("INST:%04X ",*opcode);
 		printf("CVZN:%d%d%d%d ", (pVM68k->sr>>0)&1,(pVM68k->sr>>1)&1,(pVM68k->sr>>2)&1,(pVM68k->sr>>3)&1);
@@ -934,6 +935,9 @@ int vm68k_getNextOpcode(void* hVM68k,unsigned short* opcode)
 			printf("MEMSUM:%llX\n",sum);
 		}
 		printf("\n");
+	//	inst=vm68k_decode(*opcode);
+	//	vm68k_get_instructionname(inst,tmp);
+	//	printf(" --> %s\n",tmp);
 		fflush(stdout);
 	}
 

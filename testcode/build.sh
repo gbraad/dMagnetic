@@ -30,19 +30,20 @@ export CFLAGS_EXTRA=""
 export PROJ_HOME="../"
 export INCFLAGS="-I"$PROJ_HOME"src/gui/ -I"$PROJ_HOME"src/toplevel -I"$PROJ_HOME"src/engine/vm68k -I"$PROJ_HOME"src/engine/linea -I"$PROJ_HOME"src/engine/include"
 export OBJDIR=$PROJ_HOME"/obj"
-export LDFLAGS="-L"$OBJDIR
+export LDFLAGS="-L"$OBJDIR" -L."
 (
  cd ../
  sh build.sh
+	ar rs testcode/libdmagnetic.a src/loader/maggfxloader.o src/engine/linea/gfx1loader.o src/engine/linea/gfx2loader.o src/engine/linea/linea.o src/engine/vm68k/vm68k.o src/engine/vm68k/vm68k_decode.o src/engine/vm68k/vm68k_loadstore.o src/gui/default_callbacks.o src/gui/default_render.o src/toplevel/configuration.o src/toplevel/dMagnetic.o
 )
 mkdir -p $OBJDIR
 
 gcc -g -c -o instmatcher.o instmatcher.c $INCFLAGS
-gcc -g -o instmatcher.app instmatcher.o $OBJDIR/vm68k_decode.o $LDFLAGS -l_vm68k
+gcc -g -o instmatcher.app instmatcher.o $LDFLAGS -ldmagnetic
 gcc -g -c -o magtest.o magtest.c $INCFLAGS
-gcc -g -o magtest.app magtest.o $LDFLAGS -l_vm68k -l_linea -l_gui -l_configuration
+gcc -g -o magtest.app magtest.o $LDFLAGS -ldmagnetic
 gcc -g -c -o gfxtest.o gfxtest.c $INCFLAGS
-gcc -g -o gfxtest.app gfxtest.o $LDFLAGS -l_vm68k -l_linea -l_gui -l_configuration
+gcc -g -o gfxtest.app gfxtest.o $LDFLAGS -ldmagnetic
 
 md5sum *.app
 
