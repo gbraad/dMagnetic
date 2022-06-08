@@ -1,6 +1,6 @@
 /*
 
-Copyright 2020, dettus@dettus.net
+Copyright 2021, dettus@dettus.net
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -786,57 +786,57 @@ int gfxloader_gfx4(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte versio
 
 
 // the Commodore C64 pictures
+// The c64 pictures consist of two parts: the bitmap and the colour map. essentially, each 8x8 block can be rendered with 4 colours. 
+// 2 of them are fixed, the others are determined by the colourmap.
 int gfxloader_gfx5(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPicture* pPicture)
 {
-	unsigned char tmpbuf[6080+760+760];	// maximum size for a picture. plus room for the threebuf
+#define	C64_PICWIDTH			160
+#define	C64_PICHEIGHT			152
+#define	C64_PIXELPERBYTE		(8/2)
+#define	C64_BYTES_BITMAP		(C64_PICWIDTH*C64_PICHEIGHT/C64_PIXELPERBYTE)
+#define	C64_BYTES_BITMAP_PAWN		((C64_PICWIDTH*C64_PICHEIGHT/C64_PIXELPERBYTE)+64)	// THE Pawn had a little bit padding
+#define	C64_BYTES_COLOURMAP_V0		380		// 
+#define	C64_BYTES_COLOURMAP_V1		(2*C64_BYTES_COLOURMAP_V0)
+#define	C64_BYTES_COLOURMAP_HIGH	760
+#define	C64_MAXBYTES_PICTURE_V0		(C64_BYTES_BITMAP+C64_BYTES_COLOURMAP_V0+C64_BYTES_COLOURMAP_HIGH)
+#define	C64_MAXBYTES_PICTURE_V1		(C64_BYTES_BITMAP+C64_BYTES_COLOURMAP_V1+C64_BYTES_COLOURMAP_HIGH)
+#define	C64_MAXBYTES_PICTURE		C64_MAXBYTES_PICTURE_V1
+	unsigned char tmpbuf[C64_MAXBYTES_PICTURE];	// maximum size for a picture. plus room for the threebuf
 	unsigned char colour[4]={0};
 	int format;
 	int i;
 	int offs;
 
-
-	unsigned char rgbvalues[16][3]={
-		{  0,  0,  0},
-		{255,255,255},
-		{129, 51, 56},
-		{117,206,200},
-
-		{142, 60,151},
-		{ 86,172,77},
-		{ 46, 44,155},
-		{237,241,113},
-
-		{142, 80, 41},
-		{ 85, 56,  0},
-		{196,108,113},
-		{ 74, 74, 74},
-
-		{123,123,123},
-		{169,255,159},
-		{112,109,235},
-		{178,178,178}
-	};
-
-
-	offs=READ_INT32BE(gfxbuf,4+4*picnum);
-	pPicture->width=160*2;	// make it twice as wide as it actually is.
-	pPicture->height=152;
-	pPicture->pictureType=PICTURE_C64;	// only gfx3 offers halftone pictures
-	format=0;
+	unsigned int rgbvalues[16]={
+		0x00000000,
+		0x3fffffff,
+		0x205330e0,
+		0x1d5ceb22,
+		0x2393c25d,
+		0x159ac934,
+		0x0b82c26d,
+		0x3b6f19c5,
+		0x239500a4,
+		0x15538000,
+		0x3126c5c5,
+		0x1284a128,
+		0x1ed7b5ed,
+		0x2a5ffe7d,
+		0x1c16d7ae,
+		0x2cab2aca};
 
 	for (i=0;i<16;i++)
 	{
-		unsigned int red,green,blue;
-		red=rgbvalues[i][0];
-		green=rgbvalues[i][1];
-		blue=rgbvalues[i][2];
-
-		red*=PICTURE_MAX_RGB_VALUE;green*=PICTURE_MAX_RGB_VALUE;blue*=PICTURE_MAX_RGB_VALUE;
-		red/=255;green/=255;blue/=255;
-
-		pPicture->palette[i]=(red<<(2*PICTURE_BITS_PER_RGB_CHANNEL))|(green<<(1*PICTURE_BITS_PER_RGB_CHANNEL))|blue;
+		pPicture->palette[i]=rgbvalues[i];
 	}
 
+
+
+	offs=READ_INT32BE(gfxbuf,4+4*picnum);
+	pPicture->width=C64_PICWIDTH*2;	// make it twice as wide as it actually is.
+	pPicture->height=C64_PICHEIGHT;
+	pPicture->pictureType=PICTURE_C64;	// only gfx3 offers halftone pictures
+	format=0;
 
 	///////////// dehuff /////////////
 	{
@@ -855,11 +855,11 @@ int gfxloader_gfx5(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPic
 		unsigned char rlechar;
 
 		treeidx=0;
-		expected=6080;
+		expected=C64_BYTES_BITMAP;
 		outcnt=-1;
 		bitcnt=0;
-		byteidx=127;
 		ptr=&gfxbuf[offs];
+		byteidx=1+(ptr[0]+1)*2;	// the first byte is the size of the huffman tree. After the huffman tree, the bit stream starts.
 		threecnt=0;
 		rlechar=0;
 
@@ -900,19 +900,19 @@ int gfxloader_gfx5(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPic
 							colour[0]=threebuf[0]&0xf;	// for when the bitmask is 00
 							colour[3]=threebuf[1]&0xf;	// for when the bitmask is 11
 							rlenum=threebuf[2];
-							expected=6144+760;
+							expected=C64_BYTES_BITMAP_PAWN+C64_BYTES_COLOURMAP_HIGH;
 						} else {
 							format=threebuf[0];
 							if (threebuf[0]==0x00)
 							{
-								expected=6080+380+760;	// after the bitmask comes the colourmap
+								expected=C64_MAXBYTES_PICTURE_V0;	// after the bitmask comes the colourmap
 								rlenum=0;
 								rlecnt=0;
 								rlechar=tmpbuf[outcnt++]=threebuf[2];
 							} else {
 								colour[0]=threebuf[1]&0xf;	// for when the bitmask is 00
 								colour[3]=threebuf[1]&0xf;	// for when the bitmask is 11
-								expected=6080+760+760;	// after the bitmask comes the colourmap
+								expected=C64_MAXBYTES_PICTURE_V1;	// after the bitmask comes the colourmap
 								rlecnt=0;
 								rlenum=threebuf[2];
 							}
@@ -951,7 +951,12 @@ int gfxloader_gfx5(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPic
 	}
 
 	///////////// render the picture ///////////////
-
+	// the bitmap consists of 4 pixels per byte.
+	// the pixels are ordered as rows, so the 2 bytes A=aabbccdd B=eeffgghh are being rendered as
+	// aaee
+	// bbff
+	// ccgg
+	// ddhh
 	{
 		int colidx;
 		int maskidx;
@@ -966,21 +971,21 @@ int gfxloader_gfx5(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPic
 			
 			if (version==0)
 			{
-				colour[1]=(tmpbuf[6144+colidx]>>4)&0xf;
-				colour[2]=(tmpbuf[6144+colidx]>>0)&0xf;
+				colour[1]=(tmpbuf[C64_BYTES_BITMAP_PAWN+colidx]>>4)&0xf;
+				colour[2]=(tmpbuf[C64_BYTES_BITMAP_PAWN+colidx]>>0)&0xf;
 			} else if (format==0x00) {
-				colour[1]=(tmpbuf[6080+380+colidx]>>4)&0xf;
-				colour[2]=(tmpbuf[6080+380+colidx]>>0)&0xf;
+				colour[1]=(tmpbuf[C64_BYTES_BITMAP+C64_BYTES_COLOURMAP_V0+colidx]>>4)&0xf;
+				colour[2]=(tmpbuf[C64_BYTES_BITMAP+C64_BYTES_COLOURMAP_V0+colidx]>>0)&0xf;
 				if ((colidx%2)==0)
 				{
-					colour[3]=(tmpbuf[6080+colidx/2]>>4)&0xf;
+					colour[3]=(tmpbuf[C64_BYTES_BITMAP+colidx/2]>>4)&0xf;
 				} else {
-					colour[3]=(tmpbuf[6080+colidx/2]>>0)&0xf;
+					colour[3]=(tmpbuf[C64_BYTES_BITMAP+colidx/2]>>0)&0xf;
 				}
 			} else {
-				colour[1]=(tmpbuf[6080+760+colidx]>>4)&0xf;
-				colour[2]=(tmpbuf[6080+760+colidx]>>0)&0xf;
-				colour[3]=(tmpbuf[6080+colidx]&0xf);
+				colour[1]=(tmpbuf[C64_BYTES_BITMAP+C64_BYTES_COLOURMAP_V1+colidx]>>4)&0xf;
+				colour[2]=(tmpbuf[C64_BYTES_BITMAP+C64_BYTES_COLOURMAP_V1+colidx]>>0)&0xf;
+				colour[3]=(tmpbuf[C64_BYTES_BITMAP+colidx]&0xf);
 			}
 			for (i=0;i<8;i++)
 			{
@@ -1000,7 +1005,7 @@ int gfxloader_gfx5(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPic
 				}
 			}
 			x+=4;
-			if (x==160) 
+			if (x==C64_PICWIDTH) 
 			{
 				x=0;
 				y+=8;
@@ -1013,12 +1018,20 @@ int gfxloader_gfx5(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPic
 int gfxloader_gfx6(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPicture* pPicture)
 {
 	unsigned char codebook[16]={0x00,0x40,0x04,0x44,0x10,0x50,0x14,0x54,0x01,0x41,0x05,0x45,0x11,0x51,0x15,0x55};
+
 	unsigned int rgbvalues[27]={
-                0x000000,0x000080,0x0000ff,0x800000,0x800080,0x8000ff,
-                0xff0000,0xff0080,0xff00ff,0x008000,0x008080,0x0080ff,
-                0x808000,0x808080,0x8080ff,0xff8000,0xff8080,0xff80ff,
-                0x00ff00,0x00ff80,0x00ffff,0x80ff00,0x80ff80,0x80ffff,
-                0xffff00,0xffff80,0xffffff};
+		0x00000000,0x00000201,0x000003ff,
+		0x20100000,0x20100201,0x201003ff,
+		0x3ff00000,0x3ff00201,0x3ff003ff,
+
+		0x00080400,0x00080601,0x000807ff,
+		0x20180400,0x20180601,0x201807ff,
+		0x3ff80400,0x3ff80601,0x3ff807ff,
+
+		0x000ffc00,0x000ffe01,0x000fffff,
+		0x201ffc00,0x201ffe01,0x201fffff,
+		0x3ffffc00,0x3ffffe01,0x3fffffff
+	};
 
 	int i;
 	int paletteidx;
@@ -1129,20 +1142,6 @@ int gfxloader_gfx6(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPic
 		pPicture->pixels[2*i+1]=pPicture->pixels[i];
 	}
 	pPicture->width*=2;
-	// final touch: convert the RGB palette to the correct bit width
-	for (i=0;i<16;i++)
-	{
-		unsigned int red,green,blue;
-		red	=(pPicture->palette[i]>>16)&0xff;
-		green	=(pPicture->palette[i]>> 8)&0xff;
-		blue	=(pPicture->palette[i]>> 0)&0xff;
-
-		red*=PICTURE_MAX_RGB_VALUE;green*=PICTURE_MAX_RGB_VALUE;blue*=PICTURE_MAX_RGB_VALUE;
-		red/=255;green/=255;blue/=255;
-
-		pPicture->palette[i]=(red<<(2*PICTURE_BITS_PER_RGB_CHANNEL))|(green<<(1*PICTURE_BITS_PER_RGB_CHANNEL))|blue;
-
-	}
 	return retval;
 }
 
@@ -1160,11 +1159,11 @@ int gfxloader_gfx7(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPic
 	int rgbcnt;
 	int rlenum;
 	int rlecnt;
+	unsigned char lc;
 	unsigned char rlebuf[256];
 	unsigned char threebuf[3];
 	int threecnt;
 	int pixcnt;
-	unsigned char lc;
 	int rlerep;
 	int i;
 	int blackcnt;
@@ -1189,6 +1188,7 @@ int gfxloader_gfx7(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPic
 	pPicture->height=152;
 
 	blackcnt=0;
+	lc=0;
 	while (idx<gfxsize && pixcnt<pPicture->width*pPicture->height && state!=3)
 	{
 		unsigned char branchl,branchr,branch;
@@ -1221,78 +1221,58 @@ int gfxloader_gfx7(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPic
 					switch (state)
 					{
 						case 0:	// collect rgb values
-#if 1
 							{
 								// the way atari colors work is by packing a basecolor and the brightness within a byte.
 								// the upper 4 bits are the color.
 								// the lower 4 bits are the brightness
 								// what I am doing is to interpolate between the darkest and the brightest rgb values I found.
 
-								// TODO: Translate to 10 bits per colour channel
-								unsigned int ataripalette[16][2]=
-								{
-									{0x000000,0xf9f9f9},
-									{0x412000,0xffffaa},
-									{0x451904,0xffe6ab},
-									{0x5d1f0c,0xffdad0},
-
-									{0x4a1700,0xffcade},
-									{0x490036,0xffcade},
-									{0x48036c,0xe6b6ff},
-									{0x051e81,0xcdd3ff},
-
-									{0x0b0779,0xd3d1ff},
-									{0x1d295a,0xc0ebff},
-									{0x004b59,0xc7f6ff},
-									{0x004800,0xcdffcd},
-
-									{0x164000,0xbcff9a},
-									{0x2c3500,0xf2ffab},
-									{0x463a09,0xfdf3be},
-									{0x401a02,0xffda96}
-								};
-
 								unsigned int red_dark,green_dark,blue_dark;
 								unsigned int red_bright,green_bright,blue_bright;
 								int r,g,b;
 								int basecolor;
 								int brightness;
-
+								unsigned int ataripalette[16][2]=	// RGB values (10 bit)
+								{
+									{0x00000000,0x3e6f9be6},
+									{0x10420000,0x3ffffeaa},
+									{0x11419010,0x3ffe6aae},
+									{0x1751f030,0x3ffdab42},
+									{0x12817000,0x3ffcab7a},
+									{0x124000d8,0x3ffcab7a},
+									{0x120031b1,0x39ab6bff},
+									{0x0141e205,0x336d3bff},
+									{0x02c071e5,0x34ed1bff},
+									{0x07429169,0x302ebbff},
+									{0x0004b165,0x31ef6bff},
+									{0x00048000,0x336fff36},
+									{0x05840000,0x2f2ffe69},
+									{0x0b035000,0x3caffeae},
+									{0x1183a024,0x3f6f3afa},
+									{0x1001a008,0x3ffdaa59}
+								};
 								basecolor=(c>>4)&0xf;
 								brightness=(c>>0)&0xf;
 
-								red_dark	=(ataripalette[basecolor][0]>>16)&0xff;	
-								green_dark	=(ataripalette[basecolor][0]>> 8)&0xff;	
-								blue_dark	=(ataripalette[basecolor][0]>> 0)&0xff;	
+								red_dark	=(ataripalette[basecolor][0]>>(2*PICTURE_BITS_PER_RGB_CHANNEL))&0x3ff;	
+								green_dark	=(ataripalette[basecolor][0]>>(1*PICTURE_BITS_PER_RGB_CHANNEL))&0x3ff;	
+								blue_dark	=(ataripalette[basecolor][0]>>(0*PICTURE_BITS_PER_RGB_CHANNEL))&0x3ff;	
 
-								red_bright	=(ataripalette[basecolor][1]>>16)&0xff;	
-								green_bright	=(ataripalette[basecolor][1]>> 8)&0xff;	
-								blue_bright	=(ataripalette[basecolor][1]>> 0)&0xff;	
-
-
+								red_bright	=(ataripalette[basecolor][1]>>(2*PICTURE_BITS_PER_RGB_CHANNEL))&0x3ff;	
+								green_bright	=(ataripalette[basecolor][1]>>(1*PICTURE_BITS_PER_RGB_CHANNEL))&0x3ff;	
+								blue_bright	=(ataripalette[basecolor][1]>>(0*PICTURE_BITS_PER_RGB_CHANNEL))&0x3ff;	
 
 								r=red_dark	+((red_bright	-red_dark)*brightness)/16;
 								g=green_dark	+((green_bright	-green_dark)*brightness)/16;
 								b=blue_dark	+((blue_bright	-blue_dark)*brightness)/16;
 
-								r&=0xff;g&=0xff;b&=0xff;
-								r*=PICTURE_MAX_RGB_VALUE;g*=PICTURE_MAX_RGB_VALUE;b*=PICTURE_MAX_RGB_VALUE;
-								r/=255;g/=255;b/=255;
+
+
 
 								rgb=(r<<(2*PICTURE_BITS_PER_RGB_CHANNEL))|(g<<(1*PICTURE_BITS_PER_RGB_CHANNEL))|b;
 
 
 							}
-#else
-							switch(rgbcnt)
-							{
-								case 0:rgb=0x00000300;break;
-								case 1:rgb=0x00300000;break;
-								case 2:rgb=0x00300300;break;
-								case 3:rgb=0x00ffffff;break;
-								default:rgb=0x0;break;
-							}	
-#endif
 							pPicture->palette[rgbcnt++]=rgb;
 							if (c==0) blackcnt++;
 							if (rgbcnt==16) 
@@ -1364,13 +1344,19 @@ int gfxloader_unpackpic(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte v
 	if (gfxbuf==NULL || pPicture==NULL) return -1;
 	if (gfxbuf[0]=='M' && gfxbuf[1]=='a' && gfxbuf[2]=='P')
 	{
-		if (gfxbuf[3]=='i') retval=gfxloader_gfx1(gfxbuf,gfxsize,version,picnum,pPicture);		// standard .mag/gfx format
-		if (gfxbuf[3]=='2') retval=gfxloader_gfx2(gfxbuf,gfxsize,version,picname,pPicture);		// taken from the magnetic windows .gfx files
-		if (gfxbuf[3]=='3') retval=gfxloader_gfx3(gfxbuf,gfxsize,version,picnum,pPicture);		// ms dos
-		if (gfxbuf[3]=='4') retval=gfxloader_gfx4(gfxbuf,gfxsize,version,picname,pPicture,egamode);	// read from magnetic windows resource files
-		if (gfxbuf[3]=='5') retval=gfxloader_gfx5(gfxbuf,gfxsize,version,picnum,pPicture);		// C64
-		if (gfxbuf[3]=='6') retval=gfxloader_gfx6(gfxbuf,gfxsize,version,picnum,pPicture);		// Amstrad CPC
-		if (gfxbuf[3]=='7') retval=gfxloader_gfx7(gfxbuf,gfxsize,version,picnum,pPicture);		// AtariXL
+		switch (gfxbuf[3])
+		{
+
+			case 'i':	retval=gfxloader_gfx1(gfxbuf,gfxsize,version,picnum,pPicture);break;		// standard .mag/gfx format
+			case '2':	retval=gfxloader_gfx2(gfxbuf,gfxsize,version,picname,pPicture);break;		// taken from the magnetic windows .gfx files
+			case '3':	retval=gfxloader_gfx3(gfxbuf,gfxsize,version,picnum,pPicture);break;		// ms dos
+			case '4':	retval=gfxloader_gfx4(gfxbuf,gfxsize,version,picname,pPicture,egamode);break;	// read from magnetic windows resource files
+			case '5':	retval=gfxloader_gfx5(gfxbuf,gfxsize,version,picnum,pPicture);break;		// C64
+			case '6':	retval=gfxloader_gfx6(gfxbuf,gfxsize,version,picnum,pPicture);break;		// Amstrad CPC
+			case '7':	retval=gfxloader_gfx7(gfxbuf,gfxsize,version,picnum,pPicture);break;		// AtariXL
+			default:
+					break;
+		}
 	}
 	return retval;
 }

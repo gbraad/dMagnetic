@@ -1,6 +1,6 @@
 /*
 
-   Copyright 2020, dettus@dettus.net
+   Copyright 2021, dettus@dettus.net
 
    Redistribution and use in source and binary forms, with or without modification,
    are permitted provided that the following conditions are met:
@@ -321,10 +321,11 @@ int loader_mw_mkmag(char* two_rsc,int* sizes,char* magbuf,int* bytes)
 		if (type==4)
 		{
 			if (strncmp(name,"code",4)==0) wonderland=1;
-			if (strncmp(name,"code",4)==0  || strncmp(name,"ccode",5)==0  ||strncmp(name,"fcode",5)==0  ||strncmp(name,"gcode",4)==0)  {codeoffs=offset;codesize=length;}
-			if (strncmp(name,"text",4)==0  || strncmp(name,"ctext",5)==0  ||strncmp(name,"ftext",5)==0  ||strncmp(name,"gtext",5)==0)  {textoffs=offset;text1size=length;}
-			if (strncmp(name,"index",5)==0 || strncmp(name,"cindex",6)==0 ||strncmp(name,"findex",6)==0 ||strncmp(name,"gindex",6)==0) {dictoffs=offset;dictsize=length;}
-			if (strncmp(name,"wtab",4)==0  || strncmp(name,"cwtab",5)==0  ||strncmp(name,"fwtab",5)==0  ||strncmp(name,"gwtab",5)==0)  {wtaboffs=offset;wtabsize=length;}
+			// the interesting files are ?code, ?text, ?index and ?wtab. for the games other than wonderland, there is a prefix. 
+			if (strncmp(name,"code",4)==0  || strncmp(&name[1],"code",4)==0)  {codeoffs=offset;codesize=length;}
+			if (strncmp(name,"text",4)==0  || strncmp(&name[1],"text",4)==0)  {textoffs=offset;text1size=length;}
+			if (strncmp(name,"index",5)==0 || strncmp(&name[1],"index",5)==0) {dictoffs=offset;dictsize=length;}
+			if (strncmp(name,"wtab",4)==0  || strncmp(&name[1],"wtab",4)==0)  {wtaboffs=offset;wtabsize=length;}
 		}
 	}
 	if (codeoffs==-1 || textoffs==-1 || dictoffs==-1 || wtaboffs==-1) return 0;

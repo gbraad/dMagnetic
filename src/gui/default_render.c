@@ -1,6 +1,6 @@
 /*
 
-Copyright 2020, dettus@dettus.net
+Copyright 2021, dettus@dettus.net
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -416,106 +416,72 @@ int default_render_monochrome(char* greyscales,int inverted,tPicture* picture,in
 	int pixcnt;
 	int p;
 	int scalenum=strlen(greyscales);
-	accux=accuy=0;
-	mingrey=maxgrey=0;
+	int pass;
 	// first: try to find the brightest/darkest pixels
-	
-	y_up=0;
+	// second pass: the position of the character within the monochrome ramp should be proportional to the brightness of a "pixel".
+
 	cnt=0;
-	for (i=0;i<picture->height;i++)
-	{
-		accuy+=rows;
-		if (accuy>=picture->height || i==picture->height-1)
+	mingrey=maxgrey=0;
+	for (pass=0;pass<2;pass++)
+	{	
+		y_up=0;
+		accux=accuy=0;
+		for (i=0;i<picture->height;i++)
 		{
-			accuy-=picture->height;
-			y_down=i+1;
-			x_left=0;
-			for (j=0;j<picture->width;j++)
+			accuy+=rows;
+			if (accuy>=picture->height || i==picture->height-1)
 			{
-				accux+=cols;
-				if (accux>=picture->width || j==picture->width-1)
+				accuy-=picture->height;
+				y_down=i+1;
+				x_left=0;
+				for (j=0;j<picture->width;j++)
 				{
-					x_right=j+1;
-					accux-=picture->width;		
-					// at this point, a rectangle between y_up,y_down, x_left,x_right contains the pixels that need to be greyscaled.
-					grey=0;
-					pixcnt=0;
-					for (k=y_up;k<y_down;k++)
+					accux+=cols;
+					if (accux>=picture->width || j==picture->width-1)
 					{
-						for (l=x_left;l<x_right;l++)
+						x_right=j+1;
+						accux-=picture->width;		
+						// at this point, a rectangle between y_up,y_down, x_left,x_right contains the pixels that need to be greyscaled.
+						grey=0;
+						pixcnt=0;
+						for (k=y_up;k<y_down;k++)
 						{
-							p=picture->pixels[k*picture->width+l];
-// compensate for luminance (0.2126*R + 0.7152*G + 0.0722*B)
-							grey+=2126*(PICTURE_GET_RED(picture->palette[p]));
-							grey+=7152*(PICTURE_GET_GREEN(picture->palette[p]));
-							grey+= 722*(PICTURE_GET_BLUE(picture->palette[p]));
+							for (l=x_left;l<x_right;l++)
+							{
+								p=picture->pixels[k*picture->width+l];
+								// compensate for luminance (0.2126*R + 0.7152*G + 0.0722*B)
+								grey+=2126*(PICTURE_GET_RED(picture->palette[p]));
+								grey+=7152*(PICTURE_GET_GREEN(picture->palette[p]));
+								grey+= 722*(PICTURE_GET_BLUE(picture->palette[p]));
 
-							pixcnt++;
+								pixcnt++;
+							}
 						}
-					}
-					grey/=pixcnt;
-						
-					if (cnt==0 || grey>maxgrey) maxgrey=grey;
-					if (cnt==0 || grey<mingrey) mingrey=grey;
-					cnt++;
-					x_left=x_right;
-				}
-			}
-			y_up=y_down;
-		}
-	}
-	// mingrey is the lowest grey scale value.
-	// maxgrey is the highest one.
-
-
-	y_up=0;
-	accuy=0;
-	for (i=0;i<picture->height;i++)
-	{
-		accuy+=rows;
-		if (accuy>=picture->height || i==picture->height-1)
-		{
-			accuy-=picture->height;
-			y_down=i+1;
-			x_left=0;
-			for (j=0;j<picture->width;j++)
-			{
-				accux+=cols;
-				if (accux>=picture->width || j==picture->width-1)
-				{
-					x_right=j+1;
-					accux-=picture->width;
-					
-					// at this point, a rectangle between y_up,y_down, x_left,x_right contains the pixels that need to be greyscaled.
-					grey=0;
-					pixcnt=0;
-					for (k=y_up;k<y_down;k++)
-					{
-						for (l=x_left;l<x_right;l++)
+						grey/=pixcnt;
+						if (pass==0)
 						{
-							p=picture->pixels[k*picture->width+l];
-// compensate for luminance (0.2126*R + 0.7152*G + 0.0722*B)
-							grey+=2126*(PICTURE_GET_RED(picture->palette[p]));
-							grey+=7152*(PICTURE_GET_GREEN(picture->palette[p]));
-							grey+= 722*(PICTURE_GET_BLUE(picture->palette[p]));
-
-							pixcnt++;
+							// first pass: find the dimmest and the brightest "pixels"
+							if (cnt==0 || grey>maxgrey) maxgrey=grey;
+							if (cnt==0 || grey<mingrey) mingrey=grey;
+							cnt++;
+						} else {
+							// second pass: render the "pixel" with the appropriate character
+							grey-=mingrey;
+							grey*=(scalenum-1);
+							grey/=(maxgrey-mingrey);
+							if (inverted) grey=scalenum-1-grey;
+							printf("%c",greyscales[grey]);
 
 						}
+						x_left=x_right;
 					}
-					grey/=pixcnt;
-					grey-=mingrey;
-					grey*=(scalenum-1);
-					grey/=(maxgrey-mingrey);
-					if (inverted) grey=scalenum-1-grey;
-					printf("%c",greyscales[grey]);
-					x_left=x_right;
 				}
+				y_up=y_down;
+				if (pass!=0) printf("\n");
 			}
-			y_up=y_down;
-			printf("\n");
 		}
 	}
+
 	return 0;
 }
 

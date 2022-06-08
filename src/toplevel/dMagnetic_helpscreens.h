@@ -1,6 +1,6 @@
 /*
 
-Copyright 2020, dettus@dettus.net
+Copyright 2021, dettus@dettus.net
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -25,17 +25,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 */
-#ifndef	XGLK_CALLBACKS_H
-#define	XGLK_CALLBACKS_H
-int xglk_cbOutputChar(void* context,char c,unsigned char controlD2,unsigned char flag_headline);
-int xglk_cbOutputString(void* context,char* string,unsigned char controlD2,unsigned char flag_headline);
-int xglk_cbDrawPicture(void* context,tPicture* picture,int mode);
-int xglk_getsize(int *size);
-int xglk_open(void* hContext);
-int xglk_cbSaveGame(void* context,char* filename,void* ptr,int len);
-int xglk_cbLoadGame(void* context,char* filename,void* ptr,int len);
-int xglk_cbInputString(void* context,int* len,char* string);
+#include "version.h"
 
-
-
+#ifndef	DMAGNETIC_HELPSCREENS_H
+#define	DMAGNETIC_HELPSCREENS_H
+void dMagnetic_helpscreens_header();
+void dMagnetic_helpscreens_license();
+void dMagnetic_helpscreens_help(char* argv0);
+void dMagnetic_helpscreens_helpini();
+void dMagnetic_helpscreens_loaderfailed(char* argv0);
 #endif

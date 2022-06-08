@@ -1,6 +1,6 @@
 /*
 
-Copyright 2020, dettus@dettus.net
+Copyright 2021, dettus@dettus.net
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -34,40 +34,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "linea.h"
 #include "default_callbacks.h"
 #include "maggfxloader.h"
+#include "dMagnetic_helpscreens.h"
 #define	SHAREDMEMSIZE	98304	// 98304 bytes ought to be enough for everybody
 #define	MAXMAGSIZE	(1<<20)
 #define	MAXGFXSIZE	(1<<22)
 
 
-void dMagnetic_loaderfailed_message(char* argv0)
-{
-	fprintf(stderr,"Please run with %s [-ini dMagnetic.ini] GAME\n",argv0);
-	fprintf(stderr," where GAME is one of\n");
-	fprintf(stderr,"    pawn       To play \"The Pawn\"\n");
-	fprintf(stderr,"    guild      To play \"The Guild of Thieves\"\n");
-	fprintf(stderr,"    jinxter    To play \"Jinxter\"\n");
-	fprintf(stderr,"    corruption To play \"Corruption\"\n");
-	fprintf(stderr,"    fish       To play \"Fish!\"\n");
-	fprintf(stderr,"    myth       To play \"Myth\"\n");
-	fprintf(stderr,"    wonderland To play \"Wonderland\"\n");
-	fprintf(stderr,"\n");
-	fprintf(stderr,"or one of the following\n");
-	fprintf(stderr,"\n");
-	fprintf(stderr,"%s -mag MAGFILE.mag\n",argv0);
-	fprintf(stderr,"%s -msdosdir DIRECTORY/\n",argv0);
-	fprintf(stderr,"%s -tworsc DIRECTORY/TWO.RSC\n",argv0);
-	fprintf(stderr,"%s -d64 IMAGE1.d64,IMAGE2.d64\n",argv0);
-	fprintf(stderr,"%s -amstradcpc IMAGE1.DSK,IMAGE2.DSK\n",argv0);
-	fprintf(stderr,"%s -spectrum IMAGE.DSK\n",argv0);
-	fprintf(stderr,"%s -archimedes IMAGE.adf\n",argv0);
-	fprintf(stderr,"%s -atarixl IMAGE1.atr,IMAGE2.atr\n",argv0);
-	fprintf(stderr,"\n");
-	fprintf(stderr,"You can get the .mag and .gfx files from\n");
-	fprintf(stderr," https://msmemorial.if-legends.org/\n");
-	fprintf(stderr,"\n");
-	fprintf(stderr,"To get a more detailed help, please run\n");
-	fprintf(stderr," %s --help\n",argv0);
-}
 int dMagnetic_init(void** hVM68k,void** hLineA,void* pSharedMem,int memsize,char* magbuf,int magsize,char* gfxbuf,int gfxsize)
 {
 	int sizevm68k;
@@ -156,11 +128,7 @@ int main(int argc,char** argv)
 	// figure out the location of the inifile.
 	if (!(retrievefromcommandline(argc,argv,"--version",NULL,0)))
 	{
-		fprintf(stderr,"*** dMagnetic %d.%d%d\n",VERSION_MAJOR,VERSION_MINOR,VERSION_REVISION);
-		fprintf(stderr,"*** Use at your own risk\n");
-		fprintf(stderr,"*** (C)opyright 2020 by dettus@dettus.net\n");
-		fprintf(stderr,"*****************************************\n");	
-		fprintf(stderr,"\n");
+		dMagnetic_helpscreens_header();
 #define	LOCNUM	14
 		const char *locations[LOCNUM]={"/etc/","/usr/local/share/","/usr/local/share/games/","/usr/local/share/dMagnetic/","/usr/local/games/","/usr/local/games/dMagnetic/","/usr/share/","/usr/share/games/","/usr/share/dMagnetic/","/usr/games/","/usr/games/dMagnetic/","/usr/share/doc/dmagnetic/","/usr/pkg/share/doc/dMagnetic/",
 		"./"};	// this should always be the last one.
@@ -188,192 +156,34 @@ int main(int argc,char** argv)
 	}	
 	if (argc<2)
 	{
-		dMagnetic_loaderfailed_message(argv[0]);
-		return 0;		
+		dMagnetic_helpscreens_loaderfailed(argv[0]);
+		return 1;
 	}
 	if ((retrievefromcommandline(argc,argv,"--version",NULL,0))
 		|| (retrievefromcommandline(argc,argv,"-version",NULL,0))
 		|| (retrievefromcommandline(argc,argv,"-v",NULL,0)))
 	{
 		printf("%d.%d%d\n",VERSION_MAJOR,VERSION_MINOR,VERSION_REVISION);
-		return 1;
+		return 0;
 	}
 	if (retrievefromcommandline(argc,argv,"-bsd",NULL,0))
 	{
-		printf("Copyright 2020, dettus@dettus.net\n");
-		printf("\n");
-		printf("Redistribution and use in source and binary forms, with or without modification,\n");
-		printf("are permitted provided that the following conditions are met:\n");
-		printf("\n");
-		printf("1. Redistributions of source code must retain the above copyright notice, this \n");
-		printf("   list of conditions and the following disclaimer.\n");
-		printf("\n");
-		printf("2. Redistributions in binary form must reproduce the above copyright notice, \n");
-		printf("   this list of conditions and the following disclaimer in the documentation \n");
-		printf("   and/or other materials provided with the distribution.\n");
-		printf("\n");
-		printf("THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\" AND\n");
-		printf("ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED \n");
-		printf("WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE \n");
-		printf("DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE \n");
-		printf("FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL \n");
-		printf("DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR \n");
-		printf("SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER \n");
-		printf("CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, \n");
-		printf("OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE \n");
-		printf("OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n");
-		printf("\n");
-		return 1;
+		dMagnetic_helpscreens_license();
+		return 0;
 
 
 	}
 	if ((retrievefromcommandline(argc,argv,"--help",NULL,0))
 	||  (retrievefromcommandline(argc,argv,"-help",NULL,0)))
 	{
-		printf("To start a game, run\n");	
-		printf("%s [-ini dMagnetic.ini] GAME\n",argv[0]);
-		printf("where GAME is one of \n  [");
-		printf("pawn ");
-		printf("guild ");
-		printf("jinxter ");
-		printf("corruption ");
-		printf("fish ");
-		printf("myth ");
-		printf("wonderland]");
-		printf("\n");
-		printf("\n");
-		printf("PARAMETERS TO RUN THE GAME\n");
-		printf("-ini dMagnetic.ini       to provide an inifile\n");
-		printf("-mag MAGFILE.mag         to provide the game binary directly\n");
-		printf("-gfx GFXFILE.gfx         to provide the game graphics directly\n");
-		printf("-msdosdir DIR/           to provide the game binaries from MSDOS\n");
-		printf("-tworsc DIR/TWO.RSC      to use resource files from Wonderland\n");
-		printf("                         or The Magnetic Scrolls Collection Vol.1\n");
-		printf("-d64 m1.d64,m2.d64       or use the D64 images. (Separated by ,)\n");
-		printf("-amstradcpc 1.DSK,2.DSK  or use the DSK images. (Separated by ,)\n");
-		printf("-spectrum image.DSK      or use DSK images from the Spectrum+3\n");
-		printf("-archimedes image.adf    or use adf/adl images from the Archimedes\n");
-		printf("-atarixl 1.ATR,2.ATR     or use .atr images from the AtariXL\n");
-		printf("\n");
-		printf("OPTIONAL PARAMETERS\n");
-		printf("-rmode RANDOMMODE  where mode is one of\n  [");
-			printf("pseudo ");
-			printf("real");
-			printf("]");
-		printf("\n");
-		printf("-rseed RANDOMSEED  to set the random seed between 1 and %d\n",0x7fffffff);
-
-		printf("-vrows ROWS        to set the number of rows for the pictures\n");
-		printf("-vcols COLUMNS     to set the number of columns for the pictures\n");
-		printf("-vmode MODE        where mode is one of\n  [");
-			printf("none");
-			printf(" monochrome");
-			printf(" monochrome_inv");
-			printf(" low_ansi");
-			printf(" low_ansi2");
-			printf(" high_ansi\n  ");
-			printf(" high_ansi2");
-			printf(" sixel");
-			printf(" utf");
-			printf("]");
-		printf("\n");
-		printf("-vlog LOGFILE      to write a log of the commands used\n");
-		printf("-vecho             to reprint the commands (useful for | tee)\n");
-		printf("\n");
-	
-		printf(" OTHER PARAMETERS\n");
-		printf(" -bsd shows the license\n");
-		printf(" -ega prefers EGA images\n");
-		printf(" -help shows this help\n");
-		printf(" -helpini shows an example dMagnetic.ini file\n");
-		printf(" --version shows %d.%d%d\n",VERSION_MAJOR,VERSION_MINOR,VERSION_REVISION);
-		return 1;
+		dMagnetic_helpscreens_help(argv[0]);
+		return 0;
 	}
 	if ((retrievefromcommandline(argc,argv,"--helpini",NULL,0))
 	||  (retrievefromcommandline(argc,argv,"-helpini",NULL,0)))
 	{
-		printf(";Maybe you need to create a file called dMagnetic.ini\n");
-		printf(";Place it in your home directory, with the following content:\n");
-		printf(";\n");
-		printf(";-------------------------------------------------------------------------------\n");
-		printf(";you can download the files from https://msmemorial.if-legends.org/magnetic.php\n");
-		printf("[FILES]\n");
-		printf("pawnmag=/usr/local/share/games/magneticscrolls/pawn.mag\n");
-		printf("pawngfx=/usr/local/share/games/magneticscrolls/pawn.gfx\n");
-		printf(";pawnmsdos=/usr/local/share/games/magneticscrolls/msdosversions/PAWN\n");
-		printf(";pawnd64=/d64/PAWN1.d64,/d64/PAWN2.d64\n");
-		printf(";pawnamstradcpc=/dsk/PAWN1.DSK,/dsk/PAWN2.DSK\n");
-		printf(";pawnspectrum=/dsk/PAWNspectrum.DSK\n");
-		printf(";pawnarchimedes=/adf/PAWNarchimedes.adf\n");
-		printf(";pawnatarixl=/atr/PAWN1.ATR,/atr/PAWN2.ATR\n");
-		printf("guildmag=/usr/local/share/games/magneticscrolls/guild.mag\n");
-		printf("guildgfx=/usr/local/share/games/magneticscrolls/guild.gfx\n");
-		printf(";guildmsdos=/usr/local/share/games/magneticscrolls/msdosversions/GUILD\n");
-		printf(";guildtworsc=/usr/local/share/games/magneticscrolls/MSC/GTWO.RSC\n");
-		printf(";guild64=/d64/GUILD1.d64,/d64/GUILD2.d64\n");
-		printf(";guildamstradcpc=/dsk/GUILD1.DSK,/dsk/GUILD2.DSK\n");
-		printf(";guildspectrum=/dsk/GUILDspectrum.DSK\n");
-		printf(";guildarchimedes=/adf/GUILDarchimedes.adf\n");
-		printf(";guildatarixl=/atr/GUILD1.ATR,/atr/GUILD2.ATR\n");
-		printf("jinxtermag=/usr/local/share/games/magneticscrolls/jinxter.mag\n");
-		printf("jinxtergfx=/usr/local/share/games/magneticscrolls/jinxter.gfx\n");
-		printf(";jinxtermsdos=/usr/local/share/games/magneticscrolls/msdosversions/JINXTER\n");
-		printf(";jinxterd64=/d64/JINXTER1.d64,/d64/JINXTER2.d64\n");
-		printf(";jinxteramstradcpc=/dsk/JINXTER1.DSK,/dsk/JINXTER2.DSK\n");
-		printf(";jinxterspectrum=/dsk/JINXTERspectrum.DSK\n");
-		printf(";jinxterarchimedes=/adf/JINXTERarchimedes.adf\n");
-		printf(";jinxteratarixl=/atr/JINXTER1.ATR,/atr/JINXTER2.ATR\n");
-		printf("corruptionmag=/usr/local/share/games/magneticscrolls/ccorrupt.mag\n");
-		printf("corruptiongfx=/usr/local/share/games/magneticscrolls/ccorrupt.gfx\n");
-		printf(";corruptionmsdos=/usr/local/share/games/magneticscrolls/msdosversions/CORRUPT\n");
-		printf(";corruptiontworsc=/usr/local/share/games/magneticscrolls/MSC/CTWO.RSC\n");
-		printf(";corruptiond64=/d64/CORRUPT1.d64,/d64/CORRUPT2.d64\n");
-		printf(";corruptionamstradcpc=/dsk/CORRUPTION1.DSK,/dsk/CORRUPTION2.DSK\n");
-		printf(";corruptionspectrum=/dsk/CORRUPTIONspectrum.DSK\n");
-		printf(";corruptionarchimedes=/adf/CORRUPTIONarchimedes.adf\n");
-		printf("fishmag=/usr/local/share/games/magneticscrolls/fish.mag\n");
-		printf("fishgfx=/usr/local/share/games/magneticscrolls/fish.gfx\n");
-		printf(";fishmsdos=/usr/local/share/games/magneticscrolls/msdosversions/FISH\n");
-		printf(";fishtworsc=/usr/local/share/games/magneticscrolls/MSC/FTWO.RSC\n");
-		printf(";fishd64=/d64/FISH1.d64,/d64/FISH2.d64\n");
-		printf(";fishamstradcpc=/dsk/FISH1.DSK,/dsk/FISH2.DSK\n");
-		printf(";fishspectrum=/dsk/FISHspectrum.DSK\n");
-		printf(";fisharchimedes=/adf/FISHarchimedes.adf\n");
-		printf("mythmag=/usr/local/share/games/magneticscrolls/myth.mag\n");
-		printf("mythgfx=/usr/local/share/games/magneticscrolls/myth.gfx\n");
-		printf(";mythmsdos=/usr/local/share/games/magneticscrolls/msdosversions/MYTH\n");
-		printf(";mythd64=/usr/local/share/games/magneticscrolls/MYTH.d64\n");
-		printf(";mythamstradcpc=/dsk/MYTH1.DSK,/dsk/MYTH2.DSK\n");
-		printf(";mythspectrum=/dsk/MYTHspectrum.DSK\n");
-		printf(";mytharchimedes=/adf/MYTHarchimedes.adf\n");
-		printf("wonderlandmag=/usr/local/share/games/magneticscrolls/wonder.mag\n");
-		printf("wonderlandgfx=/usr/local/share/games/magneticscrolls/wonder.gfx\n");
-		printf(";wonderlandtworsc=/usr/local/share/games/magneticscrolls/WONDER/TWO.RSC\n");
-		printf("\n");
-		printf("[RANDOM]\n");
-		printf("mode=pseudo\n");
-		printf(";mode=real\n");
-		printf("seed=12345\n");
-		printf("\n");
-		printf("[DEFAULTGUI]\n");
-		printf("rows=40\n");
-		printf("columns=120\n");
-		printf(";align=left\n");
-		printf("align=block\n");
-		printf(";align=right\n");
-		printf(";mode=none\n");
-		printf(";mode=monochrome\n");
-		printf(";mode=monochrome_inv\n");
-		printf(";mode=low_ansi\n");
-		printf("mode=low_ansi2\n");
-		printf(";mode=high_ansi\n");
-		printf(";mode=high_ansi2\n");
-		printf(";mode=sixel\n");
-		printf("low_ansi_characters=\\\\/|=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\n");
-		printf("monochrome_characters= .-=+*x#@$X\n");
-		printf("sixel_resolution=800x600\n");
-		printf(";-------------------------------------------------------------------------------\n");
-		return 1;
+		dMagnetic_helpscreens_helpini();
+		return 0;
 	}
 	if (retrievefromcommandline(argc,argv,"-ini",inifilename,sizeof(inifilename))) 
 	{
@@ -384,25 +194,25 @@ int main(int argc,char** argv)
 	if (pSharedMem==NULL)
 	{
 		fprintf(stderr,"ERROR: unable to allocate shared memory\n");
-		return 0;
+		return 1;
 	}
 	retval=default_getsize(&sizeGUI);
 	if (retval)
 	{
 		fprintf(stderr,"ERROR. default_getsize returned %d\n",retval);
-		return 0;
+		return 1;
 	}
 	hGUI=malloc(sizeGUI);
 	if (hGUI==NULL)
 	{
 		fprintf(stderr,"ERROR: unable to locate memory for the GUI\n");
-		return 0;
+		return 1;
 	}
 	retval=default_open(hGUI,f_inifile,argc,argv);
 	if (retval)
 	{
 		fprintf(stderr,"ERROR: opening the GUI failed\n");
-		return 0;
+		return 1;
 	}
 
 //////////////////////////////////////////////// random
@@ -420,7 +230,7 @@ int main(int argc,char** argv)
 				printf("illegal random mode in inifile. please use one of ");
 				printf("pseudo ");
 				printf("real ");
-				return 0;
+				return 1;
 			}
 		}
 		if (retrievefromini(f_inifile,"[RANDOM]","seed",result,sizeof(result)))
@@ -429,7 +239,7 @@ int main(int argc,char** argv)
 			if (random_seed<1 || random_seed>0x7fffffff)
 			{
 				printf("illegal random seed. please use a value between %d and %d\n",1,0x7fffffff);
-				return 0;
+				return 1;
 			}
 		}
 	}
@@ -447,7 +257,7 @@ int main(int argc,char** argv)
 				printf("pseudo ");
 				printf("real ");
 				printf("\n");
-				return 0;
+				return 1;
 			}
 		}
 		if (retrievefromcommandline(argc,argv,"-rseed",result,sizeof(result)))
@@ -456,7 +266,7 @@ int main(int argc,char** argv)
 			if (random_seed<1 || random_seed>0x7fffffff)
 			{
 				printf("illegal parameter for -rseed. please use a value between %d and %d\n",1,0x7fffffff);
-				return 0;
+				return 1;
 			}
 		}
 	}	
@@ -491,7 +301,7 @@ int main(int argc,char** argv)
 		f_inifile=fopen(inifilename,"rb");
 		if (loader_init(argc,argv,f_inifile, magbuf,&magsize,gfxbuf,&gfxsize))
 		{
-			dMagnetic_loaderfailed_message(argv[0]);
+			dMagnetic_helpscreens_loaderfailed(argv[0]);
 			return 1;
 		}
 
@@ -499,7 +309,7 @@ int main(int argc,char** argv)
 		retval=dMagnetic_init(&hVM68k,&hLineA,pSharedMem,SHAREDMEMSIZE,magbuf,magsize,gfxbuf,gfxsize);
 		if (retval)
 		{
-			return 0;
+			return 1;
 		}
 		retval|=lineA_configrandom(hLineA,random_mode,random_seed);
 		retval|=lineA_setEGAMode(hLineA,egamode);
@@ -513,7 +323,7 @@ int main(int argc,char** argv)
 		if (retval)
 		{
 			fprintf(stderr,"ERROR: setting the API hooks failed\n");
-			return 0;
+			return 1;
 		}
 		/////////////////////////////////////////////		
 
@@ -543,5 +353,5 @@ int main(int argc,char** argv)
 	free(hGUI);
 	free(hLineA);
 	free(hVM68k);
-	return 1;
+	return 0;
 }

@@ -1,6 +1,6 @@
 /*
 
-   Copyright 2020, dettus@dettus.net
+   Copyright 2021, dettus@dettus.net
 
    Redistribution and use in source and binary forms, with or without modification,
    are permitted provided that the following conditions are met:
@@ -32,6 +32,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "loader_common.h"
 #include "loader_atarixl.h"
 #include "vm68k_macros.h"
 
@@ -56,6 +57,10 @@ typedef struct _tGameInfo
 #define	DISK1_FLAG	0x40000
 #define	DISK2_FLAG	0x80000
 
+
+// i was not able to find the proper directory. 
+// but i was able to find the code/string/dict sections through correlations and other means.
+// this is how the following table has been created.
 #define GAMENUM			3
 const tGameInfo	loader_atarixl_cGameInfo[GAMENUM]={
 	{"The Pawn",0,
@@ -96,66 +101,14 @@ const tGameInfo	loader_atarixl_cGameInfo[GAMENUM]={
 
 			DISK1_FLAG|0x14590,DISK1_FLAG|0x15290,DISK1_FLAG|0x15d10,                 0,
 			DISK1_FLAG|0x16d90,DISK1_FLAG|0x17f90,DISK1_FLAG|0x18810,DISK1_FLAG|0x19590,
-			DISK1_FLAG|0x1a410,DISK1_FLAG|0x1b910,DISK1_FLAG|0x1c510,DISK1_FLAG|0x1ce90,
-			0,0
+			DISK1_FLAG|0x1a410,DISK1_FLAG|0x1b910,DISK1_FLAG|0x1c510,                 0,
+			DISK1_FLAG|0x1ce90, 0
 		}
 	}
 };
 
 #define	BLOCKSIZE	256
 #define	MAXPIVOT	8
-int loader_atarixl_descramble(unsigned char* inptr,unsigned char* outptr,int pivot,unsigned char *lastchar,int rle)
-{
-
-	unsigned char tmp[BLOCKSIZE];
-	int i;
-	int j;
-	int outcnt;
-	unsigned char lc;
-
-	pivot%=MAXPIVOT;
-
-
-	lc=*lastchar;
-	outcnt=0;
-
-	// step 1: reverse the input block
-	for (i=0;i<BLOCKSIZE;i++)
-	{
-		tmp[i]=inptr[BLOCKSIZE-1-i];
-	}
-
-	for (i=0;i<BLOCKSIZE;i++)
-	{
-
-		// step 2: the descrambler. the bytes before the pivot
-		// are desrambled slightly different than the ones
-		// after. the pivot itself does not need to be descrambled.
-		// step 2a: descramble everything before the pivot
-		if (i<pivot)
-		{
-			tmp[i]^=tmp[pivot];
-		}
-		// step 2b: descramble everything behind the pivot
-		if (i>pivot)
-		{
-			tmp[i]^=tmp[i-(1+pivot)];
-		}
-		// step 3: run length encoding. 00 is followed by the amount of zeros following
-		if (lc==0 && rle)
-		{
-			for (j=0;j<tmp[i]-1;j++)
-			{
-				outptr[outcnt++]=0;
-			}
-		} else {
-			outptr[outcnt++]=tmp[i];
-		}
-		lc=tmp[i];
-	}
-	*lastchar=lc;
-	return outcnt;
-}
 #define	GETIDX(idx,offset,disk1offs,disk2offs) \
 		idx=(offset); \
 		if ((idx)&DISK1_FLAG) idx=((idx)&DISK_OFFSETMASK)+(disk1offs); \
@@ -165,7 +118,7 @@ int loader_atarixl_detectgame(unsigned char* diskbuf,int* disk1offs,int* disk2of
 {
 	int d1,d2;
 	int found;
-	int i,n;
+	int i;
 	unsigned char tmp[256];
 
 	d1=*disk1offs;
@@ -181,7 +134,7 @@ int loader_atarixl_detectgame(unsigned char* diskbuf,int* disk1offs,int* disk2of
 	{
 		unsigned char lc;
 		lc=0xff;
-		n=loader_atarixl_descramble(&diskbuf[d1+(DISK_OFFSETMASK&loader_atarixl_cGameInfo[i].offs_code1)],tmp,0,&lc,0);
+		loader_common_descramble(&diskbuf[d1+(DISK_OFFSETMASK&loader_atarixl_cGameInfo[i].offs_code1)],tmp,0,&lc,0);
 		if (tmp[ 0]==0x49 && tmp[ 1]==0xfa && tmp[ 2]==0xff && tmp[ 3]==0xfe) found=i;
 		if (tmp[2+ 0]==0x49 && tmp[2+ 1]==0xfa && tmp[2+ 2]==0xff && tmp[2+ 3]==0xfe) found=i;
 	}
@@ -194,7 +147,7 @@ int loader_atarixl_detectgame(unsigned char* diskbuf,int* disk1offs,int* disk2of
 	{
 		unsigned char lc;
 		lc=0xff;
-		n=loader_atarixl_descramble(&diskbuf[d2+(DISK_OFFSETMASK&loader_atarixl_cGameInfo[i].offs_code1)],tmp,0,&lc,0);
+		loader_common_descramble(&diskbuf[d2+(DISK_OFFSETMASK&loader_atarixl_cGameInfo[i].offs_code1)],tmp,0,&lc,0);
 		if (tmp[ 0]==0x49 && tmp[ 1]==0xfa && tmp[ 2]==0xff && tmp[ 3]==0xfe) found=i;
 		if (tmp[2+ 0]==0x49 && tmp[2+ 1]==0xfa && tmp[2+ 2]==0xff && tmp[2+ 3]==0xfe) found=i;
 	}
@@ -203,7 +156,6 @@ int loader_atarixl_detectgame(unsigned char* diskbuf,int* disk1offs,int* disk2of
 
 int loader_atarixl_mkmag(unsigned char* diskbuf,int disksize,int disk1offs,int disk2offs,unsigned char* magbuf,int* magbufsize,const tGameInfo *pGameInfo)
 {
-	int magbufsize0;
 	int magidx;
 	int code1size;
 	int code2size;
@@ -214,7 +166,6 @@ int loader_atarixl_mkmag(unsigned char* diskbuf,int disksize,int disk1offs,int d
 
 	
 
-	magbufsize0=*magbufsize;
 	magidx=42;
 
 	code1size=0;
@@ -238,7 +189,7 @@ int loader_atarixl_mkmag(unsigned char* diskbuf,int disksize,int disk1offs,int d
 		pivot=0;
 		lc=0xff;
 		GETIDX(idx,pGameInfo->offs_code1,disk1offs,disk2offs);
-		n=loader_atarixl_descramble(&diskbuf[idx],&magbuf[magidx],pivot,&lc,rle);
+		n=loader_common_descramble(&diskbuf[idx],&magbuf[magidx],pivot,&lc,rle);
 		if (pGameInfo->version!=0)
 		{
 			codeleft=READ_INT16BE(magbuf,magidx);
@@ -249,7 +200,7 @@ int loader_atarixl_mkmag(unsigned char* diskbuf,int disksize,int disk1offs,int d
 		while (codeleft>=BLOCKSIZE)
 		{
 			pivot=(pivot+1)%MAXPIVOT;	
-			n=loader_atarixl_descramble(&diskbuf[idx],&magbuf[magidx],pivot,&lc,rle);
+			n=loader_common_descramble(&diskbuf[idx],&magbuf[magidx],pivot,&lc,rle);
 			codeleft-=BLOCKSIZE;
 			idx+=BLOCKSIZE;
 			magidx+=n;
@@ -266,7 +217,7 @@ int loader_atarixl_mkmag(unsigned char* diskbuf,int disksize,int disk1offs,int d
 		while (codeleft>0)
 		{
 			pivot=(pivot+1)%MAXPIVOT;	
-			n=loader_atarixl_descramble(&diskbuf[idx],&magbuf[magidx],pivot,&lc,0);
+			n=loader_common_descramble(&diskbuf[idx],&magbuf[magidx],pivot,&lc,0);
 			codeleft-=BLOCKSIZE;
 			idx+=BLOCKSIZE;
 			magidx+=n;
@@ -275,7 +226,7 @@ int loader_atarixl_mkmag(unsigned char* diskbuf,int disksize,int disk1offs,int d
 	}
 
 
-	// the strings are being copied over verbatimly
+	// the strings are not scrambled. they are being copied over from the disk buffer into the .mag buffer.
 	string1size=0;
 	string2size=0;
 	{
@@ -344,7 +295,7 @@ int loader_atarixl_mkmag(unsigned char* diskbuf,int disksize,int disk1offs,int d
 		while (dictsize<8704)	// TODO: magic number
 		{
 			lc=0xff;
-			n=loader_atarixl_descramble(&diskbuf[idx],&magbuf[magidx],pivot,&lc,0);
+			n=loader_common_descramble(&diskbuf[idx],&magbuf[magidx],pivot,&lc,0);
 
 			magidx+=n;
 			dictsize+=n;
@@ -352,20 +303,7 @@ int loader_atarixl_mkmag(unsigned char* diskbuf,int disksize,int disk1offs,int d
 			idx+=BLOCKSIZE;
 		}
 	}
-	
-	magbuf[0]='M';magbuf[1]='a';magbuf[2]='S';magbuf[3]='c';        //  0.. 3: the magic word
-	WRITE_INT32BE(magbuf, 4 ,magidx);                               //  4.. 7: the total size
-	WRITE_INT32BE(magbuf, 8 ,42);                           //  8..11: the size of the header
-	WRITE_INT16BE(magbuf,12 ,pGameInfo->version);           // 12..13: the version for the virtual machine
-	WRITE_INT32BE(magbuf,14 ,code1size+code2size);          // 14..17 the size of the game code
-	WRITE_INT32BE(magbuf,18 ,string1size);                  // 18..21 the size of the string1
-	WRITE_INT32BE(magbuf,22 ,string2size);                  // 22..25 the size of the string2
-	WRITE_INT32BE(magbuf,26 ,dictsize);                     // 26..29 the size of the dictionary
-	WRITE_INT32BE(magbuf,30 ,huffmantreeidx)                // 30..33 the beginning of the huffman tree within the string buffer
-	WRITE_INT32BE(magbuf,34 ,0);                            //  34..37: undo size
-	WRITE_INT32BE(magbuf,38 ,0);                            //  38..41: undo pc
-	
-
+	loader_common_addmagheader(magbuf,magidx,pGameInfo->version,code1size+code2size,string1size,string2size,dictsize,huffmantreeidx);
 	*magbufsize=magidx;
 
 
@@ -375,15 +313,20 @@ int loader_atarixl_mkgfx(unsigned char* gfxbuf,int *gfxbufsize,int disk1offs,int
 {
 	int i;
 	int idx;
+	int gfxidx;
 
 	// i am lazy
 	// just translate the pre-determined offsets into the gfx buffer index
+	gfxidx=0;
 
-	gfxbuf[0]='M';gfxbuf[1]='a';gfxbuf[2]='P';gfxbuf[3]='7';
+	gfxbuf[gfxidx++]='M';
+	gfxbuf[gfxidx++]='a';
+	gfxbuf[gfxidx++]='P';
+	gfxbuf[gfxidx++]='7';
 	for (i=0;i<30;i++)
 	{
 		GETIDX(idx,pGameInfo->offs_pictures[i],disk1offs,disk2offs);
-		WRITE_INT32BE(gfxbuf,4+i*4,idx);
+		WRITE_INT32BE(gfxbuf,gfxidx,idx);gfxidx+=4;
 	}
 	// that's it
 

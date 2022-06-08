@@ -1,4 +1,4 @@
-#Copyright 2020, dettus@dettus.net
+#Copyright 2021, dettus@dettus.net
 #
 #Redistribution and use in source and binary forms, with or without modification,
 #are permitted provided that the following conditions are met:
@@ -60,10 +60,10 @@ INPUT_utf=		"Lahausen"
 
 ### this is the output
 CHECKSUM_none=		"3211640dc669f6b960a84a51559fc88a25bbc26966f01cdf44b9f4d9f4d71e1c"
-CHECKSUM_monochrome=	"d8bc9ccf30b5cc53f545ac5458e1a864e27c18c3debdb9ac427886237997e415"
-CHECKSUM_monochrome_inv="79ff5931e4b8b0812bfa15c49fce9dde985495e962dacd59c3e61d881bc91e01"
-CHECKSUM_low_ansi=	"7ce4a85016794d60979e9b3543c036e30514e0cb3097a569cfb9b48506c567be"
-CHECKSUM_low_ansi2=	"05e7fdd4d2ae3476db0baa38bf5dac6255a13cc46d71505c4d63a57cfa40e1fe"
+CHECKSUM_monochrome=	"aa0614428ccdb7e7806a4f829f9ababa8c109e7487437fab1bf449fb2534c98b"
+CHECKSUM_monochrome_inv="56946544673dfbfa0d3769bbbab82bf942e8dcfc2dabf463cc734ac0133ea53f"
+CHECKSUM_low_ansi=	"16a13bc5da8e4b506e706bd281c749605c6c75840069d0c709a18047ff44368b"
+CHECKSUM_low_ansi2=	"e12080328098fb5dd86f4a8230938526b2539cdb49f8ebc0d0dac573a2e0423e"
 CHECKSUM_high_ansi=	"bcc24e07c6e207bd4988e11d7e3cbaa0594820670bf1f3df530722700934e970"
 CHECKSUM_high_ansi2=	"e83e480afc67de933cc51dacf7a68d3c5c3fa4221fb299edf4bda495caf68bdc"
 CHECKSUM_sixel=		"eb20c0de385696b55320ce15e703690e38be2e238b7dbddfb424b54023286180"
@@ -82,31 +82,31 @@ CHECKSUM_utf=		"f484470b10a415b6a6aea37778055c7a2649e285078a32f33ef558de0228de85
 
 
 # the code for the 8 checks is IDENTICAL. the only difference is the target's name. 
-check-none:		dMagnetic
+check-none:		dMagnetic dMagnetic.ini
 	if [ "`${ECHO_CMD} ${INPUT_${@:check-%=%}}    | ./dMagnetic -ini dMagnetic.ini -vmode "${@:check-%=%}" -vcols 300 -vrows 300 -vecho -sres 1024x768 -mag testcode/minitest.mag | ${SHA256_CMD} | ${AWK_CMD} -F' ' '{ print $$1; }' - `" = ${CHECKSUM_${@:check-%=%}} ]       ; then ${ECHO_CMD} "$@ OK" ; else ${ECHO_CMD} "$@ failed" ; exit 1 ; fi
 
-check-monochrome:	dMagnetic
+check-monochrome:	dMagnetic dMagnetic.ini
 	if [ "`${ECHO_CMD} ${INPUT_${@:check-%=%}}    | ./dMagnetic -ini dMagnetic.ini -vmode "${@:check-%=%}" -vcols 300 -vrows 300 -vecho -sres 1024x768 -mag testcode/minitest.mag | ${SHA256_CMD} | ${AWK_CMD} -F' ' '{ print $$1; }' - `" = ${CHECKSUM_${@:check-%=%}} ]       ; then ${ECHO_CMD} "$@ OK" ; else ${ECHO_CMD} "$@ failed" ; exit 1 ; fi
 
-check-monochrome_inv:	dMagnetic
+check-monochrome_inv:	dMagnetic dMagnetic.ini
 	if [ "`${ECHO_CMD} ${INPUT_${@:check-%=%}}    | ./dMagnetic -ini dMagnetic.ini -vmode "${@:check-%=%}" -vcols 300 -vrows 300 -vecho -sres 1024x768 -mag testcode/minitest.mag | ${SHA256_CMD} | ${AWK_CMD} -F' ' '{ print $$1; }' - `" = ${CHECKSUM_${@:check-%=%}} ]       ; then ${ECHO_CMD} "$@ OK" ; else ${ECHO_CMD} "$@ failed" ; exit 1 ; fi
 
-check-low_ansi:		dMagnetic
+check-low_ansi:		dMagnetic dMagnetic.ini
 	if [ "`${ECHO_CMD} ${INPUT_${@:check-%=%}}    | ./dMagnetic -ini dMagnetic.ini -vmode "${@:check-%=%}" -vcols 300 -vrows 300 -vecho -sres 1024x768 -mag testcode/minitest.mag | ${SHA256_CMD} | ${AWK_CMD} -F' ' '{ print $$1; }' - `" = ${CHECKSUM_${@:check-%=%}} ]       ; then ${ECHO_CMD} "$@ OK" ; else ${ECHO_CMD} "$@ failed" ; exit 1 ; fi
 
-check-low_ansi2:	dMagnetic
+check-low_ansi2:	dMagnetic dMagnetic.ini
 	if [ "`${ECHO_CMD} ${INPUT_${@:check-%=%}}    | ./dMagnetic -ini dMagnetic.ini -vmode "${@:check-%=%}" -vcols 300 -vrows 300 -vecho -sres 1024x768 -mag testcode/minitest.mag | ${SHA256_CMD} | ${AWK_CMD} -F' ' '{ print $$1; }' - `" = ${CHECKSUM_${@:check-%=%}} ]       ; then ${ECHO_CMD} "$@ OK" ; else ${ECHO_CMD} "$@ failed" ; exit 1 ; fi
 
-check-high_ansi:	dMagnetic
+check-high_ansi:	dMagnetic dMagnetic.ini
 	if [ "`${ECHO_CMD} ${INPUT_${@:check-%=%}}    | ./dMagnetic -ini dMagnetic.ini -vmode "${@:check-%=%}" -vcols 300 -vrows 300 -vecho -sres 1024x768 -mag testcode/minitest.mag | ${SHA256_CMD} | ${AWK_CMD} -F' ' '{ print $$1; }' - `" = ${CHECKSUM_${@:check-%=%}} ]       ; then ${ECHO_CMD} "$@ OK" ; else ${ECHO_CMD} "$@ failed" ; exit 1 ; fi
 
-check-high_ansi2:	dMagnetic
+check-high_ansi2:	dMagnetic dMagnetic.ini
 	if [ "`${ECHO_CMD} ${INPUT_${@:check-%=%}}    | ./dMagnetic -ini dMagnetic.ini -vmode "${@:check-%=%}" -vcols 300 -vrows 300 -vecho -sres 1024x768 -mag testcode/minitest.mag | ${SHA256_CMD} | ${AWK_CMD} -F' ' '{ print $$1; }' - `" = ${CHECKSUM_${@:check-%=%}} ]       ; then ${ECHO_CMD} "$@ OK" ; else ${ECHO_CMD} "$@ failed" ; exit 1 ; fi
 
-check-sixel:		dMagnetic
+check-sixel:		dMagnetic dMagnetic.ini
 	if [ "`${ECHO_CMD} ${INPUT_${@:check-%=%}}    | ./dMagnetic -ini dMagnetic.ini -vmode "${@:check-%=%}" -vcols 300 -vrows 300 -vecho -sres 1024x768 -mag testcode/minitest.mag | ${SHA256_CMD} | ${AWK_CMD} -F' ' '{ print $$1; }' - `" = ${CHECKSUM_${@:check-%=%}} ]       ; then ${ECHO_CMD} "$@ OK" ; else ${ECHO_CMD} "$@ failed" ; exit 1 ; fi
 
-check-utf:		dMagnetic
+check-utf:		dMagnetic dMagnetic.ini
 	if [ "`${ECHO_CMD} ${INPUT_${@:check-%=%}}    | ./dMagnetic -ini dMagnetic.ini -vmode "${@:check-%=%}" -vcols 300 -vrows 300 -vecho -sres 1024x768 -mag testcode/minitest.mag | ${SHA256_CMD} | ${AWK_CMD} -F' ' '{ print $$1; }' - `" = ${CHECKSUM_${@:check-%=%}} ]       ; then ${ECHO_CMD} "$@ OK" ; else ${ECHO_CMD} "$@ failed" ; exit 1 ; fi
 
 

@@ -1,6 +1,6 @@
 /*
 
-Copyright 2020, dettus@dettus.net
+Copyright 2021, dettus@dettus.net
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -795,7 +795,7 @@ int default_open(void* hContext,FILE *f_inifile,int argc,char** argv)
 #define	DEFAULT_LOW_ANSI_CHARACTERS 8
 	const char default_low_ansi_characters[DEFAULT_LOW_ANSI_CHARACTERS]="\\/|=L#T";
 #define	DEFAULT_MONOCHROME_CHARACTERS 14
-	const char default_monochrome_characters[DEFAULT_MONOCHROME_CHARACTERS]=" .:-=+*x#/@$X";
+	const char default_monochrome_characters[DEFAULT_MONOCHROME_CHARACTERS]=" .-=*";
 
 	if (pContext==NULL) return DEFAULT_NOK;
 	memset(pContext,0,sizeof(tContext));

@@ -1,6 +1,6 @@
 #!/usr/bin/make -f 
 #
-#Copyright 2020, dettus@dettus.net
+#Copyright 2021, dettus@dettus.net
 #
 #Redistribution and use in source and binary forms, with or without modification,
 #are permitted provided that the following conditions are met:
@@ -67,6 +67,7 @@ SOURCES_GUI=	\
 
 SOURCES_TOPLEVEL=	\
 	src/toplevel/configuration.c	\
+	src/toplevel/dMagnetic_helpscreens.c	\
 	src/toplevel/dMagnetic.c
 
 OBJ_LOADER=${SOURCES_LOADER:.c=.o}
@@ -75,11 +76,11 @@ OBJ_VM68K=${SOURCES_VM68K:.c=.o}
 OBJ_GUI=${SOURCES_GUI:.c=.o}
 OBJ_TOPLEVEL=${SOURCES_TOPLEVEL:.c=.o}
 
-all:	dMagnetic
+all:	dMagnetic dMagnetic.ini
 #	strip dMagnetic
 
 clean:
-	rm -rf dMagnetic
+	rm -rf dMagnetic dMagnetic.ini
 	rm -rf $(OBJ_LOADER)
 	rm -rf $(OBJ_LINEA)
 	rm -rf $(OBJ_VM68K)
@@ -102,6 +103,9 @@ install: all dMagnetic.1 dMagneticini.5
 
 dMagnetic:	$(OBJ_LOADER) $(OBJ_LINEA) $(OBJ_VM68K) $(OBJ_GUI) $(OBJ_TOPLEVEL)
 	$(LINK) $(LDFLAGS) -o $@ $(OBJ_LOADER) $(OBJ_LINEA) $(OBJ_VM68K) $(OBJ_GUI) $(OBJ_TOPLEVEL)
+
+dMagnetic.ini:	dMagnetic
+	./dMagnetic -helpini >dMagnetic.ini
 
 .c.o:
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(CFLAGS_EXTRA) $(INCFLAGS) -c -o $@ $<

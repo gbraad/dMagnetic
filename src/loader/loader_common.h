@@ -1,6 +1,6 @@
 /*
 
-   Copyright 2020, dettus@dettus.net
+   Copyright 2021, dettus@dettus.net
 
    Redistribution and use in source and binary forms, with or without modification,
    are permitted provided that the following conditions are met:
@@ -40,6 +40,7 @@
 
 int loader_common_unhuffer(unsigned char* input,int length,unsigned char* output);
 int loader_common_addmagheader(unsigned char* magbuf,int magsize,int version,int codesize,int string1size,int string2size,int dictsize,int huffmantreeidx);
+int loader_common_descramble(unsigned char* inptr,unsigned char* outptr,int pivot,unsigned char *lastchar,int rle);
 
 #endif
 

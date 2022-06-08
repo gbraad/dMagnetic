@@ -1,6 +1,6 @@
 /*
 
-   Copyright 2020, dettus@dettus.net
+   Copyright 2021, dettus@dettus.net
 
    Redistribution and use in source and binary forms, with or without modification,
    are permitted provided that the following conditions are met:
@@ -276,8 +276,12 @@ int loader_dsk_amstradcpc_gfx(
 	if (version==0)
 	{
 		// THE PAWN uses a single file for the images and the index.
+
+		// since it is not 32 bit aligned, add 2 extra bytes.
 		gfxbuf[outputidx++]=0;
 		gfxbuf[outputidx++]=0;
+
+		// now just read the file
 		outputidx+=loader_dsk_readfile(diskimage,&gfxbuf[outputidx],FILESUFFIX4,pDirEntries,entrycnt,sectorsize);
 		// it is necessary to convert the image a little bit. the header has to be added, for example.
 		// and, just for fun, change the index to BIG endian as well
@@ -611,10 +615,8 @@ int loader_dsk(char* amstradcpcname,
 								foundsuffixes|=(1<<dirEntries[entrycnt].fileID);
 							}
 						}	
-						dirEntries[entrycnt].attrs=(ptr[ 9]>>7)&1;
-						dirEntries[entrycnt].attrs<<=1;
-						dirEntries[entrycnt].attrs|=(ptr[10]>>7)&1;
-						dirEntries[entrycnt].attrs<<=1;
+						dirEntries[entrycnt].attrs=(ptr[ 9]>>5)&4;
+						dirEntries[entrycnt].attrs|=(ptr[10]>>6)&2;
 						dirEntries[entrycnt].attrs|=(ptr[11]>>7)&1;
 						for (l=0;l<EXTENDLEN;l++) dirEntries[entrycnt].extend[l]=ptr[12+l];
 						for (l=0;l<MAXOFFSETSPERENTRY;l++) dirEntries[entrycnt].offsets[l]=-1;

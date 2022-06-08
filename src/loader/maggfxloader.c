@@ -1,6 +1,6 @@
 /*
 
-   Copyright 2020, dettus@dettus.net
+   Copyright 2021, dettus@dettus.net
 
    Redistribution and use in source and binary forms, with or without modification,
    are permitted provided that the following conditions are met:
@@ -277,7 +277,7 @@ int loader_init(int argc,char** argv,FILE *f_inifile,
 			*gfxsize=n;
 			fclose(f);
 			break;
-	}		
+	}
 	// at this point, they are stored in magbuf and gfxbuf.
 
 	return retval;

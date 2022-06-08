@@ -1,6 +1,6 @@
 /*
 
-Copyright 2020, dettus@dettus.net
+Copyright 2021, dettus@dettus.net
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -31,6 +31,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define	VERSION_H
 
 #define	VERSION_MAJOR		0
-#define	VERSION_MINOR		2
-#define	VERSION_REVISION	9
+#define	VERSION_MINOR		3
+#define	VERSION_REVISION	0
 #endif

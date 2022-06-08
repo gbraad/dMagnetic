@@ -1,6 +1,6 @@
 /*
 
-   Copyright 2020, dettus@dettus.net
+   Copyright 2021, dettus@dettus.net
 
    Redistribution and use in source and binary forms, with or without modification,
    are permitted provided that the following conditions are met:
@@ -107,13 +107,13 @@ int loader_d64_detectgame(unsigned char* diskram)
 	// find the magic word
 	int i;
 	char tmp[5];
-
+#define	MAGIC_WORD_LOCATION	0x1eb
 	// at those positions in the image, a magic word is hidden.
 	// it can be used to detect the game
-	tmp[0]=diskram[0x1eb];
-	tmp[1]=diskram[0x1ec];
-	tmp[2]=diskram[0x1ed];
-	tmp[3]=diskram[0x1ee];
+	tmp[0]=diskram[MAGIC_WORD_LOCATION+0];
+	tmp[1]=diskram[MAGIC_WORD_LOCATION+1];
+	tmp[2]=diskram[MAGIC_WORD_LOCATION+2];
+	tmp[3]=diskram[MAGIC_WORD_LOCATION+3];
 	tmp[4]=0;
 
 	for (i=0;i<6;i++)
@@ -130,32 +130,6 @@ const unsigned char loader_d64_sectorcnt[D64_TRACKNUM]=
 	18,18,18,18,18,18,      // track 25-30
 	17,17,17,17,17,17,17,17,17,17   // track 31-40
 };
-void loader_d64_descrambler(unsigned char* buf,int blockcnt)
-{
-	unsigned char tmp[256];
-	int pivot;
-	int i,j;
-	for (i=0;i<256;i++) tmp[i]=buf[i];
-
-
-	// to have some variaion in the "encryption"
-	pivot=(blockcnt&0x7)^0xff;
-	for (i=pivot+1;i<256;i++)
-	{
-		tmp[i]^=tmp[pivot];
-	}
-
-	for (i=pivot-1,j=255;i>=0;i--,j--)
-	{
-		tmp[i]^=tmp[j];
-	}
-
-	// the finishing touch: reverse the descrambled buffer
-	for (i=0;i<256;i++)
-	{
-		buf[i]=tmp[255-i];
-	}
-}
 
 void loader_d64_readEntries(unsigned char* d64image,int d64size,tFileEntry* pEntries,int* pEntrynum)
 {
@@ -251,8 +225,8 @@ void loader_d64_identifyEntries(unsigned char* d64image,tFileEntry* pEntries,int
 			pEntries[i+1].fileType=TYPE_DICTIONARY;
 			sideoffsets[pEntries[i].side]=D64_IMAGESIZE;
 		} else {
-			loader_d64_descrambler(tmp1,0);
-			loader_d64_descrambler(tmp2,0);
+			loader_common_descramble(tmp1,tmp1,0,NULL,0);
+			loader_common_descramble(tmp2,tmp2,0,NULL,0);
 			if ((tmp1[0]==0x49 || tmp1[2]==0x49) && (tmp1[1]==0xfa || tmp1[3]==0xfa))	// 0x49fa is ALWAYS the first instruction. run level encoded files start with a 2 byte header.
 			{
 				pEntries[i].fileType=TYPE_CODE1_ENCRYPTED;
@@ -275,14 +249,17 @@ void loader_d64_identifyEntries(unsigned char* d64image,tFileEntry* pEntries,int
 	sideoffsets[3]=0;
 
 	// step2: identify all the pictures
+	// maybe there is a proper way to determine it from the data. through some form of directory i have not found yet.
+	// so here is what i do: I just check if the sector starts with the sequence 3d 82 81... or 3e 82 81, heralding
+	// the size of the huffman tree and the first two branches which are never a terminal symbol.
+	// (at least in the releases I dealt with)
 	for (i=0;i<entryNum;i++)
 	{
 		pEntries[i].offset+=sideoffsets[pEntries[i].side];
 		if (pEntries[i].fileType==TYPE_UNKNOWN)
 		{
 			loader_d64_readSector(&d64image[sideoffsets[pEntries[i].side]],pEntries[i].track,pEntries[i].sector,tmp1);
-			if (tmp1[0]==0x3d && tmp1[1]==0x82 && tmp1[2]==0x81) pEntries[i].fileType=TYPE_PICTURE;
-			if (tmp1[0]==0x3e && tmp1[1]==0x82 && tmp1[2]==0x81) pEntries[i].fileType=TYPE_PICTURE;
+			if ((tmp1[0]==0x3d || tmp1[0]==0x3e) && tmp1[1]==0x82 && tmp1[2]==0x81) pEntries[i].fileType=TYPE_PICTURE;
 		}
 	}
 	
@@ -349,7 +326,7 @@ int loader_d64_readCode1(unsigned char* d64image,tFileEntry *pEntries,int entryN
 		start=0;
 		if (encrypted)
 		{
-			loader_d64_descrambler(tmp,i);
+			loader_common_descramble(tmp,tmp,i,NULL,0);
 		}
 		if (i==0)
 		{
@@ -418,7 +395,7 @@ int loader_d64_readCode2(unsigned char* d64image,tFileEntry *pEntries,int entryN
 	for (i=0;i<len;i++)
 	{
 		loader_d64_readSector(&d64image[offset],track,sect,tmp);
-		if (encrypted) loader_d64_descrambler(tmp,i+scrambleoffs);
+		if (encrypted) loader_common_descramble(tmp,tmp,i+scrambleoffs,NULL,0);
 		loader_d64_advanceSector(&track,&sect);
 		for (j=0;j<256;j++)
 		{
@@ -467,7 +444,7 @@ int loader_d64_readStrings(unsigned char* d64image,tFileEntry* pEntries,int entr
 			for (j=0;j<len;j++)
 			{
 				loader_d64_readSector(&d64image[offset],track,sect,tmp);
-				if (encrypted) loader_d64_descrambler(tmp,j);
+				if (encrypted) loader_common_descramble(tmp,tmp,j,NULL,0);
 				loader_d64_advanceSector(&track,&sect);
 				for (k=0;k<256;k++)
 				{
@@ -617,7 +594,7 @@ int loader_d64(char* d64name,
 		piccnt=0;
 
 		////////////// LOAD THE GFX BUFFER /////////////////
-		gfxidx=4+4*32+1;	// leave some rom for the magic word, offsets and the game's version
+		gfxidx=4+4*32+1;	// leave some room for the magic word, offsets and the game's version
 
 		// just copy the picture data into the GFX buffer. It will be parsed and unpacked later.
 		for (i=0;i<entryNum;i++)
@@ -650,21 +627,22 @@ int loader_d64(char* d64name,
 			}
 		}		
 
+		*gfxsize=gfxidx;
+
+		gfxidx=0;
 		// now the buffer is complete. write the header.
-		gfxbuf[0]='M';gfxbuf[1]='a';gfxbuf[2]='P';gfxbuf[3]='5';
+		gfxbuf[gfxidx++]='M';
+		gfxbuf[gfxidx++]='a';
+		gfxbuf[gfxidx++]='P';
+		gfxbuf[gfxidx++]='5';
 		for (i=0;i<32;i++)
 		{
 			int order;
 			order=loader_d64_gameinfo[gameID].order[i];
-			if (order==-1)
-			{
-				WRITE_INT32BE(gfxptr,4+4*i ,0xffffffff);
-			} else {
-				WRITE_INT32BE(gfxptr,4+4*i ,picoffs[loader_d64_gameinfo[gameID].order[i]]);
-			}
+			WRITE_INT32BE(gfxptr,gfxidx ,(order==-1)?0xffffffff:picoffs[loader_d64_gameinfo[gameID].order[i]]);
+			gfxidx+=4;
 		}
 		gfxbuf[4+4*32]=loader_d64_gameinfo[gameID].version;
-		*gfxsize=gfxidx;
 		/////////// GFX is finished ///////////////
 	}
 	return 0;

@@ -1,6 +1,6 @@
 /*
 
-   Copyright 2020, dettus@dettus.net
+   Copyright 2021, dettus@dettus.net
 
    Redistribution and use in source and binary forms, with or without modification,
    are permitted provided that the following conditions are met:
@@ -212,13 +212,6 @@ unsigned int loader_archimedes_recursivedir(unsigned char* dskimg,int dsksize,in
 		int j;
 		int k;
 		int match;
-		fprintf(stderr,"found the files %04x in a directory called [",found);
-		for (j=0;j<10;j++)
-		{
-			if (dirname[j]<' ') break;
-			fprintf(stderr,"%c",dirname[j]);
-		}
-		fprintf(stderr,"]\n\n");
 
 		for (j=0;j<MAXGAMES && *pGameId==-1;j++)
 		{

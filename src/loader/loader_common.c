@@ -1,6 +1,6 @@
 /*
 
-   Copyright 2020, dettus@dettus.net
+   Copyright 2021, dettus@dettus.net
 
    Redistribution and use in source and binary forms, with or without modification,
    are permitted provided that the following conditions are met:
@@ -126,3 +126,62 @@ int loader_common_addmagheader(unsigned char* magbuf,int magsize,int version,int
 	WRITE_INT32BE(magbuf,38 ,0);                            //  38..41: undo pc
 	return LOADER_OK;
 }
+#define	BLOCKSIZE	256
+#define	MAXPIVOT	8
+int loader_common_descramble(unsigned char* inptr,unsigned char* outptr,int pivot,unsigned char *lastchar,int rle)
+{
+
+	unsigned char tmp[BLOCKSIZE];
+	int i;
+	int j;
+	int outcnt;
+	unsigned char lc;
+
+	pivot%=MAXPIVOT;
+
+
+	lc=0xff;
+	if (lastchar!=NULL) lc=*lastchar;
+	outcnt=0;
+
+	// step 1: reverse the input block
+	for (i=0;i<BLOCKSIZE;i++)
+	{
+		tmp[i]=inptr[BLOCKSIZE-1-i];
+	}
+
+	for (i=0;i<BLOCKSIZE;i++)
+	{
+
+		// step 2: the descrambler. the bytes before the pivot
+		// are desrambled slightly different than the ones
+		// after. the pivot itself does not need to be descrambled.
+		// step 2a: descramble everything before the pivot
+		if (i<pivot)
+		{
+			tmp[i]^=tmp[pivot];
+		}
+		// step 2b: descramble everything behind the pivot
+		if (i>pivot)
+		{
+			tmp[i]^=tmp[i-(1+pivot)];
+		}
+		// step 3: run length encoding. 00 is followed by the amount of zeros following
+		if (lc==0 && rle)
+		{
+			for (j=0;j<tmp[i]-1;j++)
+			{
+				outptr[outcnt++]=0;
+			}
+		} else {
+			outptr[outcnt++]=tmp[i];
+		}
+		lc=tmp[i];
+	}
+	if (lastchar!=NULL)
+	{
+		*lastchar=lc;
+	}
+	return outcnt;
+}
+
