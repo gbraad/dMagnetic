@@ -110,6 +110,9 @@ typedef struct _tLineA
 	tVM68k_ubyte gfxbuf[MAXGFXBUF];
 	tVM68k_ulong gfxsize;
 
+	// prefer ega images when set.
+	tVM68k_bool egamode;
+
 
 	tPicture picture;
 } tLineA;
@@ -240,7 +243,7 @@ int lineA_showTitleScreen(void* hLineA)
 	{
 		if (pLineA->gfxbuf[0]=='M' && pLineA->gfxbuf[1]=='a' && pLineA->gfxbuf[2]=='P' && pLineA->gfxbuf[3]=='3')	
 		{	
-			gfxloader_unpackpic(pLineA->gfxbuf,pLineA->gfxsize,pLineA->version,30,NULL,&pLineA->picture);
+			gfxloader_unpackpic(pLineA->gfxbuf,pLineA->gfxsize,pLineA->version,30,NULL,&pLineA->picture,0);
 			if (pLineA->pcbDrawPicture!=NULL)
 			{
 				pLineA->pcbDrawPicture(pLineA->contextDrawPicture,&pLineA->picture,1);	
@@ -309,6 +312,16 @@ int lineA_configrandom(void* hLineA,char random_mode,unsigned int random_seed)
 	pLineA->random_state=random_seed;
 	srand(random_seed);
 
+	return 0;
+}
+int lineA_setEGAMode(void* hLineA,int egamode)
+{
+	tLineA* pLineA=(tLineA*)hLineA;
+	if (hLineA==NULL) return LINEA_NOK_INVALID_PTR;
+	if (pLineA->magic!=MAGICVALUE) return LINEA_NOK_INVALID_PARAM;
+	if (egamode!=0 && egamode!=1) return LINEA_NOK_INVALID_PARAM;
+
+	pLineA->egamode=egamode;
 	return 0;
 }
 int lineA_getVersion(void* hLineA,int* version)
@@ -433,7 +446,7 @@ int lineA_singlestep(void* hLineA,void* hVM68k,unsigned short opcode)
 					case 7:	// show picture
 						if (pLineA->gfxsize)
 						{
-							gfxloader_unpackpic(pLineA->gfxbuf,pLineA->gfxsize,pLineA->version,-1,picname,&pLineA->picture);
+							gfxloader_unpackpic(pLineA->gfxbuf,pLineA->gfxsize,pLineA->version,-1,picname,&pLineA->picture,pLineA->egamode);
 							if (pLineA->pcbDrawPicture!=NULL)
 							{
 								pLineA->pcbDrawPicture(pLineA->contextDrawPicture,&pLineA->picture,2);
@@ -530,6 +543,18 @@ int lineA_singlestep(void* hLineA,void* hVM68k,unsigned short opcode)
 				}
 			}
 			break;
+		case 0xa0e9:
+			{	// strcpy a word from the dictionary into the memory.
+				// source is in A1
+				// destination is A0
+				tVM68k_ubyte tmp;
+				do
+				{
+					tmp=pLineA->pDict[pVM68k->a[1]++];
+					pVM68k->pMem[pVM68k->a[0]++]=tmp;
+				} while (!(tmp&0x80));
+			}
+			break;
 		case 0xa0ea:	// print a word from the dictionary. the beginning INDEX is stored in A1. the headline flag is signalled in D1.
 			{
 				unsigned char c;
@@ -580,7 +605,7 @@ int lineA_singlestep(void* hLineA,void* hVM68k,unsigned short opcode)
 				//printf("\x1b[1;37;44mLINEA: show picture %d mode %d\x1b[0m\n",pVM68k->d[0],pVM68k->d[1]);
 				if (pVM68k->d[1] && pLineA->gfxsize) 
 				{
-					gfxloader_unpackpic(pLineA->gfxbuf,pLineA->gfxsize,pLineA->version,pVM68k->d[0],NULL,&pLineA->picture);
+					gfxloader_unpackpic(pLineA->gfxbuf,pLineA->gfxsize,pLineA->version,pVM68k->d[0],NULL,&pLineA->picture,pLineA->egamode);
 					if (pLineA->pcbDrawPicture!=NULL)
 					{
 						pLineA->pcbDrawPicture(pLineA->contextDrawPicture,&pLineA->picture,pVM68k->d[1]);	
@@ -1067,7 +1092,7 @@ int lineA_singlestep(void* hLineA,void* hVM68k,unsigned short opcode)
 								matching=1;
 							} else if (matching) {	// actively comparing
 								cinput1=inputptr[inputidx++];	// the current character
-								cinput2=inputptr[inputidx];	// and the next one
+								cinput2=inputptr[inputidx];	// and the next onea
 								if (pLineA->version!=0)
 								{
 									if (cdict==0x5f && (cinput2!=0 || cinput1==' '))

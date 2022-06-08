@@ -44,6 +44,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	(((tVM68k_ulong)((ptr)[((idx)+0)])&0xff)<< 0)	|\
 	0)
 
+#define	READ_INT32LE(ptr,idx)	(\
+	(((unsigned int)((ptr)[((idx)+3)])&0xff)<<24)	|\
+	(((unsigned int)((ptr)[((idx)+2)])&0xff)<<16)	|\
+	(((unsigned int)((ptr)[((idx)+1)])&0xff)<< 8)	|\
+	(((unsigned int)((ptr)[((idx)+0)])&0xff)<< 0)	|\
+	0)
+#define	READ_INT16LE(ptr,idx)	(\
+	(((unsigned int)((ptr)[((idx)+1)])&0xff)<< 8)	|\
+	(((unsigned int)((ptr)[((idx)+0)])&0xff)<< 0)	|\
+	0)
+#define	READ_INT8LE(ptr,idx)	(\
+	(((unsigned int)((ptr)[((idx)+0)])&0xff)<< 0)	|\
+	0)
+
+
 #define	WRITE_INT32BE(ptr,idx,val) {\
 	(ptr)[(idx)+3]=((tVM68k_ubyte)((val)>> 0)&0xff);	\
 	(ptr)[(idx)+2]=((tVM68k_ubyte)((val)>> 8)&0xff);	\
@@ -57,6 +72,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define	WRITE_INT8BE(ptr,idx,val) {\
 	(ptr)[(idx)+0]=((tVM68k_ubyte)((val)>> 0)&0xff);	\
 	}
+
+#define	WRITE_INT32LE(ptr,idx,val) {\
+	(ptr)[(idx)+0]=((unsigned char)((val)>> 0)&0xff);	\
+	(ptr)[(idx)+1]=((unsigned char)((val)>> 8)&0xff);	\
+	(ptr)[(idx)+2]=((unsigned char)((val)>>16)&0xff);	\
+	(ptr)[(idx)+3]=((unsigned char)((val)>>24)&0xff);	\
+	}
+#define	WRITE_INT16LE(ptr,idx,val) {\
+	(ptr)[(idx)+0]=((unsigned char)((val)>> 0)&0xff);	\
+	(ptr)[(idx)+1]=((unsigned char)((val)>> 8)&0xff);	\
+	}
+#define	WRITE_INT8LE(ptr,idx,val) {\
+	(ptr)[(idx)+0]=((unsigned char)((val)>> 0)&0xff);	\
+	}
+
 
 #define	INITNEXT(pVM68k,next)	\
 	(next).pcr=(pVM68k)->pcr;	\

@@ -66,6 +66,9 @@ typedef	struct _tContext
 	char	textoutput[MAXTEXTBUFFER];
 	int	headlineidx;
 	char	headlineoutput[MAXHEADLINEBUFFER];
+
+	int 	screenheight;
+	int	screenwidth;
 } tContext;
 
 
@@ -275,7 +278,7 @@ int default_cbOutputChar(void* context,char c,unsigned char controlD2,unsigned c
 		}
 		newline=0;
 		if (
-				(pContext->lastchar=='.' || pContext->lastchar=='!' || /*pContext->lastchar==':' ||*/ pContext->lastchar=='?'|| pContext->lastchar==',' || pContext->lastchar==';') 	// a sentence as ended
+				(pContext->lastchar=='.' || pContext->lastchar=='!' || pContext->lastchar==':' || pContext->lastchar=='?'|| pContext->lastchar==',' || pContext->lastchar==';') 	// a sentence as ended
 				&&  ((c2>='A' && c2<='Z') ||(c2>='a' && c2<='z') ||(c2>='0' && c2<='9'))) 	// and a new one is beginning.
 		{
 			if (flag_headline) 
@@ -290,7 +293,7 @@ int default_cbOutputChar(void* context,char c,unsigned char controlD2,unsigned c
 					pContext->textoutput[pContext->textidx++]=' ';
 				}
 			}
-			pContext->lastchar=' ';
+			//pContext->lastchar=' ';
 		}
 		if (pContext->textidx>0 && pContext->lastchar==' ' && (c2==',' || c2==';' || c2=='.' || c2=='!'))	// there have been some glitches with extra spaces, right before a komma. which , as you can see , looks weird.
 		{
@@ -473,6 +476,95 @@ int default_cbDrawPicture(void* context,tPicture* picture,int mode)
 			}
 		}
 	}
+	if (pContext->mode==5) 	// sixels
+	{		
+		int i,j;
+		int accux,accuy;
+		int x,y;
+		int screenheight;
+		int screenwidth;
+		printf("\n\x1bPq\n");
+		for (i=0;i<16;i++)
+		{
+			int red,green,blue;
+			red=(picture->palette[i]>>8)&0xf;
+			green=(picture->palette[i]>>4)&0xf;
+			blue=(picture->palette[i]>>0)&0xf;
+
+			red*=100;green*=100;blue*=100;
+			red/=0x7;green/=0x7;blue/=0x7;
+
+			printf("#%02d;2;%d;%d;%d",i,red,green,blue);
+		}
+		printf("\n");
+
+		x=0;y=0;
+		accux=accuy=0;
+		screenheight=pContext->screenheight;
+		screenwidth=pContext->screenwidth;
+
+		// find a good aspect ratio
+		{
+			float ratiox,ratioy;
+			ratiox=(float)screenwidth/(float)(picture->width);
+			ratioy=(float)screenheight/(float)(picture->height);
+			
+			if (ratiox<ratioy) ratioy=ratiox; else ratiox=ratioy;
+
+			screenwidth=(int)(ratiox*(float)picture->width);
+			screenheight=(int)(ratioy*(float)picture->height);
+		}
+
+		while (y<picture->height)
+		{
+			int y0;
+			int accuy0;
+			int curpixel;
+			accuy0=accuy;
+			y0=y;
+			for (i=0;i<16;i++)
+			{
+				printf("#%02d",i);
+				x=0;
+				accux=0;
+				while (x<picture->width)
+				{
+					char bitmask;
+					y=y0;
+					accuy=accuy0;
+					curpixel=picture->pixels[y*picture->width+x];
+					bitmask=0;
+					for (j=0;j<6;j++)
+					{
+						bitmask>>=1;
+						if (curpixel==i) bitmask|=0x20;
+						accuy+=picture->height;
+						if (accuy>=screenheight)
+						{
+							accuy-=screenheight;
+							y++;
+							if (y<picture->height) 
+							{
+								curpixel=picture->pixels[y*picture->width+x];
+							} else {
+								curpixel=0;
+							}
+						}
+					}
+					while (accux<screenwidth)
+					{
+						printf("%c",'?'+bitmask);
+						accux+=picture->width;
+					}
+					accux-=screenwidth;
+					x++;
+				}
+				printf("$\n");
+			}
+			printf("-\n");
+		}
+		printf("\x1b\\\n");
+	}
 
 	return 0;
 }
@@ -533,12 +625,15 @@ int default_open(void* hContext,FILE *f_inifile,int argc,char** argv)
 
 	pContext->rows=40;
 	pContext->columns=120;
-	pContext->mode=2;	// 0=none. 1=monochrome. 2=low_ansi. 3=high_ansi. 4=high_ansi2
+	pContext->mode=2;	// 0=none. 1=monochrome. 2=low_ansi. 3=high_ansi. 4=high_ansi2, 5=sixel
 	pContext->f_logfile=NULL;
 	pContext->echomode=0;
 	pContext->textalign=1;
 	pContext->textidx=0;
 	pContext->textlastspace=-1;
+
+	pContext->screenwidth=320;
+	pContext->screenheight=200;
 	
 	memcpy(pContext->low_ansi_characters,default_low_ansi_characters,sizeof(default_low_ansi_characters));
 	memcpy(pContext->monochrome_characters,default_monochrome_characters,sizeof(default_monochrome_characters));
@@ -560,6 +655,7 @@ int default_open(void* hContext,FILE *f_inifile,int argc,char** argv)
 			if (strncmp(result,"monochrome",10)==0) pContext->mode=1;
 			if (strncmp(result,"low_ansi",8)==0) pContext->mode=2;
 			if (strncmp(result,"high_ansi2",10)==0) pContext->mode=4;
+			if (strncmp(result,"sixel",5)==0) pContext->mode=5;
 			else if (strncmp(result,"high_ansi",9)==0) pContext->mode=3;
 		}
 		if (retrievefromini(f_inifile,"[DEFAULTGUI]","align",result,sizeof(result)))
@@ -579,6 +675,28 @@ int default_open(void* hContext,FILE *f_inifile,int argc,char** argv)
 
 		} else {
 			memcpy(pContext->monochrome_characters,default_monochrome_characters,DEFAULT_MONOCHROME_CHARACTERS);
+		}
+		if (retrievefromini(f_inifile,"[DEFAULTGUI]","sixel_resolution",result,sizeof(result)))
+		{
+			int i;
+			int l;
+			l=strlen(result);
+			pContext->screenwidth=pContext->screenheight=0;
+			for (i=0;i<l;i++)
+			{
+				if (result[i]=='x')
+				{
+					result[i]=0;
+					pContext->screenwidth =atoi(&result[0]);
+					pContext->screenheight=atoi(&result[i+1]);
+				}
+			}
+			if (pContext->screenwidth==0 || pContext->screenwidth>1024 || pContext->screenheight==0) 
+			{
+				printf("illegal parameter for sixelresultion. please use something like 1024x768\n");
+				return DEFAULT_NOK;
+			}
+
 		}
 	}
 
@@ -605,6 +723,7 @@ int default_open(void* hContext,FILE *f_inifile,int argc,char** argv)
 			else if (strncmp(result,"monochrome",10)==0) pContext->mode=1;
 			else if (strncmp(result,"low_ansi",8)==0) pContext->mode=2;
 			else if (strncmp(result,"high_ansi2",10)==0) pContext->mode=4;
+			else if (strncmp(result,"sixel",5)==0) pContext->mode=5;
 			else if (strncmp(result,"high_ansi",9)==0) pContext->mode=3;
 			else {
 				printf("unknown parameter for -vmode. please use one of\n");
@@ -613,6 +732,7 @@ int default_open(void* hContext,FILE *f_inifile,int argc,char** argv)
 				printf("low_ansi ");
 				printf("high_ansi ");
 				printf("high_ansi2 ");
+				printf("sixel ");
 				printf("\n");	
 				return DEFAULT_NOK;
 			}	
@@ -651,6 +771,27 @@ int default_open(void* hContext,FILE *f_inifile,int argc,char** argv)
 			{
 				fprintf(stderr,"Error opening logfile [%s]\n",result);
 				exit(0);
+			}
+		}
+		if (retrievefromcommandline(argc,argv,"-sres",result,sizeof(result)))
+		{
+			int i;
+			int l;
+			l=strlen(result);
+			pContext->screenwidth=pContext->screenheight=0;
+			for (i=0;i<l;i++)
+			{
+				if (result[i]=='x')
+				{
+					result[i]=0;
+					pContext->screenwidth =atoi(&result[0]);
+					pContext->screenheight=atoi(&result[i+1]);
+				}
+			}
+			if (pContext->screenwidth==0 || pContext->screenwidth>1024 || pContext->screenheight==0) 
+			{
+				printf("illegal parameter for -sres. please use something like 1024x768\n");
+				return DEFAULT_NOK;
 			}
 		}
 	}

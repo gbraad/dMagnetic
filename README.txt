@@ -1,10 +1,10 @@
 *** dMagnetic
 *** Use at your own risk
-*** (C)opyright 2019 by dettus@dettus.net
+*** (C)opyright 2020 by dettus@dettus.net
 *****************************************
 
 
-Welcome, brave adventurer. This is Version 0.21.
+Welcome, brave adventurer. This is Version 0.22.
 If you are interested in playing "The Pawn", just follow these simple steps.
 
 STEP 1: BUILD
@@ -29,7 +29,9 @@ your harddrive.
 
 
 STEP 4: CONFIGURE
-edit dMagnetic.ini, especially the lines ????mag= and ???gfx=, or ???msdosdir=.
+edit dMagnetic.ini, especially the lines that start with one of ????mag= and 
+???gfx=, ???msdosdir= or ???tworsc=. Make sure that only one of those three
+methods (mag&gfx, msdosdir, tworsc) is being commented in.
 
 
 STEP 5: RUN
@@ -49,10 +51,13 @@ Alternatively, you can select the .mag files like this:
 
 ./dMagnetic -ini dMagnetic.ini -mag /usr/local/share/games/pawn.mag
 
-TO SEE GRAPHICS IN WONDERLAND, you have to type in 'GRAPHICS'.
+TO SEE GRAPHICS IN WONDERLAND OR ANY GAME FROM THE MAGNETIC SCROLLS COLLECTION,
+you have to type in 'GRAPHICS'. To see the EGA version of those pictures, run
+
+./dMagnetic -ega -ini dMagnetic.ini wonderland
 
 
-STEP 5: GRAPHICS
+STEP 6: GRAPHICS
 You can select output modes by using one of the following parameters:
 
 ./dMagnetic -ini dMagnetic.ini pawn -vmode none       -vrows 40 -vcols 120
@@ -60,12 +65,16 @@ You can select output modes by using one of the following parameters:
 ./dMagnetic -ini dMagnetic.ini pawn -vmode low_ansi   -vrows 40 -vcols 120
 ./dMagnetic -ini dMagnetic.ini pawn -vmode high_ansi  -vrows 40 -vcols 120
 ./dMagnetic -ini dMagnetic.ini pawn -vmode high_ansi2 -vrows 40 -vcols 120
+./dMagnetic -ini dMagnetic.ini pawn -vmode sixel -sres 1024x768 -vcols 120
 
 The defaut mode is "low_ansi", since it works on most terminals. The mode 
 called "high_ansi" provides the richest amount of colors, even though the 
 graphics are slightly block-y. When playing the PC version, the high_ansi2
 mode is recommended.
 if your terminal does not support them, please try one of the others. 
+
+The sixel mode can be used in certain terminal emulators, such as mlterm, or
+some variants of xterm, when run with xterm -ti vt340.
 
 STEP 6: LOGGING
 In case you would like to retrace our steps, you can use -vlog LOGFILE.log and

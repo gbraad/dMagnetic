@@ -2,7 +2,7 @@
 .\" groff -man -Tascii dMagneticini.5
 .\"
 .
-.Dd December 27th, 2019
+.Dd February 11th, 2020
 .Os OpenBSD 
 .Dt dMagneticini 5
 .
@@ -60,7 +60,18 @@ pawngfx=/home/games/magneticscrolls/pawn.gfx
 ;pawnmsdos=/home/games/magneticscrolls/msdosversions/PAWN
 .Pp
 The .mag and .gfx packages can be downloaded from https://msmemorial.if-legends.org/memorial.php, btw. If you are lucky enough to have a copy of the MSDOS version stored on your harddrive, you can provide the directory with the pawnmsdos entry.
-.
+.Pp
+;wonderlandtworsc=/games/magneticscrolls/wonderland/TWO.RSC
+.br
+;guildtworsc=/games/magneticscrolls/MSC/GTWO.RSC
+.br
+;corruptiontworsc=/games/magneticscrolls/MSC/CTWO.RSC
+.br
+;fishtworsc=/games/magneticscrolls/MSC/FTWO.RSC
+.Pp
+"Wonderland", and the "Magnetic Scrolls Collections" used a different framework, called "Magnetic Windows". This framework utilized a collection of resource files. By providing the name and the location of the second resource file "TWO.RSC", the names of the other ones can be computed.
+.Pp
+To avoid any form of misunderstanding, it is recommended to make sure that the .ini file is providing only one of the three methods. The other two should be commented out.
 .Sh SECTION [RANDOM]
 This section configures the random number generator.
 .Pp
@@ -101,15 +112,22 @@ mode=high_ansi
 .br
 ;mode=high_ansi2
 .br
+;mode=sixel
+.br
 low_ansi_characters=\\\\/=|\\;
 .br
 monochrome_characters= .:-=+*x#@$X
+.br
+sixel_resolution=1024x768
 .Pp
 Changing the numbers of rows will make pictures longer, changing the number of columns makes them wider. To change the output mode, comment it in, and comment the current one out.
 .br
 The characters that will be used in the low ansi rendering mode can be configured with the low_ansi_characters entry. Note that the backslash and semicolon need to be escaped.
 .br
 The monochrome_characters entry is a the actual shade that will be displayed. The leftmost part start with the lowest intensity, it goes up until the right.
+.br
+The sixel resolution is setting the amount of pixels in which the images are being rendered with sixel mode.
+.br
 .Sh EXAMPLE
 .Pp
 ;you can download the files from https://msmemorial.if-legends.org/magnetic.php
@@ -128,6 +146,8 @@ guildgfx=/usr/local/share/games/magneticscrolls/guild.gfx
 .br
 ;guildmsdos=/usr/local/share/games/magneticscrolls/msdosversions/GUILD
 .br
+;guildtworsc=/games/magneticscrolls/MSC/GTWO.RSC
+.br
 jinxtermag=/usr/local/share/games/magneticscrolls/jinxter.mag
 .br
 jinxtergfx=/usr/local/share/games/magneticscrolls/jinxter.gfx
@@ -136,9 +156,13 @@ corruptionmag=/usr/local/share/games/magneticscrolls/ccorrupt.mag
 .br
 corruptiongfx=/usr/local/share/games/magneticscrolls/ccorrupt.gfx
 .br
+;corruptiontworsc=/games/magneticscrolls/MSC/CTWO.RSC
+.br
 fishmag=/usr/local/share/games/magneticscrolls/fish.mag
 .br
 fishgfx=/usr/local/share/games/magneticscrolls/fish.gfx
+.br
+;fishtworsc=/games/magneticscrolls/MSC/FTWO.RSC
 .br
 mythmag=/usr/local/share/games/magneticscrolls/myth.mag
 .br
@@ -147,6 +171,8 @@ mythgfx=/usr/local/share/games/magneticscrolls/myth.gfx
 wonderlandmag=/usr/local/share/games/magneticscrolls/wonder.mag
 .br
 wonderlandgfx=/usr/local/share/games/magneticscrolls/wonder.gfx
+.br
+;wonderlandtworsc=/games/magneticscrolls/WONDER/TWO.RSC
 .br
 .br
 .br

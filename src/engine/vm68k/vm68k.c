@@ -932,12 +932,11 @@ int vm68k_getNextOpcode(void* hVM68k,unsigned short* opcode)
 			unsigned long long sum;
 			sum=0;
 			for (i=0;i<pVM68k->memsize;i++) sum+=READ_INT32BE(pVM68k->pMem,i);
-			printf("MEMSUM:%llX\n",sum);
+			printf("MEMSUM:%llX ",sum);
 		}
-		printf("\n");
-	//	inst=vm68k_decode(*opcode);
-	//	vm68k_get_instructionname(inst,tmp);
-	//	printf(" --> %s\n",tmp);
+		inst=vm68k_decode(*opcode);
+		vm68k_get_instructionname(inst,tmp);
+		printf(" --> %s\n",tmp);
 		fflush(stdout);
 	}
 

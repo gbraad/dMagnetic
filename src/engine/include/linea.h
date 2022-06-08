@@ -49,6 +49,7 @@ typedef int (*cbLineALoadGame)(void* context,char* filename,void* ptr,int len);
 int lineA_getsize(int* size);
 int lineA_init(void* hLineA,void* pSharedMem,int *sharedmemsize,void* pMag,int magsize,void* pGfx,int gfxsize);
 int lineA_configrandom(void* hLineA,char random_mode,unsigned int random_seed);
+int lineA_setEGAMode(void* hLineA,int egamode);
 int lineA_getVersion(void* hLineA,int* version);
 int lineA_setCBoutputChar(void* hLineA,cbLineAOutputChar pCB,void *context);
 int lineA_setCBoutputString(void* hLineA,cbLineAOutputString pCB,void* context);

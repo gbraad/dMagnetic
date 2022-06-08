@@ -103,6 +103,7 @@ int dMagnetic_init(void** hVM68k,void** hLineA,void* pSharedMem,int memsize,char
 }
 int main(int argc,char** argv)
 {
+	int i;
 	char inifilename[1024];
 	int retval;
 	FILE *f_inifile=NULL;
@@ -117,6 +118,7 @@ int main(int argc,char** argv)
 	char *homedir;
 	char random_mode;
 	unsigned int random_seed;
+	int egamode;
 	char* magbuf;	
 	char* gfxbuf;
 	
@@ -130,6 +132,8 @@ int main(int argc,char** argv)
 		fprintf(stderr,"*** (C)opyright 2019 by dettus@dettus.net\n");
 		fprintf(stderr,"*****************************************\n");	
 		fprintf(stderr,"\n");
+#define	LOCNUM	12
+		const char *locations[LOCNUM]={"/etc/","/usr/local/share/","/usr/local/share/games/","/usr/local/share/dMagnetic/","/usr/local/games/","/usr/local/games/dMagnetic/","/usr/share/","/usr/share/games/","/usr/share/dMagnetic/","/usr/games/","/usr/games/dMagnetic/","./"};
 
 		f_inifile=NULL;
 		if (f_inifile==NULL)
@@ -138,66 +142,14 @@ int main(int argc,char** argv)
 			snprintf(inifilename,1023,"%s/dMagnetic.ini",homedir);
 			f_inifile=fopen(inifilename,"rb");
 		}
-		if (f_inifile==NULL)
+		for (i=0;i<LOCNUM;i++)
 		{
-			snprintf(inifilename,1023,"/etc/dMagnetic.ini");
-			f_inifile=fopen(inifilename,"rb");
+			if (f_inifile==NULL)
+			{
+				snprintf(inifilename,1023,"%sdMagnetic.ini",locations[i]);
+				f_inifile=fopen(inifilename,"rb");
+			}
 		}
-		if (f_inifile==NULL)
-		{
-			snprintf(inifilename,1023,"/usr/local/share/dMagnetic.ini");
-			f_inifile=fopen(inifilename,"rb");
-		}
-		if (f_inifile==NULL)
-		{
-			snprintf(inifilename,1023,"/usr/local/share/games/dMagnetic.ini");
-			f_inifile=fopen(inifilename,"rb");
-		}
-		if (f_inifile==NULL)
-		{
-			snprintf(inifilename,1023,"/usr/local/share/dMagnetic/dMagnetic.ini");
-			f_inifile=fopen(inifilename,"rb");
-		}
-		if (f_inifile==NULL)
-		{
-			snprintf(inifilename,1023,"/usr/local/games/dMagnetic.ini");
-			f_inifile=fopen(inifilename,"rb");
-		}
-		if (f_inifile==NULL)
-		{
-			snprintf(inifilename,1023,"/usr/local/games/dMagnetic/dMagnetic.ini");
-			f_inifile=fopen(inifilename,"rb");
-		}
-		if (f_inifile==NULL)
-		{
-			snprintf(inifilename,1023,"/usr/share/dMagnetic.ini");
-			f_inifile=fopen(inifilename,"rb");
-		}
-		if (f_inifile==NULL)
-		{
-			snprintf(inifilename,1023,"/usr/share/games/dMagnetic.ini");
-			f_inifile=fopen(inifilename,"rb");
-		}
-		if (f_inifile==NULL)
-		{
-			snprintf(inifilename,1023,"/usr/share/dMagnetic/dMagnetic.ini");
-			f_inifile=fopen(inifilename,"rb");
-		}
-		if (f_inifile==NULL)
-		{
-			snprintf(inifilename,1023,"/usr/games/dMagnetic.ini");
-			f_inifile=fopen(inifilename,"rb");
-		}
-		if (f_inifile==NULL)
-		{
-			snprintf(inifilename,1023,"/usr/games/dMagnetic/dMagnetic.ini");
-			f_inifile=fopen(inifilename,"rb");
-		}
-		if (f_inifile==NULL)
-		{
-			snprintf(inifilename,1023,"./dMagnetic.ini");
-			f_inifile=fopen(inifilename,"rb");
-		}	
 
 		if (f_inifile) 
 		{
@@ -278,9 +230,12 @@ int main(int argc,char** argv)
 		printf("\n");
 		printf("\n");
 		printf("PARAMETERS TO RUN THE GAME\n");
-		printf("-ini dMagnetic.ini to provide an inifile\n");
-		printf("-mag MAGFILE.mag   to provide the game binary directly\n");
-		printf("-gfx GFXFILE.gfx   to provide the game graphics directly\n");
+		printf("-ini dMagnetic.ini  to provide an inifile\n");
+		printf("-mag MAGFILE.mag    to provide the game binary directly\n");
+		printf("-gfx GFXFILE.gfx    to provide the game graphics directly\n");
+		printf("-msdosdir DIR/      to provide the game binaries from MSDOS\n");
+		printf("-tworsc DIR/TWO.RSC to use resource files from Wonderland\n");
+		printf("                    or The Magnetic Scrolls Collection Vol.1\n");
 		printf("\n");
 		printf("OPTIONAL PARAMETERS\n");
 		printf("-rmode RANDOMMODE  where mode is one of\n  [");
@@ -296,8 +251,9 @@ int main(int argc,char** argv)
 			printf("none ");
 			printf("monochrome ");
 			printf("low_ansi ");
-			printf("high_ansi");
-			printf("high_ansi2");
+			printf("high_ansi ");
+			printf("high_ansi2 ");
+			printf("sixel ");
 			printf("]");
 		printf("\n");
 		printf("-vlog LOGFILE      to write a log of the commands used\n");
@@ -306,6 +262,7 @@ int main(int argc,char** argv)
 	
 		printf(" OTHER PARAMETERS\n");
 		printf(" -bsd shows the license\n");
+		printf(" -ega prefers EGA images\n");
 		printf(" -help shows this help\n");
 		printf(" -helpini shows an example dMagnetic.ini file\n");
 		printf(" --version shows %d.%d%d\n",VERSION_MAJOR,VERSION_MINOR,VERSION_REVISION);
@@ -326,16 +283,20 @@ int main(int argc,char** argv)
 		printf("guildmag=/usr/local/share/games/magneticscrolls/guild.mag\n");
 		printf("guildgfx=/usr/local/share/games/magneticscrolls/guild.gfx\n");
 		printf(";guildmsdos=/usr/local/share/games/magneticscrolls/msdosversions/GUILD\n");
+		printf(";guildtworsc=/usr/local/share/games/magneticscrolls/MSC/GTWO.RSC\n");
 		printf("jinxtermag=/usr/local/share/games/magneticscrolls/jinxter.mag\n");
 		printf("jinxtergfx=/usr/local/share/games/magneticscrolls/jinxter.gfx\n");
 		printf("corruptionmag=/usr/local/share/games/magneticscrolls/ccorrupt.mag\n");
 		printf("corruptiongfx=/usr/local/share/games/magneticscrolls/ccorrupt.gfx\n");
+		printf(";corruptiontworsc=/usr/local/share/games/magneticscrolls/MSC/CTWO.RSC\n");
 		printf("fishmag=/usr/local/share/games/magneticscrolls/fish.mag\n");
 		printf("fishgfx=/usr/local/share/games/magneticscrolls/fish.gfx\n");
+		printf(";fishtworsc=/usr/local/share/games/magneticscrolls/MSC/FTWO.RSC\n");
 		printf("mythmag=/usr/local/share/games/magneticscrolls/myth.mag\n");
 		printf("mythgfx=/usr/local/share/games/magneticscrolls/myth.gfx\n");
 		printf("wonderlandmag=/usr/local/share/games/magneticscrolls/wonder.mag\n");
 		printf("wonderlandgfx=/usr/local/share/games/magneticscrolls/wonder.gfx\n");
+		printf(";wonderlandtworsc=/usr/local/share/games/magneticscrolls/WONDER/TWO.RSC\n");
 		printf("\n");
 		printf("[RANDOM]\n");
 		printf("mode=pseudo\n");
@@ -415,7 +376,8 @@ int main(int argc,char** argv)
 				return 0;
 			}
 		}
-	}	
+	}
+		
 
 	if (argc)
 	{
@@ -442,6 +404,15 @@ int main(int argc,char** argv)
 			}
 		}
 	}	
+	egamode=0;
+	if (f_inifile)
+	{
+		char result[64];
+		if (retrievefromcommandline(argc,argv,"-ega",result,sizeof(result)))
+		{
+			egamode=1;
+		}
+	}
 
 
 	if (f_inifile) fclose(f_inifile);
@@ -474,6 +445,7 @@ int main(int argc,char** argv)
 			return 0;
 		}
 		retval|=lineA_configrandom(hLineA,random_mode,random_seed);
+		retval|=lineA_setEGAMode(hLineA,egamode);
 		// set the call back hooks for this GUI
 		retval|=lineA_setCBoutputChar(hLineA,default_cbOutputChar,	hGUI);
 		retval|=lineA_setCBoutputString(hLineA,default_cbOutputString,	hGUI);

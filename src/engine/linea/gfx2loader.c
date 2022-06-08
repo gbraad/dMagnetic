@@ -37,10 +37,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	(((tVM68k_ulong)((ptr)[((idx)+3)])&0xff)<< 8)	|\
 	(((tVM68k_ulong)((ptr)[((idx)+2)])&0xff)<< 0)	|\
 	0)
-#define	READ_INT16LE(ptr,idx)	(\
-	(((tVM68k_ulong)((ptr)[((idx)+1)])&0xff)<< 8)	|\
-	(((tVM68k_ulong)((ptr)[((idx)+0)])&0xff)<< 0)	|\
-	0)
 
 
 typedef struct _tGFX2_properties
