@@ -807,7 +807,7 @@ int gfxloader_gfx5(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPic
 	int i;
 	int offs;
 
-	unsigned int rgbvalues[16]={
+	const unsigned int gfx5_rgbvalues[16]={
 		0x00000000,
 		0x3fffffff,
 		0x205330e0,
@@ -827,7 +827,7 @@ int gfxloader_gfx5(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPic
 
 	for (i=0;i<16;i++)
 	{
-		pPicture->palette[i]=rgbvalues[i];
+		pPicture->palette[i]=gfx5_rgbvalues[i];
 	}
 
 
@@ -1017,9 +1017,9 @@ int gfxloader_gfx5(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPic
 // the Amstrad CPC pictures
 int gfxloader_gfx6(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPicture* pPicture)
 {
-	unsigned char codebook[16]={0x00,0x40,0x04,0x44,0x10,0x50,0x14,0x54,0x01,0x41,0x05,0x45,0x11,0x51,0x15,0x55};
+	const unsigned char gfx6_codebook[16]={0x00,0x40,0x04,0x44,0x10,0x50,0x14,0x54,0x01,0x41,0x05,0x45,0x11,0x51,0x15,0x55};
 
-	unsigned int rgbvalues[27]={
+	const unsigned int gfx6_rgbvalues[27]={
 		0x00000000,0x00000201,0x000003ff,
 		0x20100000,0x20100201,0x201003ff,
 		0x3ff00000,0x3ff00201,0x3ff003ff,
@@ -1059,8 +1059,8 @@ int gfxloader_gfx6(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPic
 	byte=0;
 	bitidx=picoffs+1+(gfxbuf[picoffs]+1)*2;
 	mask=0;
-	pPicture->palette[paletteidx++]=rgbvalues[ 0];  // black
-	pPicture->palette[paletteidx++]=rgbvalues[26];  // bright white
+	pPicture->palette[paletteidx++]=gfx6_rgbvalues[ 0];  // black
+	pPicture->palette[paletteidx++]=gfx6_rgbvalues[26];  // bright white
 	symbol=0;
 	code=0;
 	toggle=0;
@@ -1085,7 +1085,7 @@ int gfxloader_gfx6(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPic
 			branch&=0x7f;
 			if (paletteidx<16)      // the first two colours are fixed. and the rest comes from the first 14 terminal symbols
 			{
-				pPicture->palette[paletteidx++]=rgbvalues[branch];	// one of them
+				pPicture->palette[paletteidx++]=gfx6_rgbvalues[branch];	// one of them
 			} else {
 				int loopcnt;
 				loopcnt=1;
@@ -1093,7 +1093,7 @@ int gfxloader_gfx6(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPic
 				{
 					loopcnt=branch-0x10;
 				} else {	// otherwise, it is a code 
-					code=codebook[branch];
+					code=gfx6_codebook[branch];
 				}
 				for (i=0;i<loopcnt && outidx<(pPicture->height*pPicture->width);i++)
 				{
@@ -1222,6 +1222,8 @@ int gfxloader_gfx7(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPic
 					{
 						case 0:	// collect rgb values
 							{
+#define	NUM_BASECOLOURS	16
+#define	NUM_BRIGHTNESSLEVELS	16
 								// the way atari colors work is by packing a basecolor and the brightness within a byte.
 								// the upper 4 bits are the color.
 								// the lower 4 bits are the brightness
@@ -1232,7 +1234,7 @@ int gfxloader_gfx7(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPic
 								int r,g,b;
 								int basecolor;
 								int brightness;
-								unsigned int ataripalette[16][2]=	// RGB values (10 bit)
+								const unsigned int gfx7_ataripalette[NUM_BASECOLOURS][2]=	// RGB values (10 bit)
 								{
 									{0x00000000,0x3e6f9be6},
 									{0x10420000,0x3ffffeaa},
@@ -1254,17 +1256,17 @@ int gfxloader_gfx7(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPic
 								basecolor=(c>>4)&0xf;
 								brightness=(c>>0)&0xf;
 
-								red_dark	=(ataripalette[basecolor][0]>>(2*PICTURE_BITS_PER_RGB_CHANNEL))&0x3ff;	
-								green_dark	=(ataripalette[basecolor][0]>>(1*PICTURE_BITS_PER_RGB_CHANNEL))&0x3ff;	
-								blue_dark	=(ataripalette[basecolor][0]>>(0*PICTURE_BITS_PER_RGB_CHANNEL))&0x3ff;	
+								red_dark	=(gfx7_ataripalette[basecolor][0]>>(2*PICTURE_BITS_PER_RGB_CHANNEL))&0x3ff;	
+								green_dark	=(gfx7_ataripalette[basecolor][0]>>(1*PICTURE_BITS_PER_RGB_CHANNEL))&0x3ff;	
+								blue_dark	=(gfx7_ataripalette[basecolor][0]>>(0*PICTURE_BITS_PER_RGB_CHANNEL))&0x3ff;	
 
-								red_bright	=(ataripalette[basecolor][1]>>(2*PICTURE_BITS_PER_RGB_CHANNEL))&0x3ff;	
-								green_bright	=(ataripalette[basecolor][1]>>(1*PICTURE_BITS_PER_RGB_CHANNEL))&0x3ff;	
-								blue_bright	=(ataripalette[basecolor][1]>>(0*PICTURE_BITS_PER_RGB_CHANNEL))&0x3ff;	
+								red_bright	=(gfx7_ataripalette[basecolor][1]>>(2*PICTURE_BITS_PER_RGB_CHANNEL))&0x3ff;	
+								green_bright	=(gfx7_ataripalette[basecolor][1]>>(1*PICTURE_BITS_PER_RGB_CHANNEL))&0x3ff;	
+								blue_bright	=(gfx7_ataripalette[basecolor][1]>>(0*PICTURE_BITS_PER_RGB_CHANNEL))&0x3ff;	
 
-								r=red_dark	+((red_bright	-red_dark)*brightness)/16;
-								g=green_dark	+((green_bright	-green_dark)*brightness)/16;
-								b=blue_dark	+((blue_bright	-blue_dark)*brightness)/16;
+								r=red_dark	+((red_bright	-red_dark)*brightness)/NUM_BRIGHTNESSLEVELS;
+								g=green_dark	+((green_bright	-green_dark)*brightness)/NUM_BRIGHTNESSLEVELS;
+								b=blue_dark	+((blue_bright	-blue_dark)*brightness)/NUM_BRIGHTNESSLEVELS;
 
 
 
@@ -1275,7 +1277,7 @@ int gfxloader_gfx7(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPic
 							}
 							pPicture->palette[rgbcnt++]=rgb;
 							if (c==0) blackcnt++;
-							if (rgbcnt==16) 
+							if (rgbcnt==NUM_BASECOLOURS) 
 							{
 								state=1;
 								if (treesize==0x3e) state=1; else state=2;
@@ -1318,7 +1320,7 @@ int gfxloader_gfx7(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPic
 	}
 	if (rlenum!=0)
 	{
-		for (i=pPicture->width*2;i<pixcnt;i++)
+		for (i=pPicture->width*2;i<pixcnt;i++)	// descramble over 2 lines
 		{
 			pPicture->pixels[i]^=pPicture->pixels[i-pPicture->width*2];
 		}
@@ -1332,26 +1334,33 @@ int gfxloader_gfx7(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPic
 // Apple II picture loader
 int gfxloader_gfx8(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPicture* pPicture)
 {
-	unsigned int apple2_palette[16]={// 10 bit per channel
-		0x00000000,
-		0x1814E2F6,
-		0x000A3581,
-		0x050CFBF6,
+#define PICTURE_HOTFIX1         0x80000000
+#define PICTURE_HOTFIX2         0x40000000
+#define PICTURE_HOTFIX3         0x20000000
+#define	APPLE2_COLOURS		16
 
-		0x1817240C,
-		0x2719C671,
-		0x050F58F0,
-		0x1C9FFF42,
 
-		0x38E1E181,
-		0x3FF443F6,
-		0x2719C671,
-		0x342C3BFF,
 
-		0x3FF6A4F0,
-		0x3FFA0742,
-		0x342DDA35,
-		0x3FFFFFFF,
+	const unsigned int gfx8_apple2_palette[APPLE2_COLOURS]={// 10 bit per channel
+		0x00000000,	// black
+		0x1814e2f6,	// dark blue
+		0x000a3581,	// dark green
+		0x050cfbf6,	// medium blue
+
+		0x1817240c,	// brown
+		0x2719c671,	// dark grey
+		0x050f58f0,	// light green
+		0x1c9fff42,	// aquamarin
+
+		0x38e1e181,	// deep red
+		0x3ff443f6,	// purple
+		0x2719c671,	// light grey
+		0x342c3bff,	// light blue
+
+		0x3ff6a4f0,	// orange
+		0x3ffa0742,	// pink
+		0x342dda35,	// yellow
+		0x3fffffff	// white
 	};
 	int retval;
 	int i;
@@ -1369,17 +1378,19 @@ int gfxloader_gfx8(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPic
 
 	retval=0;	
 	treeoffs=READ_INT32BE(gfxbuf,4*picnum+4);
+
 	
-	for (i=0;i<16;i++)
+	for (i=0;i<APPLE2_COLOURS;i++)
 	{
-		pPicture->palette[i]=apple2_palette[i];
+		pPicture->palette[i]=gfx8_apple2_palette[i];
 	}
 	pPicture->height=192-32;
-	pPicture->width=140;
-	hotfix=(treeoffs&0xc0000000);
-	if (hotfix==0x80000000) hotfix=-1;
-	if (hotfix==0x40000000) hotfix= 1;
-	treeoffs&=0x3ffffff;
+	pPicture->width=140*2;
+	hotfix=(treeoffs&0xe0000000);
+	if (hotfix==PICTURE_HOTFIX1) hotfix=-1;
+	if (hotfix==PICTURE_HOTFIX2) hotfix= 1;
+	if (hotfix==PICTURE_HOTFIX3) hotfix= 2;
+	treeoffs&=0x1ffffff;
 	treeoffs+=1;
 
 	// step 1: unhuffing with the RLE
@@ -1392,7 +1403,12 @@ int gfxloader_gfx8(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPic
 	byte=0;
 	unhuffptr=(unsigned char*)&(pPicture->pixels[pPicture->height*pPicture->width]);	
 
-	while (outidx<16384 && bitidx<=gfxsize)
+	// at the unhuffptr, there is now the content which would have
+	// been written into the Apple II Videoram at $2000.
+	// the first 8192 bytes are the AUX memory bank.
+	// the second 8192 bytes are the MAIN memory bank
+
+	while (outidx<(8192+8192) && bitidx<=gfxsize)
 	{
 		unsigned char branchl,branchr;
 		unsigned char branch;
@@ -1419,7 +1435,7 @@ int gfxloader_gfx8(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPic
 				n=1;
 				lastterm=terminal;
 			}
-			for (i=0;i<n && outidx<16384;i++)
+			for (i=0;i<n && outidx<(8192+8192);i++)
 			{
 				unhuffptr[outidx++]=terminal;
 			}
@@ -1428,11 +1444,6 @@ int gfxloader_gfx8(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPic
 			treeidx=branch;
 		}
 	}
-	// at the unhuffptr, there is now the content which would have
-	// been written into the Apple II Videoram at $2000.
-	// the first 8192 bytes are the AUX memory bank.
-	// the second 8192 bytes are the MAIN memory bank
-
 	// step 2: translate the extracted buffer into pixels	
 	pixidx=0;
 	for (offs4=0;offs4<120;offs4+=40)
@@ -1450,6 +1461,14 @@ int gfxloader_gfx8(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPic
 						int p;
 						int j;
 						p=i+offs1+offs2+offs3+offs4;
+						// the pixel information is spread out over AUX and MAIN memory.
+						// 4*7=28 bits are used to store 7 pixels.
+						// the bits are being read LSB  first, but only 7 bits of a byte are being used.
+						// 
+						// A0..A6 are the bits from the first byte in the AUX memory. Starting at 0x0000
+						// B0..B6 are the bits from the second byte in the AUX memory.
+						// M0..M6 are the bits from the first byte in the MAIN memory. Starting at 0x2000
+						// N0..N6 are the bits from the second byte in the MAIN memory.
 						bitreg =((((unhuffptr[p+0x0000]>>0)&0xf))<< 0); 				// pixel 0: A0 A1 A2 A3
 						bitreg|=((((unhuffptr[p+0x0000]>>4)&0x7)|((unhuffptr[p+0x2000]&0x1)<<3))<< 4); 	// pixel 1: A4 A5 A6 M0
 						bitreg|=((((unhuffptr[p+0x2000]>>1)&0xf))<< 8); 		   		// pixel 2: M1 M2 M3 M4
@@ -1457,13 +1476,15 @@ int gfxloader_gfx8(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPic
 						bitreg|=((((unhuffptr[p+0x0001]>>2)&0xf))<<16); 	   			// pixel 4: B2 B3 B4 B5
 						bitreg|=((((unhuffptr[p+0x0001]>>6)&0x1)|((unhuffptr[p+0x2001]&0x7)<<1))<<20); 	// pixel 5: B6 N0 N1 N2
 						bitreg|=((((unhuffptr[p+0x2001]>>3)&0xf))<<24); 	   			// pixel 6: N3 N4 N5 N6
-						
+					
+						// bits have been collected, now turn them into pixels.	
 						for (j=0;j<7;j++)
 						{
 							unsigned char col;
 					
 							col=bitreg&0xf;bitreg>>=4;
 							pPicture->pixels[pixidx++]=col;
+							pPicture->pixels[pixidx++]=col;	// make the pictures T W I C E as wide
 						}						
 					}
 				}

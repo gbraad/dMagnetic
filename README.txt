@@ -4,7 +4,7 @@
 *****************************************
 
 
-Welcome, brave adventurer. This is Version 0.31.
+Welcome, brave adventurer. This is Version 0.32.
 If you are interested in playing "The Pawn", just follow these simple steps.
 
 STEP 1: BUILD
@@ -34,6 +34,11 @@ https://msmemorial.if-legends.org/games.htm/pawn.php
 Alternatively, if you have the MS-DOS version of the games, copy them onto
 your harddrive. 
 
+Try them out by running
+
+% ./dMagnetic -mag pawn.mag
+
+(for example)
 
 STEP 4: CONFIGURE
 edit dMagnetic.ini, especially the lines that start with one of ????mag= and 
@@ -93,10 +98,11 @@ For the Spectrum+3/Spectrum128 releases, the commandline would be this one:
 
 % ./dMagnetic -ini dMagnetic.ini -spectrum DISKIMAGE.DSK
 
-For the Apple ][ releases, both the .nib and .2mg format can be used:
+For the Apple ][ releases, the .nib,.2mg and .woz format can be used:
 
 % ./dMagnetic -ini dMagnetic.ini -appleii PAWN.NIB
-% ./dMagnetic -ini dMagnetic.ini -appleii CorrA.2mg,CorrB.2mg,CorrC.2mg
+% ./dMagnetic -ini dMagnetic.ini -appleii GUILD.2MG
+% ./dMagnetic -ini dMagnetic.ini -appleii CorrA.woz,CorrB.woz,CorrC.woz
 
 
 

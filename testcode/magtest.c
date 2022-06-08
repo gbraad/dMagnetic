@@ -53,7 +53,7 @@ int main(int argc,char** argv)
 	
 	fprintf(stderr,"*** dMagnetic- magtest\n");
 	fprintf(stderr,"*** Use at your own risk\n");
-	fprintf(stderr,"*** (C)opyright 2020 by dettus@dettus.net\n");
+	fprintf(stderr,"*** (C)opyright 2021 by dettus@dettus.net\n");
 	fprintf(stderr,"*****************************************\n");	
 	fprintf(stderr,"\n");
 

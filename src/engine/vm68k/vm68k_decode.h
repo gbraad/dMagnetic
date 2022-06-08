@@ -28,6 +28,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef	VM68K_DECODE_H
 #define	VM68K_DECODE_H
+//#define	DEBUG_PRINT
 #include "vm68k_datatypes.h"
 
 
@@ -127,7 +128,9 @@ VM68K_INST_UNLK,	//0100111001011yyy
 // opcodes are 16 bit values, this function translates them into an easier-to-handle enumeration.
 tVM68k_instruction vm68k_decode(tVM68k_uword opcode);
 
+#ifdef	DEBUG_PRINT
 // this function is for translating the enumeration into something human-readable.
 void vm68k_get_instructionname(tVM68k_instruction instruction,char* name);
+#endif
 
 #endif

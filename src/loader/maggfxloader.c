@@ -80,7 +80,8 @@ int loader_init(int argc,char** argv,FILE *f_inifile,
 			|| (retrievefromcommandline(argc,argv,"corruption",NULL,0))
 			|| (retrievefromcommandline(argc,argv,"fish",NULL,0))
 			|| (retrievefromcommandline(argc,argv,"myth",NULL,0))
-			|| (retrievefromcommandline(argc,argv,"wonderland",NULL,0)))
+			|| (retrievefromcommandline(argc,argv,"wonderland",NULL,0))
+			|| (retrievefromcommandline(argc,argv,"wonder",NULL,0)))
 	{
 		gamenamegiven=1;
 	}
@@ -92,7 +93,7 @@ int loader_init(int argc,char** argv,FILE *f_inifile,
 	}
 	{
 		int i;
-		char* gameprefix[]={"pawn","guild","jinxter","corruption","fish","myth","wonderland"};
+		char* gameprefix[]={"pawn","guild","jinxter","corruption","fish","myth","wonderland","wonder"};
 		char magname[32];
 		char gfxname[32];
 		char tworscname[32];
@@ -103,7 +104,7 @@ int loader_init(int argc,char** argv,FILE *f_inifile,
 		char archimedesname[32];
 		char atarixlname[32];
 		char appleiiname[32];
-		for (i=0;i<7;i++)
+		for (i=0;i<8;i++)
 		{
 			snprintf(magname,32,"%smag",gameprefix[i]);
 			snprintf(gfxname,32,"%sgfx",gameprefix[i]);
@@ -307,6 +308,10 @@ int loader_init(int argc,char** argv,FILE *f_inifile,
 			finish=1;
 			printf("Writing new .mag file [%s]\n",magfilename);
 			f=fopen(magfilename,"wb");
+			if (!f)
+			{
+				fprintf(stderr,"unable to open [%s]\n",magfilename);
+			}
 			fwrite(magbuf,sizeof(char),*magsize,f);
 			fclose(f);
 		}
@@ -315,6 +320,10 @@ int loader_init(int argc,char** argv,FILE *f_inifile,
 			finish=1;
 			printf("Writing new .gfx file [%s]\n",gfxfilename);
 			f=fopen(gfxfilename,"wb");
+			if (!f)
+			{
+				fprintf(stderr,"unable to open [%s]\n",gfxfilename);
+			}
 			fwrite(gfxbuf,sizeof(char),*gfxsize,f);
 			fclose(f);
 		}

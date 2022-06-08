@@ -35,6 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "default_callbacks.h"
 #include "maggfxloader.h"
 #include "dMagnetic_helpscreens.h"
+#include "dMagnetic_pathnames.h"
 #define	SHAREDMEMSIZE	98304	// 98304 bytes ought to be enough for everybody
 #define	MAXMAGSIZE	(1<<20)
 #define	MAXGFXSIZE	(1<<22)
@@ -130,8 +131,21 @@ int main(int argc,char** argv)
 	{
 		dMagnetic_helpscreens_header();
 #define	LOCNUM	14
-		const char *locations[LOCNUM]={"/etc/","/usr/local/share/","/usr/local/share/games/","/usr/local/share/dMagnetic/","/usr/local/games/","/usr/local/games/dMagnetic/","/usr/share/","/usr/share/games/","/usr/share/dMagnetic/","/usr/games/","/usr/games/dMagnetic/","/usr/share/doc/dmagnetic/","/usr/pkg/share/doc/dMagnetic/",
-		"./"};	// this should always be the last one.
+		const char *locations[LOCNUM]={
+			PATH_ETC,
+			PATH_USR_LOCAL_SHARE,
+			PATH_USR_LOCAL_SHARE_GAMES,
+			PATH_USR_LOCAL_SHARE"dMagnetic/",
+			PATH_USR_LOCAL_GAMES,
+			PATH_USR_LOCAL_GAMES"dMagnetic/",
+			PATH_USR_SHARE,
+			PATH_USR_SHARE_GAMES,
+			PATH_USR_SHARE"dMagnetic/",
+			PATH_USR_GAMES,
+			PATH_USR_GAMES"dMagnetic/",
+			PATH_USR_SHARE"doc/dmagnetic/",
+			PATH_USR_PKG_SHARE"doc/dMagnetic/",
+			"./"};	// this should always be the last one.
 
 		f_inifile=NULL;
 		if (f_inifile==NULL)

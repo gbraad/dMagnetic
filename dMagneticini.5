@@ -2,7 +2,7 @@
 .\" groff -man -Tascii dMagneticini.5
 .\"
 .
-.Dd December 24th, 2020
+.Dd July 19th, 2021
 .Os OpenBSD 
 .Dt dMagneticini 5
 .
@@ -135,15 +135,15 @@ To use ATR images from the AtariXL/Atari800 releases, the parameters are as foll
 ;jinxteratarixl=/atr/JINXTER1.ATR,/atr/JINXTER2.ATR
 .br
 .Pp
-To use NIB or 2MG images from the Apple II releases, the parameters are as followed:
+To use NIB,2MG or WOZ images from the Apple II releases, the parameters are as followed:
 .br
 ;pawnappleii=/nib/pawn.nib
 .br
-;guildappleii=/nib/guild.nib
+;guildappleii=/2mg/guild.2mg
 .br
 ;jinxterappleii=/nib/jinxter1.nib,/nib/jinxter2.nib
 .br
-;corruptionappleii=/2mg/corruptA.2mg,/2mg/corruptB.2mg,/2mg/corruptC.2mg
+;corruptionappleii=/woz/corruptA.woz,/woz/corruptB.woz,/woz/corruptC.woz
 .Pp
 To avoid any form of misunderstanding, it is recommended to make sure that the .ini file is providing only one of the five methods. The other four should be commented out.
 .Sh SECTION [RANDOM]
@@ -287,7 +287,7 @@ corruptiongfx=/usr/local/share/games/magneticscrolls/ccorrupt.gfx
 .br
 ;corruptionarchimedes=/adf/CORRUPTIONarchimedes.adf
 .br
-;corruptionappleii=/2mg/corruptA.2mg,/2mg/corruptB.2mg,/2mg/corruptC.2mg
+;corruptionappleii=/woz/corruptA.woz,/woz/corruptB.woz,/woz/corruptC.woz
 .br
 fishmag=/usr/local/share/games/magneticscrolls/fish.mag
 .br

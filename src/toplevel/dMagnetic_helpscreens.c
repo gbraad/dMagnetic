@@ -29,6 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #include <string.h>
 #include "dMagnetic_helpscreens.h"
+#include "dMagnetic_pathnames.h"
 #include "version.h"
 
 #define	NUMGAMES	7
@@ -61,6 +62,7 @@ typedef struct _tGameInfo
 {
 	char *name;
 	char *description;
+	char *maggfxname;
 	int disknum;
 	int special;
 	char *specialPrefix;
@@ -68,10 +70,10 @@ typedef struct _tGameInfo
 } tGameInfo;
 
 const tPlatformInfo	cdMagnetic_platformInfo[NUMPLATFORMS]={
-	{"mag",		"/usr/local/share/games/magneticscrolls/",	".mag"	,0,0,1,1,	PLATFORM_MAG,		"-mag MAGFILE.mag"},
-	{"gfx",		"/usr/local/share/games/magneticscrolls/",	".gfx"	,0,0,1,1,	PLATFORM_GFX,		"-gfx GFXFILE.gfx"},
+	{"mag",		PATH_USR_LOCAL_SHARE_GAMES"magneticscrolls/",	".mag"	,0,0,1,1,	PLATFORM_MAG,		"-mag MAGFILE.mag"},
+	{"gfx",		PATH_USR_LOCAL_SHARE_GAMES"magneticscrolls/",	".gfx"	,0,0,1,1,	PLATFORM_GFX,		"-gfx GFXFILE.gfx"},
 	{"msdos",	"/MSDOS/C/",					""	,1,0,1,0,	PLATFORM_MSDOS,		"-msdosdir DIRECTORY/"},
-	{"tworsc",	"/usr/local/share/games/",			"TWO.RSC",0,1,1,0,	PLATFORM_TWORSC,	"-tworsc DIRECTORY/TWO.RSC"},
+	{"tworsc",	PATH_USR_LOCAL_SHARE"games/",			"TWO.RSC",0,1,1,0,	PLATFORM_TWORSC,	"-tworsc DIRECTORY/TWO.RSC"},
 	{"d64",		"/8/",						".D64"	,1,0,2,0,	PLATFORM_D64,		"-d64 IMAGE1.d64,IMAGE2.d64"},
 	{"amstradcpc",	"/dsk/amstradcpc/",				".DSK"	,1,0,2,0,	PLATFORM_AMSTRADCPC,	"-amstradcpc IMAGE1.DSK,IMAGE2.DSK"},
 	{"spectrum",	"/dsk/spectrum/",				".DSK"	,0,0,1,0,	PLATFORM_SPECTRUM,	"-spectrum IMAGE.DSK"},
@@ -80,13 +82,13 @@ const tPlatformInfo	cdMagnetic_platformInfo[NUMPLATFORMS]={
 	{"appleii",	"/appleii/",					".NIB"	,1,0,3,0,	PLATFORM_APPLEII,	"-appleii IMAGE1.NIB,IMAGE2.NIB,IMAGE3.NIB"}
 };
 const tGameInfo		cdMagnetic_gameInfo[NUMGAMES]={
-	{"pawn",	"The Pawn",		2,0,""			,PLATFORM_MAG|PLATFORM_GFX|PLATFORM_MSDOS|PLATFORM_D64|PLATFORM_AMSTRADCPC|PLATFORM_SPECTRUM|PLATFORM_ARCHIMEDES|PLATFORM_ATARIXL                |PLATFORM_APPLEII},
-	{"guild",	"The Guild of Thieves",	2,1,"MSC/G"		,PLATFORM_MAG|PLATFORM_GFX|PLATFORM_MSDOS|PLATFORM_D64|PLATFORM_AMSTRADCPC|PLATFORM_SPECTRUM|PLATFORM_ARCHIMEDES|PLATFORM_ATARIXL|PLATFORM_TWORSC|PLATFORM_APPLEII},
-	{"jinxter",	"Jinxter",		2,0,""			,PLATFORM_MAG|PLATFORM_GFX|PLATFORM_MSDOS|PLATFORM_D64|PLATFORM_AMSTRADCPC|PLATFORM_SPECTRUM|PLATFORM_ARCHIMEDES|PLATFORM_ATARIXL                |PLATFORM_APPLEII},
-	{"corruption",	"Corruption",		3,1,"MSC/C"		,PLATFORM_MAG|PLATFORM_GFX|PLATFORM_MSDOS|PLATFORM_D64|PLATFORM_AMSTRADCPC|PLATFORM_SPECTRUM|PLATFORM_ARCHIMEDES                 |PLATFORM_TWORSC|PLATFORM_APPLEII},
-	{"fish",	"Fish!",		2,1,"MSC/F"		,PLATFORM_MAG|PLATFORM_GFX|PLATFORM_MSDOS|PLATFORM_D64|PLATFORM_AMSTRADCPC|PLATFORM_SPECTRUM|PLATFORM_ARCHIMEDES                 |PLATFORM_TWORSC},
-	{"myth",	"Myth",			1,0,""			,PLATFORM_MAG|PLATFORM_GFX|PLATFORM_MSDOS|PLATFORM_D64|PLATFORM_AMSTRADCPC|PLATFORM_SPECTRUM                                                     },
-	{"wonderland",	"Wonderland",		1,1,"wonderland/"	,PLATFORM_MAG|PLATFORM_GFX                                                                                                       |PLATFORM_TWORSC},
+	{"pawn",	"The Pawn",		"pawn",		2,0,""			,PLATFORM_MAG|PLATFORM_GFX|PLATFORM_MSDOS|PLATFORM_D64|PLATFORM_AMSTRADCPC|PLATFORM_SPECTRUM|PLATFORM_ARCHIMEDES|PLATFORM_ATARIXL                |PLATFORM_APPLEII},
+	{"guild",	"The Guild of Thieves",	"guild",	2,1,"MSC/G"		,PLATFORM_MAG|PLATFORM_GFX|PLATFORM_MSDOS|PLATFORM_D64|PLATFORM_AMSTRADCPC|PLATFORM_SPECTRUM|PLATFORM_ARCHIMEDES|PLATFORM_ATARIXL|PLATFORM_TWORSC|PLATFORM_APPLEII},
+	{"jinxter",	"Jinxter",		"jinxter",	2,0,""			,PLATFORM_MAG|PLATFORM_GFX|PLATFORM_MSDOS|PLATFORM_D64|PLATFORM_AMSTRADCPC|PLATFORM_SPECTRUM|PLATFORM_ARCHIMEDES|PLATFORM_ATARIXL                |PLATFORM_APPLEII},
+	{"corruption",	"Corruption",		"corrupt",	3,1,"MSC/C"		,PLATFORM_MAG|PLATFORM_GFX|PLATFORM_MSDOS|PLATFORM_D64|PLATFORM_AMSTRADCPC|PLATFORM_SPECTRUM|PLATFORM_ARCHIMEDES                 |PLATFORM_TWORSC|PLATFORM_APPLEII},
+	{"fish",	"Fish!",		"fish",		2,1,"MSC/F"		,PLATFORM_MAG|PLATFORM_GFX|PLATFORM_MSDOS|PLATFORM_D64|PLATFORM_AMSTRADCPC|PLATFORM_SPECTRUM|PLATFORM_ARCHIMEDES                 |PLATFORM_TWORSC},
+	{"myth",	"Myth",			"myth",		1,0,""			,PLATFORM_MAG|PLATFORM_GFX|PLATFORM_MSDOS|PLATFORM_D64|PLATFORM_AMSTRADCPC|PLATFORM_SPECTRUM                                                     },
+	{"wonderland",	"Wonderland",		"wonder",	1,1,"wonderland/"	,PLATFORM_MAG|PLATFORM_GFX                                                                                                       |PLATFORM_TWORSC},
 };
 
 void dMagnetic_helpscreens_header()
@@ -150,6 +152,8 @@ void dMagnetic_helpscreens_help(char* argv0)
 	printf("-archimedes image.adf       or use adf/adl images from the Archimedes\n");
 	printf("-atarixl 1.ATR,2.ATR        or use .atr images from the AtariXL\n");
 	printf("-appleii 1.NIB,2.NIB,3.NIB  or use .nib images for the Apple ][\n");
+	printf("-appleii 1.2MG,2.2MG,3.2MG  or use .2MG images for the Apple ][\n");
+	printf("-appleii 1.WOZ,2.WOZ,3.WOZ  or use .woz images for the Apple ][\n");
 	printf("\n");
 	printf("OPTIONAL PARAMETERS\n");
 	printf("-rmode RANDOMMODE  where mode is one of\n  [");
@@ -226,7 +230,7 @@ void dMagnetic_helpscreens_helpini()
 					{
 						if (l) printf(",");
 						printf("%s",cdMagnetic_platformInfo[j].dir);
-						printf("%s",cdMagnetic_platformInfo[j].uppercase?uppercase:cdMagnetic_gameInfo[i].name);
+						printf("%s",cdMagnetic_platformInfo[j].uppercase?uppercase:cdMagnetic_gameInfo[i].maggfxname);
 						if (num!=1) printf("%d",(l+1));
 						printf("%s",cdMagnetic_platformInfo[j].suffix);
 					}

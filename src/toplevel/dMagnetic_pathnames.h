@@ -27,10 +27,22 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 
-#ifndef	VERSION_H
-#define	VERSION_H
+#ifndef	DMAGNETIC_PATHNAMES_H
+#define	DMAGNETIC_PATHNAMES_H
 
-#define	VERSION_MAJOR		0
-#define	VERSION_MINOR		3
-#define	VERSION_REVISION	2
+// some distributions require a specific prefix before the pathnames.
+// those macros allow them to patch the prefixes in a centralized location.
+
+#define	PATH_ETC			"/etc/"
+#define	PATH_USR			"/usr/"
+#define	PATH_USR_LOCAL			"/usr/local/"
+#define	PATH_USR_LOCAL_SHARE		"/usr/local/share/"
+#define	PATH_USR_LOCAL_SHARE_GAMES	"/usr/local/share/games/"
+#define	PATH_USR_LOCAL_GAMES		"/usr/local/games/"
+#define	PATH_USR_SHARE			"/usr/share/"
+#define	PATH_USR_SHARE_GAMES		"/usr/share/games/"
+#define	PATH_USR_GAMES			"/usr/games/"
+#define	PATH_USR_PKG_SHARE		"/usr/pkg/share/"
+
+
 #endif

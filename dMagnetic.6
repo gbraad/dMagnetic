@@ -1,7 +1,7 @@
 .\" Process this file with
-.\" groff -man -Tascii dMagnetic.1
+.\" groff -man -Tascii dMagnetic.6
 .\"
-.Dd December 24th,2020
+.Dd July 19th, 2021
 .Os OpenBSD 
 .Dt dMagnetic 6
 .
@@ -43,6 +43,9 @@ You wake up on a sunny August morning with birds singing, and the air fresh and 
 .br
 .Nm
 .Op Fl atarixl Ar DIRECTORY/FILE1.ATR,DIRECTORY/FILE2.ATR
+.br
+.Nm
+.Op Fl appleii Ar 1.NIB,2.2MG,3.WOZ
 .br
 .Nm
 .Op Fl ini Ar ini-file 
@@ -131,14 +134,17 @@ Once downloaded, their position has to be made available to
 .Nm
 by editing dMagnetic.ini first. 
 .br
-Other possibilities are loading the games from original releases, such as i
-the MS-DOS binaries, 
-the Magnetic Windows Resource Files, 
-the Commodore C64 images in the d64 format, 
-Amstrad CPC and Spectrum128 images in the DSK format.
-Acorn Archimedes images in the ADF/ADL (aka ADFS) format.
-and finally
-AtariXL/Atari800 images in the ATR format.
+Other possibilities are loading the games from original releases, such as
+.Bl -tag -width 10
+.It the MS-DOS binaries
+.It the Magnetic Windows Resource Files
+.It the Commodore C64 images in the d64 format
+.It Amstrad CPC and Spectrum128 images in the DSK format
+.It Acorn Archimedes images in the ADF/ADL (aka ADFS) format
+.It AtariXL/Atari800 images in the ATR format
+.It Apple II images in the 2MG, NIB or WOZ format
+.El
+.
 .Sh STARTING THE GAME
 Once the game(s) have been downloaded, the .mag and .gfx files can be provided via
 .Pp
@@ -168,7 +174,7 @@ A third option is to use the resource files from "Wonderland" or the magnetic sc
 .br
 The names of the other resource files is being calculated from that. With the optional parameter -ega, the EGA versions of the pictures are being shown.
 .Pp
-A fourth option is to use D64 image files from the Commodore 64 releases. They come in pairs, since noth sides of the floppy disk were occupied. So the parameter requires a list of them, separated by komma:
+A fourth option is to use D64 image files from the Commodore 64 releases. They come in pairs, since both sides of the floppy disk were occupied. So the parameter requires a list of them, separated by komma:
 .Pp
 .Nm
 -d64 DIRECTORY/FILE1.d64,DIRECTORY/FILE2.d64 -vmode sixel
@@ -192,6 +198,21 @@ An eigth option is to use ATR image files from the AtariXL/Atari800 releases. Th
 .Pp
 .Nm
 -atarixl DIRECTORY/FILE1.ATR,DIRECTORY/FILE2.ATR
+.Pp
+An ninth option is to use image files from the Apple II releases.
+.Nm
+can handle NIB, 2MG and WOZ. For this platform, up to three disks were used, so three floppy images are required.
+.br
+.Pp
+.Nm
+-appleii 1.NIB,2.NIB,3.NIB
+.br
+.Nm
+-appleii 1.2MG,2.2MG,3.2MG
+.br
+.Nm
+-appleii 1.WOZ,2.WOZ,3.WOZ
+.br
 .Pp
 It is also possible to edit the dMagnetic.ini file and start a specific game, by using one of
 .Pp
@@ -320,33 +341,29 @@ Shows an example for a working dMagnetic.ini file.
 .Op Fl mag Ar MAGFILE.mag
 .Op Fl gfx Ar GFXFILE.gfx
 .br
-.Pp
 .Op Fl msdosdir Ar DIRECTORY/
 .br
-.Pp
 .Op Fl tworsc Ar DIRECTORY/TWO.RSC
 .br
-.Pp
 .Op Fl d64 Ar DIRECTORY/FILE1.d64,DIRECTORY/FILE2.d64
 .br
-.Pp
 .Op Fl amstradcpc Ar DIRECTORY/FILE1.DSK,DIRECTORY/FILE2.DSK
 .br
-.Pp
 .Op Fl spectrum Ar DIRECTORY/DISKIMAGES.DSK
 .br
-.Pp
 .Op Fl archimedes Ar DIRECTORY/DISKIMAGES.ADF
-.Pp
 .br
 .Op Fl atarixl Ar DIRECTORY/FILE1.ATR,DIRECTORY/FILE2.ATR
+.br
+.Op Fl appleii Ar 1.NIB,2.2MG,3.WOZ
 .br
 .Nm
 is a Magnetic Scrolls Interpreter. To actually play the games, their binaries have to be provided. Either in the .mag and .gfx format from https://msmemorial.if-legends.org/magnetic.php, as the name of the directory in which the original MS-DOS version can be found, the location and the name of the second resource file TWO.RSC, as D64-images from the Commodore 64 releases, 
 as DSK-images from the Amstrad/Schneider CPC releases,
 as DSK-images from the Spectrum releases,
 as ADF/ADL/ADFS images from the Acorn Archimedes releases,
-or even as ATR images from the AtariXL/Atari800 releases.
+as ATR images from the AtariXL/Atari800 releases,
+or even as NIB/2MG/WOZ images from the Apple II releases.
 .Pp
 .Op Fl ini Ar dMagnetic.ini pawn
 .br

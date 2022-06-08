@@ -518,18 +518,29 @@ int default_cbDrawPicture(void* context,tPicture* picture,int mode)
 		}
 	}
 	if (pContext->mode==eMODE_SIXEL) 	// sixels
-	{		
+	{	
+
+// so, according to James, some terminals have only 16 registers for the colours.
+// thus, the colour for text foreground and the background might be overwritten,
+// when too many sixel colours are being defined.
+//
+
+// the solution is to make sure that the sixth entry contains the brightest
+// and the 15th entry the darkest colour. So I am reordering the palette.
+#define	FOREGROUND_POSITION	6
+#define	BACKGROUND_POSITION	15
+#define	TOTAL_COLOURS		16
 		int i,j;
 		int accux,accuy;
 		int x,y;
 		int screenheight;
 		int screenwidth;
 		int forceres;
-		int minval;
-		int minpos;
-		int maxval;
-		int maxpos;
-		int paletteorder[16];
+		int minval=0;
+		int minpos=0;
+		int maxval=0;
+		int maxpos=0;
+		int paletteorder[TOTAL_COLOURS];
 		x=0;y=0;
 		accux=accuy=0;
 		screenheight=pContext->screenheight;
@@ -541,6 +552,7 @@ int default_cbDrawPicture(void* context,tPicture* picture,int mode)
 			int ratiox,ratioy;
 			#define	MAGICFIXPOINT	1800	// magic factor was chosen when I removed the float code. simply because it worked with the check and it did not cause overflows with 32 bit machines
 
+			if (picture->width<=0 || picture->height<=1) return 0;	// make sure that there will be no division by 0
 			ratiox=(MAGICFIXPOINT*screenwidth)/(picture->width);
 			ratioy=(MAGICFIXPOINT*screenheight)/(picture->height-1);
 
@@ -559,12 +571,13 @@ int default_cbDrawPicture(void* context,tPicture* picture,int mode)
 		// find the darkest and the brightest color. 
 		// move them to pallette position 0 or 15, to deal with an issue that james found
 		{
-			for (i=0;i<16;i++)
+			int j;
+			for (i=0;i<TOTAL_COLOURS;i++)
 			{
 				unsigned int red,green,blue;
 				unsigned int rgb;
 				int val;
-				paletteorder[i]=i;
+				paletteorder[i]=-1;
 				rgb=picture->palette[i];
 				red  =PICTURE_GET_RED(rgb);
 				green=PICTURE_GET_GREEN(rgb);
@@ -588,13 +601,21 @@ int default_cbDrawPicture(void* context,tPicture* picture,int mode)
 			// memory for 16 rgb values. on those, the default foreground is being over-
 			// written with the sixth colour being defined. and the default background,
 			// when the 15th colour comes. ("a last ressort", as james put it)
+			paletteorder[FOREGROUND_POSITION]=maxpos;	// the brightest one becomes the foreground
+			paletteorder[BACKGROUND_POSITION]=minpos;	// the darkest colour is now the background
+			j=0;
+			for (i=0;i<TOTAL_COLOURS;i++)
+			{
+				if (j==maxpos || j==minpos) j++;
+				if (j==maxpos || j==minpos) j++;
+				if (paletteorder[i]==-1) paletteorder[i]=j++;
 
-			paletteorder[minpos]^=paletteorder[15];paletteorder[15]^=paletteorder[minpos];paletteorder[minpos]^=paletteorder[15];	// the darkest colour is now the background
-			paletteorder[maxpos]^=paletteorder[ 6];paletteorder[ 6]^=paletteorder[maxpos];paletteorder[maxpos]^=paletteorder[ 6];	// the brightest one becomes the foreground
+			}
+			
 		}
 
 		printf("\n\x1bP9;1q\"1;1;%d;%d", screenwidth, screenheight);
-		for (i=0;i<16;i++)
+		for (i=0;i<TOTAL_COLOURS;i++)
 		{
 			unsigned int red,green,blue;
 			unsigned int rgb;
@@ -619,7 +640,7 @@ int default_cbDrawPicture(void* context,tPicture* picture,int mode)
 			int curpixel;
 			accuy0=accuy;
 			y0=y;
-			for (i=0;i<16;i++)
+			for (i=0;i<TOTAL_COLOURS;i++)
 			{
 				printf("#%02d",i);
 				x=0;

@@ -150,7 +150,7 @@ tVM68k_instruction vm68k_decode(tVM68k_uword opcode)
 
 	return VM68K_INST_UNKNOWN;
 }
-
+#ifdef	 DEBUG_PRINT
 void vm68k_get_instructionname(tVM68k_instruction instruction,char* name)
 {
 	#define	INSTFOUND(x)  case x: snprintf(name,64,#x); break;
@@ -248,3 +248,4 @@ void vm68k_get_instructionname(tVM68k_instruction instruction,char* name)
 	}
 
 }
+#endif

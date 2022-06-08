@@ -25,7 +25,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 */
-//#define	DEBUG_PRINT
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -514,7 +513,7 @@ int vm68k_singlestep(void *hVM68k,unsigned short opcode)
 		case VM68K_INST_MOVEMregtomem:
 			{
 				tVM68k_types datatype2;
-				tVM68k_uword bitmask;
+				tVM68k_uword bitmask=0;
 				datatype2=((opcode>>6)&1)?VM68K_LONG:VM68K_WORD;
 				retval=vm68k_resolve_ea(pVM68k,&next,datatype2,addrmode,reg2,VM68K_LEGAL_CONTROLALTERATEADDRESSING|VM68K_LEGAL_AM_PREDEC,&ea);
 				// special case: the memory decrement should only be performed when the bitmask says so
@@ -551,7 +550,7 @@ int vm68k_singlestep(void *hVM68k,unsigned short opcode)
 		case VM68K_INST_MOVEMmemtoreg:
 			{
 				tVM68k_types datatype2;
-				tVM68k_uword bitmask;
+				tVM68k_uword bitmask=0;
 				datatype2=((opcode>>6)&1)?VM68K_LONG:VM68K_WORD;
 				retval=vm68k_resolve_ea(pVM68k,&next,datatype2,addrmode,reg2,VM68K_LEGAL_CONTROLADDRESSING|VM68K_LEGAL_AM_POSTINC,&ea);
 				// special case: the memory increment should only be performed when the bitmask says so
@@ -869,9 +868,13 @@ int vm68k_singlestep(void *hVM68k,unsigned short opcode)
 		break;
 		default:
 		{
+#ifdef	DEBUG_PRINT
 			char tmp[64];
 			vm68k_get_instructionname(instruction,tmp);
 			printf("UNIMPLEMENTED opcode %04X = %s\n",opcode,tmp);
+#else
+			printf("UNIMPLEMENTED opcode %04X\n",opcode);
+#endif
 			retval=VM68K_NOK_UNKNOWN_INSTRUCTION;
 		}
 		break;

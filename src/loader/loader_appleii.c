@@ -37,6 +37,11 @@
 #include "configuration.h"
 #include "vm68k_macros.h"
 
+#define	PREAMBLE_SIZE	3
+#define	EPILOGUE_SIZE	3
+#define	ADDRBUF_SIZE	8
+#define	DATABUF_SIZE	343
+
 #define	MAXDISKS	3
 #define	MAXTRACKS	35
 #define	MAXSECTORS	16
@@ -46,18 +51,204 @@
 #define	NIBTRACKSIZE	(MAXSECTORS*416)	// TODO: why 416?
 
 
+
 #define	GAME_PAWN	0
 #define	GAME_GUILD	1
 #define	GAME_JINXTER	2
 #define	GAME_CORRUPTION	3
+#define	MAXPICTURES	32
 
+
+
+
+#define	WOZ_MAXQUARTERTRACKS	(4*MAXTRACKS)		// TODO: not sure what to do with this...
+#define	WOZ_BLOCKSIZE		512			// the woz format has been designed to work on SD cards. So blocks are aligned to 512 to speed up processing
+
+
+// the most important information, parsed from the WOZ header
+typedef struct _tWozInfo
+{
+	int quarterTrack[WOZ_MAXQUARTERTRACKS];	// TODO: not sure what to do with this...
+	int trackStart[WOZ_MAXQUARTERTRACKS];	// the block offset within the WOZ file
+	int trackBits[WOZ_MAXQUARTERTRACKS];	// the number of bits for a track
+	unsigned int crc32_expected;
+} tWozInfo;
+
+
+int loader_appleii_woz_parseheader(unsigned char* pWozBuf,int wozsize,tWozInfo *pWozInfo)
+{
+	int idx;
+	int len;
+	unsigned char donemask;
+	idx=0;
+	donemask=0;
+	while (idx<wozsize && donemask!=3)
+	{
+		if (memcmp(&pWozBuf[idx],"WOZ2",4)==0)
+		{
+			if (pWozBuf[idx+4]!=0xff || pWozBuf[idx+5]!=0xa || pWozBuf[idx+6]!=0xd || pWozBuf[idx+7]!=0xa)
+			{
+				fprintf(stderr,"       WOZ2 eader corruption? Expected FF 0A 0D 0A, got %02X %02X %02X %02X \n",pWozBuf[idx+4],pWozBuf[idx+5],pWozBuf[idx+6],pWozBuf[idx+7]);
+				return -1;
+			}
+			pWozInfo->crc32_expected=READ_INT32BE(pWozBuf,idx+8);
+			idx+=12;
+		}
+		else if (memcmp(&pWozBuf[idx],"INFO",4)==0)
+		{
+			len=READ_INT32LE(pWozBuf,idx+4);
+			idx+=8;
+			// skip the info chunk
+			idx+=len;
+		}
+		else if (memcmp(&pWozBuf[idx],"TMAP",4)==0)
+		{
+			int i;
+			len=READ_INT32LE(pWozBuf,idx+4);
+			idx+=8;
+			for (i=0;i<WOZ_MAXQUARTERTRACKS;i++)
+			{
+				unsigned char x;
+				x=pWozBuf[idx+i];
+				if (x>=0 && x<MAXTRACKS)
+				{
+					pWozInfo->quarterTrack[i]=x;
+				}
+			}	
+			idx+=len;
+			donemask|=1;
+		}
+		else if (memcmp(&pWozBuf[idx],"TRKS",4)==0)
+		{
+			int i;
+			int idx2;
+			len=READ_INT32LE(pWozBuf,idx+4);
+			idx+=8;
+			idx2=idx;
+			for (i=0;i<WOZ_MAXQUARTERTRACKS;i++)
+			{
+				pWozInfo->trackStart[i]=WOZ_BLOCKSIZE*READ_INT16LE(pWozBuf,idx2);idx2+=2;
+				idx2+=2;		//skip the block count
+				pWozInfo->trackBits[i]=READ_INT32LE(pWozBuf,idx2);idx2+=4;
+			}	
+			idx+=len;
+			donemask|=2;
+
+		}
+		else if (memcmp(&pWozBuf[idx],"META",4)==0)
+		{
+			len=READ_INT32LE(pWozBuf,idx+4);
+			idx+=8;
+			// skip the info chunk
+			idx+=len;
+		}
+		else 
+		{
+			fprintf(stderr,"Unknown Tag in WOZ2 detected %02X %02X %02X %02X\n",pWozBuf[idx+0],pWozBuf[idx+1],pWozBuf[idx+2],pWozBuf[idx+3]);
+			return -1;
+		}
+	}
+	if (donemask!=3)
+	{
+		fprintf(stderr," Error parsing the WOZ header\n");
+		return -1;
+	}
+	return 0;
+}
+// when the woz bit stream is synchronized, it can be interpreted as a nib stream.
+int loader_appleii_woz_synchronize(unsigned char* trackbuf,unsigned char* wozbuf,int len)
+{
+	int i;
+	unsigned char byte;
+	unsigned char bit;
+	unsigned int reg;
+	int addrcnt;
+	int datacnt;
+	int part_cnt;
+	int outidx;
+	
+
+
+	reg=0;
+	byte=0;
+	bit=0;
+	addrcnt=0;
+	datacnt=0;
+	part_cnt=0;
+	i=0;
+	outidx=0;
+	for (i=0;i<NIBTRACKSIZE;i++) trackbuf[i]=0xff;	// initialize
+	while (outidx<NIBTRACKSIZE && i<(len*2) && (part_cnt!=0 || addrcnt!=MAXSECTORS || datacnt!=MAXSECTORS))
+	{
+		int wozbyte;
+		int wozbit;
+
+		wozbyte=(i%len)/8;
+		wozbit=(i%len)%8;
+		bit=(wozbuf[wozbyte]>>(7-wozbit))&1;
+		byte<<=1;
+		byte|=bit;
+		if (byte&0x80)	// byte is synchronized when the highest bit is set.
+		{
+			reg<<=8;
+			reg|=((unsigned int)byte)&0xff;
+			reg&=0x00ffffff;
+			if (part_cnt==0)
+			{
+				if (reg==0xD5AA96)	// addr preamble found
+				{
+					addrcnt++;
+					trackbuf[outidx++]=0xD5;		// write the preamble
+					trackbuf[outidx++]=0xAA;	
+					trackbuf[outidx++]=0x96;	
+					part_cnt=ADDRBUF_SIZE+EPILOGUE_SIZE;	// collect 11 bytes 
+				}
+				if (reg==0xD5AAAD)	// data preamble found
+				{
+					datacnt++;
+					trackbuf[outidx++]=0xD5;		// write the preamble
+					trackbuf[outidx++]=0xAA;	
+					trackbuf[outidx++]=0xAD;
+					part_cnt=DATABUF_SIZE+EPILOGUE_SIZE;	// collect 346 bytes
+				}
+			} else {
+				trackbuf[outidx++]=byte;
+				part_cnt--;	
+			}
+			byte=0;
+		}
+		i++;
+	}
+	// at this point, the trackbuf contains the NIB stream, even though there is no padding between the sectors.
+	// the nib decoder will be able to handle it, even though a physical drive might not be able to.
+	return 0;
+}
+
+int loader_appleii_decode_addrbuf(unsigned char* pAddrBuf,unsigned char* volume,unsigned char* track,unsigned char* sector,unsigned char* checksum)
+{
+	const unsigned char loader_appleii_deinterleave[16]={ 0x0,0x7,0xe,0x6,0xd,0x5,0xc,0x4,0xb,0x3,0xa,0x2,0x9,0x1,0x8,0xf };
+	int ridx;
+	unsigned char x;
+	unsigned char check;
+	ridx=0;
+	check=0;
+#define	ROL(x)	((((x)&0x80)>>7|(x)<<1)&0xff)
+	x=pAddrBuf[ridx++];x=ROL(x);x&=pAddrBuf[ridx++];*volume=x;check^=x;
+	x=pAddrBuf[ridx++];x=ROL(x);x&=pAddrBuf[ridx++];*track=x;check^=x;
+	x=pAddrBuf[ridx++];x=ROL(x);x&=pAddrBuf[ridx++];*sector=loader_appleii_deinterleave[x&0xf];check^=x;
+	x=pAddrBuf[ridx++];x=ROL(x);x&=pAddrBuf[ridx++];*checksum=x;check^=x;
+	if (check)
+	{
+		fprintf(stderr,"Warning. Checksum mismatch\n");
+	}
+	return check;
+}
 
 int loader_appleii_decodenibtrack(unsigned char* pTrackBuf,int track,unsigned char* pDskBuf)
 {
 #define	PREAMBLESIZE	3
 #define	DECODEROFFS	0x96
 #define	SECTORLSB	86
-#define	ROL(x)	((((x)&0x80)>>7|(x)<<1)&0xff)
 	const	unsigned char loader_appleii_addr_preamble[PREAMBLESIZE]={0xD5,0xAA,0x96};
 	const	unsigned char loader_appleii_data_preamble[PREAMBLESIZE]={0xD5,0xAA,0xAD};
 	//const	unsigned char loader_appleii_epilog[PREAMBLESIZE]={0xDE,0xAA,0xEB};
@@ -78,7 +269,6 @@ int loader_appleii_decodenibtrack(unsigned char* pTrackBuf,int track,unsigned ch
 		0x37,0x38,0xFF,0x39,0x3A,0x3B,0x3C,0x3D,
 		0x3E,0x3F};
 
-	const unsigned char loader_appleii_deinterleave[16]={ 0x0,0x7,0xe,0x6,0xd,0x5,0xc,0x4,0xb,0x3,0xa,0x2,0x9,0x1,0x8,0xf };
 
 	unsigned char addr_track=0;
 	unsigned char addr_sector=0;
@@ -101,7 +291,7 @@ int loader_appleii_decodenibtrack(unsigned char* pTrackBuf,int track,unsigned ch
 				{
 					if ( pTrackBuf[(ridx+0)%NIBTRACKSIZE]==loader_appleii_addr_preamble[0] && pTrackBuf[(ridx+1)%NIBTRACKSIZE]==loader_appleii_addr_preamble[1] && pTrackBuf[(ridx+2)%NIBTRACKSIZE]==loader_appleii_addr_preamble[2])
 					{
-						ridx+=3;
+						ridx+=PREAMBLE_SIZE;
 						state=1;
 						foundsectors++;
 					} else ridx++;
@@ -109,15 +299,13 @@ int loader_appleii_decodenibtrack(unsigned char* pTrackBuf,int track,unsigned ch
 				break;
 			case 1:		// decode the ADDR data
 				{
-					unsigned char x;
-					x=pTrackBuf[(ridx++)%NIBTRACKSIZE];x=ROL(x);x&=pTrackBuf[(ridx++)%NIBTRACKSIZE];addr_volume=x;
-					x=pTrackBuf[(ridx++)%NIBTRACKSIZE];x=ROL(x);x&=pTrackBuf[(ridx++)%NIBTRACKSIZE];addr_track=x;
-					x=pTrackBuf[(ridx++)%NIBTRACKSIZE];x=ROL(x);x&=pTrackBuf[(ridx++)%NIBTRACKSIZE];addr_sector=loader_appleii_deinterleave[x&0xf];
-					x=pTrackBuf[(ridx++)%NIBTRACKSIZE];x=ROL(x);x&=pTrackBuf[(ridx++)%NIBTRACKSIZE];addr_checksum=x;
-					if ((addr_volume^addr_track^addr_sector^addr_checksum)&0xf0)
+					unsigned char addrbuf[ADDRBUF_SIZE];
+					int i;
+					for (i=0;i<ADDRBUF_SIZE;i++)
 					{
-						printf("Warning. Checksum mismatch\n");
+						addrbuf[i]=pTrackBuf[(ridx++)%NIBTRACKSIZE];
 					}
+					loader_appleii_decode_addrbuf(addrbuf,&addr_volume,&addr_track,&addr_sector,&addr_checksum);
 					if (volumeid==-1 || volumeid==addr_volume)
 					{
 						volumeid=addr_volume;
@@ -138,7 +326,7 @@ int loader_appleii_decodenibtrack(unsigned char* pTrackBuf,int track,unsigned ch
 				{
 					if ( pTrackBuf[(ridx+0)%NIBTRACKSIZE]==loader_appleii_data_preamble[0] && pTrackBuf[(ridx+1)%NIBTRACKSIZE]==loader_appleii_data_preamble[1] && pTrackBuf[(ridx+2)%NIBTRACKSIZE]==loader_appleii_data_preamble[2])
 					{
-						ridx+=3;
+						ridx+=PREAMBLE_SIZE;
 						state=3;
 					} else ridx++;
 				}
@@ -177,51 +365,16 @@ int loader_appleii_decodenibtrack(unsigned char* pTrackBuf,int track,unsigned ch
 
 int loader_appleii_mkgfx(unsigned char *gfxbuf,int* gfxsize,int gameid,int diskcnt,int *pDskOffs)
 {
-#define	ON_DISKA		0x100000
-#define	ON_DISKB		0x200000
-#define	ON_DISKC		0x400000
 #define	PICTURE_HOTFIX1		0x80000000
 #define	PICTURE_HOTFIX2		0x40000000
-#define	MASK_OFFSET		0xC001FFFF
-
+#define	PICTURE_HOTFIX3		0x20000000
 #define	PICTURENUM		26
-	int i;
+#define	CODESECTIONS		5
+#define	TOTALSECTIONS		(PICTURENUM+CODESECTIONS)
 
-	const unsigned int loader_appleii_offsets_pictures[PICTURENUM]={
-		0x0A000|ON_DISKA,
-		0x00000|ON_DISKC|PICTURE_HOTFIX1,
-		0x0C300|ON_DISKA|PICTURE_HOTFIX2,
-		0x01D00|ON_DISKC,
-
-		0x0E400|ON_DISKA,
-		0x03E00|ON_DISKC,
-		0x10500|ON_DISKA,
-		0x05A00|ON_DISKC|PICTURE_HOTFIX1,
-
-		0x07E00|ON_DISKC,
-		0x0A200|ON_DISKC,
-		0x12400|ON_DISKA,
-		0x0C600|ON_DISKC,
-
-		0x0EA00|ON_DISKC,
-		0x10A00|ON_DISKC|PICTURE_HOTFIX2,
-		0x14300|ON_DISKA,
-		0x12A00|ON_DISKC,
-
-		0x14C00|ON_DISKC,
-		0x16500|ON_DISKA,
-		0x17000|ON_DISKC,
-		0x19600|ON_DISKC,
-
-		0x18900|ON_DISKA,
-		0x1BA00|ON_DISKC,
-		0x1AC00|ON_DISKA,
-		0x1CB00|ON_DISKA,
-
-		0x1DB00|ON_DISKC,
-		0x1FF00|ON_DISKC
-	};
-
+	unsigned int hotfix1=(1<<1)|(1<< 7);
+	unsigned int hotfix2=(1<<2)|(1<<13);
+	unsigned int hotfix3=(1<<16);
 
 	if (gameid!=GAME_CORRUPTION)
 	{
@@ -234,22 +387,97 @@ int loader_appleii_mkgfx(unsigned char *gfxbuf,int* gfxsize,int gameid,int diskc
 		return -1;
 	}
 	*gfxsize=4+4*32+diskcnt*DSKSIZE;
-	printf("gfxsize:%08X\n",*gfxsize);
-	gfxbuf[0]='M';gfxbuf[1]='a';gfxbuf[2]='P';gfxbuf[3]='8';
-	for (i=0;i<PICTURENUM;i++)
 	{
-		unsigned int offset;
-		int disk;
-		unsigned int x;
-		offset=loader_appleii_offsets_pictures[i];
-		disk=0;
-		if (offset&ON_DISKA) disk=0;
-		else if (offset&ON_DISKB) disk=1;
-		else if (offset&ON_DISKC) disk=2;
-		offset&=MASK_OFFSET;
-		x=offset+pDskOffs[disk]+132;
-		WRITE_INT32BE(gfxbuf,4+i*4,x);
+		unsigned char mask;
+		unsigned char byte;
+#define	UNHUFFSTART	0x00a00
+#define	DIR_START	0x997
+#define	DIR_END		0x9d5
+
+		int outidx;
+		int tracks[MAXPICTURES];
+		int sectors[MAXPICTURES];
+		int i;
+		int cnt;
+		int unhuffsize;
+		unsigned char terminal;
+		int treeoffs;
+		int bitidx;
+		int unhuffoffs;
+		int treeidx=0;
+		outidx=0;
+		cnt=0;
+
+		unhuffoffs=4+4*MAXPICTURES+pDskOffs[0]+UNHUFFSTART;
+		terminal=0;
+		unhuffsize=READ_INT16LE(gfxbuf,unhuffoffs);
+		treeoffs=unhuffoffs+2;
+		bitidx=treeoffs+16+16;
+		treeidx=0;	
+		mask=0;
+		byte=0;
+		while (outidx<unhuffsize || mask)
+		{
+			unsigned char branchl,branchr;
+			unsigned char branch;
+
+			if (mask==0x00)
+			{
+				mask=0x80;
+				byte=gfxbuf[bitidx++];
+			}
+
+			branchl=gfxbuf[treeoffs+ 0+treeidx];
+			branchr=gfxbuf[treeoffs+16+treeidx];
+			branch=(byte&mask)?branchl:branchr;
+			mask>>=1;
+
+			if (branch&0x80)
+			{
+				treeidx=branch&0xf;
+			} else {
+				treeidx=0;
+				terminal<<=4;
+				terminal|=(branch&0xf);
+				terminal&=0xff;
+				if (outidx>=(DIR_START*2) && outidx<=(DIR_END*2) && ((outidx&1)==1))
+				{
+					if (cnt<TOTALSECTIONS) tracks[cnt]=terminal;
+					else {
+						sectors[cnt-TOTALSECTIONS]=terminal;
+					}
+					cnt++;
+				}
+				outidx++;
+			}
+		}
+		// read the locations of the pictures. skip over the code sections
+		for (i=0;i<PICTURENUM;i++)
+		{
+			unsigned int offs;
+			offs=4+MAXPICTURES*4;
+
+			
+			offs+=((tracks[i+CODESECTIONS]&0x1f)<<12);
+			offs+=(sectors[i+CODESECTIONS]<<8);
+			if (tracks[i+CODESECTIONS]&0x80) offs+=pDskOffs[2];		// picture is on disk 3
+			else if (tracks[i+CODESECTIONS]&0x40) offs+=pDskOffs[1];	// picture is on disk 2
+			else offs+=pDskOffs[0];						// picture is on disk 1
+
+			if (hotfix1&1) offs|=PICTURE_HOTFIX1;
+			if (hotfix2&1) offs|=PICTURE_HOTFIX2;
+			if (hotfix3&1) offs|=PICTURE_HOTFIX3;
+			hotfix1>>=1;
+			hotfix2>>=1;
+			hotfix3>>=1;
+			WRITE_INT32BE(gfxbuf,4+i*4,offs);
+		}
+		
 	}
+
+	
+	gfxbuf[0]='M';gfxbuf[1]='a';gfxbuf[2]='P';gfxbuf[3]='8';
+
 	return 0;
 }
 typedef	 struct _tSection
@@ -374,7 +602,7 @@ int loader_appleii_mkmag(unsigned char* magbuf,int* magsize,int gameid,unsigned 
 		printf("[");
 		while (i<0x2c && c!=0xa9)
 		{
-			c=pDskBuf[offs];
+			c=pDskBuf[pDskOffs[0]+offs];
 			i++;
 			offs++;
 			if (c>=' ' && c<127) printf("%c",c);
@@ -436,13 +664,14 @@ int loader_appleii(char *appleiiname,
 	int dskidx;
 	int gameid;
 	int diskoffs[MAXDISKS];
+	tWozInfo wozInfo;
 	FILE *f;
 
 #define	SIZE_NIBIMAGE	232960
 #define	SIZE_2MGIMAGE	143424	
 #define	SIZE_DSKIMAGE	143360
 
-	pDskBuf=(unsigned char*)&gfxbuf[4+32*4];
+	pDskBuf=(unsigned char*)&gfxbuf[4+MAXPICTURES*4];
 	l=strlen(appleiiname);
 	j=0;
 	diskcnt=0;
@@ -457,6 +686,11 @@ int loader_appleii(char *appleiiname,
 			int n;
 			int filesize;
 			f=fopen(filename,"rb");
+			if (!f)
+			{
+				fprintf(stderr,"Unable to open [%s]\n",filename);
+				return -1;
+			}
 			fseek(f,0L,SEEK_END);
 			filesize=ftell(f);
 			fseek(f,0L,SEEK_SET);
@@ -470,12 +704,53 @@ int loader_appleii(char *appleiiname,
 					dskidx+=MAXSECTORS*SECTORBYTES;
 				}
 			}
-			if (filesize==SIZE_2MGIMAGE)
+			else if (filesize==SIZE_2MGIMAGE)
 			{
 				n+=fread(&pDskBuf[dskidx],sizeof(char),0x40,f);	// read in the header. https://apple2.org.za/gswv/a2zine/Docs/DiskImage_2MG_Info.txt
 				volumeids[diskcnt]=pDskBuf[dskidx+0x10];	// according to my observations, this is where the volume ID is
 				n+=fread(&pDskBuf[dskidx],sizeof(char),DSKSIZE,f);
 				dskidx+=DSKSIZE;
+			}
+			else
+			{
+				n+=fread(&pDskBuf[dskidx],sizeof(char),filesize,f);	// read in the full file. maybe it is a .WOZ?
+				if (pDskBuf[dskidx+0]=='W' && pDskBuf[dskidx+1]=='O' && pDskBuf[dskidx+2]=='Z' && pDskBuf[dskidx+3]=='2')
+				{
+
+					int dskidx0;
+					// the file is a .woz file, basically an unsynchronized .nib file with a header.
+					// the idea is to synchronize the tracks and treat it as a NIB file.
+			
+					// first, the wo header needs to be parsed, to find the tracks within the diskfile
+					if (loader_appleii_woz_parseheader(&pDskBuf[dskidx],filesize,&wozInfo))
+					{
+						return -1;
+					}
+					// at this point, the header information has been read. the tracks can be found, and the translation from WOZ to DSK can be written into the DskBuf (inplace)
+					dskidx0=dskidx;
+					for (j=0;j<MAXTRACKS;j++)
+					{
+						int start;
+						int len;
+						int quarterTrack;
+
+						quarterTrack=j;//wozInfo.quarterTrack[j];
+						start=wozInfo.trackStart[quarterTrack];
+						len=wozInfo.trackBits[quarterTrack];
+
+						if (start)
+						{	
+							loader_appleii_woz_synchronize(trackbuf,&pDskBuf[dskidx0+start],len);
+							volumeids[diskcnt]=loader_appleii_decodenibtrack(trackbuf,j,&pDskBuf[dskidx]);
+						}
+						dskidx+=MAXSECTORS*SECTORBYTES;
+					}
+
+
+				} else {
+					fprintf(stderr,"Unexpected filesize %d bytes.\n",filesize);
+					return -1;
+				}
 			}
 			fclose(f);
 			printf("read %d bytes from [%s]. Volume ID [%02X]\n",n,filename,volumeids[diskcnt]);
