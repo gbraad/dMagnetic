@@ -77,6 +77,7 @@ int vm68k_resolve_ea(tVM68k* pVM68k,tVM68k_next *pNext,tVM68k_types size,
 			case  VM68K_AMX_data:	if (legal&VM68K_LEGAL_AMX_DATA)
 						{ 
 							*ea=pNext->pcr;
+							retval=VM68K_OK;
 							switch (size)
 							{
 								case VM68K_BYTE: *ea+=1;pNext->pcr+=2;break;
@@ -84,7 +85,6 @@ int vm68k_resolve_ea(tVM68k* pVM68k,tVM68k_next *pNext,tVM68k_types size,
 								case VM68K_LONG: pNext->pcr+=4;break;
 								default: retval=VM68K_NOK_UNKNOWN_INSTRUCTION;
 							}
-							retval=VM68K_OK;
 						}
 						break;
 			case VM68K_AMX_PC: if (legal&VM68K_LEGAL_AMX_PC)

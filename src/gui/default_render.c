@@ -445,10 +445,10 @@ int default_render_monochrome(char* greyscales,int inverted,tPicture* picture,in
 						for (l=x_left;l<x_right;l++)
 						{
 							p=picture->pixels[k*picture->width+l];
-
-							grey+=(PICTURE_GET_RED(picture->palette[p]));
-							grey+=(PICTURE_GET_GREEN(picture->palette[p]));
-							grey+=(PICTURE_GET_BLUE(picture->palette[p]));
+// compensate for luminance (0.2126*R + 0.7152*G + 0.0722*B)
+							grey+=2126*(PICTURE_GET_RED(picture->palette[p]));
+							grey+=7152*(PICTURE_GET_GREEN(picture->palette[p]));
+							grey+= 722*(PICTURE_GET_BLUE(picture->palette[p]));
 
 							pixcnt++;
 						}
@@ -494,10 +494,13 @@ int default_render_monochrome(char* greyscales,int inverted,tPicture* picture,in
 						for (l=x_left;l<x_right;l++)
 						{
 							p=picture->pixels[k*picture->width+l];
-							grey+=(PICTURE_GET_RED(picture->palette[p]));
-							grey+=(PICTURE_GET_GREEN(picture->palette[p]));
-							grey+=(PICTURE_GET_BLUE(picture->palette[p]));
+// compensate for luminance (0.2126*R + 0.7152*G + 0.0722*B)
+							grey+=2126*(PICTURE_GET_RED(picture->palette[p]));
+							grey+=7152*(PICTURE_GET_GREEN(picture->palette[p]));
+							grey+= 722*(PICTURE_GET_BLUE(picture->palette[p]));
+
 							pixcnt++;
+
 						}
 					}
 					grey/=pixcnt;

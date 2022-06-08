@@ -527,55 +527,34 @@ int default_cbDrawPicture(void* context,tPicture* picture,int mode)
 
 		// find a good aspect ratio
 		{
-			float ratiox,ratioy;
-			ratiox=(float)screenwidth/(float)(picture->width);
-			ratioy=(float)screenheight/(float)(picture->height);
+			int ratiox,ratioy;
+			#define	MAGICFIXPOINT	1800	// magic factor was chosen when I removed the float code. simply because it worked with the check and it did not cause overflows with 32 bit machines
+
+			ratiox=(MAGICFIXPOINT*screenwidth)/(picture->width);
+			ratioy=(MAGICFIXPOINT*screenheight)/(picture->height);
 
 			if (ratiox<ratioy) ratioy=ratiox; else ratiox=ratioy;
 
-			screenwidth=(int)(ratiox*(float)picture->width);
-			screenheight=(int)(ratioy*(float)picture->height);
+			screenwidth =(int)((ratiox*picture->width)/MAGICFIXPOINT);
+			screenheight=(int)((ratioy*picture->height)/MAGICFIXPOINT);
 		}
 
 		printf("\n\x1bPq\n");
-//		if (picture->pictureType==PICTURE_C64)
-		if (0)
+		for (i=0;i<16;i++)
 		{
-			// the C64 had a fixed colour palette.
-			// Brix suggested the following values as approximations:
-			printf("#00;2;0;0;0");		//   0   0   0	BLACK
-			printf("#01;2;100;100;100");	// 255 255 255	WHITE
-			printf("#02;2;50;20;21");	// 129  51  56	RED
-			printf("#03;2;45;80;78");	// 117 206 200	CYAN
-			printf("#04;2;55;23;59");	// 142  60 151	PURPLE
-			printf("#05;2;33;67;30");	//  86 172  77	GREEN
-			printf("#06;2;18;17;60");	//  46  44 155	BLUE
-			printf("#07;2;92;94;44");	// 237 241 113	YELLOW
-			printf("#08;2;55;31;16");	// 142  80  41	ORANGE
-			printf("#09;2;33;21;0");	//  85  56   0	BROWN
-			printf("#10;2;76;42;44");	// 196 108 113	LIGHT RED
-			printf("#11;2;29;29;29");	//  74  74  74	DARK GREY
-			printf("#12;2;48;48;48");	// 123 123 123	GREY
-			printf("#13;2;66;100;62");	// 169 255 159	LIGHT GREEN
-			printf("#14;2;43;42;92");	// 112 109 235	LIGHT BLUE
-			printf("#15;2;69;69;69");	// 178 178 178	LIGHT GREY
-		} else {
-			for (i=0;i<16;i++)
-			{
-				unsigned int red,green,blue;
-				unsigned int rgb;
+			unsigned int red,green,blue;
+			unsigned int rgb;
 
-				rgb=picture->palette[i];
-				red  =PICTURE_GET_RED(rgb);
-				green=PICTURE_GET_GREEN(rgb);
-				blue =PICTURE_GET_BLUE(rgb);
-				red*=100;green*=100;blue*=100;
-				red  /=PICTURE_MAX_RGB_VALUE;
-				green/=PICTURE_MAX_RGB_VALUE;
-				blue /=PICTURE_MAX_RGB_VALUE;
+			rgb=picture->palette[i];
+			red  =PICTURE_GET_RED(rgb);
+			green=PICTURE_GET_GREEN(rgb);
+			blue =PICTURE_GET_BLUE(rgb);
+			red*=100;green*=100;blue*=100;
+			red  /=PICTURE_MAX_RGB_VALUE;
+			green/=PICTURE_MAX_RGB_VALUE;
+			blue /=PICTURE_MAX_RGB_VALUE;
 
-				printf("#%02d;2;%d;%d;%d",i,red,green,blue);
-			}
+			printf("#%02d;2;%d;%d;%d",i,red,green,blue);
 		}
 		printf("\n");
 

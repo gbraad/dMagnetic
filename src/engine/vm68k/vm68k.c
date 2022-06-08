@@ -120,16 +120,15 @@ int vm68k_init(void* hVM68k,void* pSharedMem,int sharedmemsize,int version)
 	memset(hVM68k,0,sizeof(tVM68k));
 	pVM68k->magic=MAGICVALUE;
 	pVM68k->pcr=0;
-	pVM68k->a[7]=0xfffe;	// stack pointer. set to the end of the memory.
 	pVM68k->pMem=pSharedMem;
 	pVM68k->memsize=sharedmemsize;
+	pVM68k->a[7]=pVM68k->memsize-4;		// The stack pointer goes to the end of the memory
 
 	pVM68k->version=version;
 
 	return	VM68K_OK;
 	
 }
-
 int vm68k_singlestep(void *hVM68k,unsigned short opcode)
 {
 	tVM68k* pVM68k=(tVM68k*)hVM68k;
@@ -171,9 +170,38 @@ int vm68k_singlestep(void *hVM68k,unsigned short opcode)
 	direction=(opcode>>8)&0x1;
 
 	INITNEXT(pVM68k,next);	
-	result=0;	
+	result=0;
 	switch(instruction)
 	{
+		case VM68K_INST_TRAP:
+			printf("\x1b[1;37;42mtrap #%d\n",opcode&0xf);
+			for (i=0;i<16;i++)
+			{
+				printf(" ** trap %d stack %2d %08X \n",opcode&0xf,i,READ_INT32BE(pVM68k->pMem,pVM68k->a[7]-i*4));
+			}
+			printf("\x1b[0m\n");
+			retval=VM68K_OK;
+			break;
+		case VM68K_INST_MULU:
+			retval=vm68k_resolve_ea(pVM68k,&next,VM68K_WORD,addrmode,reg2,VM68K_LEGAL_ALL,&ea);
+			if (retval==VM68K_OK) retval=vm68k_fetchoperand(pVM68k,0,VM68K_WORD,ea,&operand1);
+			if (retval==VM68K_OK) retval=vm68k_fetchoperand(pVM68k,0,VM68K_WORD,DATAREGADDR(reg1),&operand2);
+			if (retval==VM68K_OK) result=((unsigned int)operand1&0xffff)*((unsigned short)operand2&0xffff);
+			if (retval==VM68K_OK) retval=vm68k_calculateflags2(&next,FLAGS_ALL,instruction,VM68K_LONG,operand1,operand2,result);	
+			if (retval==VM68K_OK) retval=vm68k_storeresult(pVM68k,&next,VM68K_LONG,DATAREGADDR(reg1),result);
+			break;
+		case VM68K_INST_DIVU:
+			// FIXME: division by 0?
+			retval=vm68k_resolve_ea(pVM68k,&next,VM68K_WORD,addrmode,reg2,VM68K_LEGAL_ALL,&ea);
+			if (retval==VM68K_OK) retval=vm68k_fetchoperand(pVM68k,0,VM68K_WORD,ea,&operand1);
+			if (retval==VM68K_OK) retval=vm68k_fetchoperand(pVM68k,0,VM68K_WORD,DATAREGADDR(reg1),&operand2);
+			// upper 16 bits are the remainder
+			if (retval==VM68K_OK) result=(((unsigned int)operand1&0xffff)%((unsigned short)operand2&0xffff))<<16;	
+			// lower 16 bits are the quotient
+			if (retval==VM68K_OK) result|=(((unsigned int)operand1&0xffff)/((unsigned short)operand2&0xffff))&0xffff;
+			if (retval==VM68K_OK) retval=vm68k_calculateflags2(&next,FLAGS_ALL,instruction,VM68K_LONG,operand1,operand2,result);	
+			if (retval==VM68K_OK) retval=vm68k_storeresult(pVM68k,&next,VM68K_LONG,DATAREGADDR(reg1),result);
+			break;
 		case VM68K_INST_ADD:
 		case VM68K_INST_CMP:
 		case VM68K_INST_SUB:
@@ -662,7 +690,7 @@ int vm68k_singlestep(void *hVM68k,unsigned short opcode)
 					operand2|=lsb;
 					next.cflag=next.xflag=msb;
 					// FIXME: reallY???
-					if (instruction!=VM68K_INST_ASL_ASR) next.vflag|=(prevmsb^(operand2>>(bitnum-1)))&1;	// set overfloat flag if the msb is changed at any time.
+					if (instruction!=VM68K_INST_ASL_ASR) next.vflag|=(prevmsb^(operand2>>(bitnum-1)))&1;	// set overflow flag if the msb is changed at any time.
 				} else {	/// right shift
 					operand2>>=1;
 					switch (instruction)
@@ -841,7 +869,7 @@ int vm68k_singlestep(void *hVM68k,unsigned short opcode)
 		break;
 		default:
 		{
-			char tmp[32];
+			char tmp[64];
 			vm68k_get_instructionname(instruction,tmp);
 			printf("UNIMPLEMENTED opcode %04X = %s\n",opcode,tmp);
 			retval=VM68K_NOK_UNKNOWN_INSTRUCTION;
@@ -887,7 +915,6 @@ int vm68k_singlestep(void *hVM68k,unsigned short opcode)
 		}
 	} 
 
-
 	return	retval;
 }
 int vm68k_getNextOpcode(void* hVM68k,unsigned short* opcode)
@@ -903,9 +930,10 @@ int vm68k_getNextOpcode(void* hVM68k,unsigned short* opcode)
 #ifdef	DEBUG_PRINT
 	{
 		int i;
-		char tmp[16];
+		char tmp[64];
 		tVM68k_instruction inst;
-		printf("\n\n\npcr:%06x ",pVM68k->pcr);
+		printf("\n\n\n");
+		printf("pcr:%06x ",pVM68k->pcr);
 		printf("INST:%04X ",*opcode);
 		printf("CVZN:%d%d%d%d ", (pVM68k->sr>>0)&1,(pVM68k->sr>>1)&1,(pVM68k->sr>>2)&1,(pVM68k->sr>>3)&1);
 		printf("D:");
@@ -922,6 +950,7 @@ int vm68k_getNextOpcode(void* hVM68k,unsigned short* opcode)
 		inst=vm68k_decode(*opcode);
 		vm68k_get_instructionname(inst,tmp);
 		printf(" --> %s\n",tmp);
+		if (pVM68k->pcr<0x1c238) printf("\x1b[0m\n");
 		fflush(stdout);
 	}
 #endif

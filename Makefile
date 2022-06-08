@@ -44,6 +44,7 @@ SOURCES_LOADER=	\
 	src/loader/loader_msdos.c	\
 	src/loader/loader_mw.c		\
 	src/loader/loader_d64.c		\
+	src/loader/loader_amstradcpc.c	\
 	src/loader/maggfxloader.c
 
 SOURCES_LINEA=	\
@@ -72,7 +73,7 @@ OBJ_GUI=${SOURCES_GUI:.c=.o}
 OBJ_TOPLEVEL=${SOURCES_TOPLEVEL:.c=.o}
 
 all:	dMagnetic
-	strip dMagnetic
+#	strip dMagnetic
 
 clean:
 	rm -rf dMagnetic
@@ -100,7 +101,7 @@ dMagnetic:	$(OBJ_LOADER) $(OBJ_LINEA) $(OBJ_VM68K) $(OBJ_GUI) $(OBJ_TOPLEVEL)
 	$(LINK) $(LDFLAGS) -o $@ $(OBJ_LOADER) $(OBJ_LINEA) $(OBJ_VM68K) $(OBJ_GUI) $(OBJ_TOPLEVEL)
 
 .c.o:
-	$(CC) $(CFLAGS) $(CFLAGS_EXTRA) $(INCFLAGS) -c -o $@ $<
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(CFLAGS_EXTRA) $(INCFLAGS) -c -o $@ $<
 
 
 ## in case some post-compilation checks are needed

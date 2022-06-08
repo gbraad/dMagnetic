@@ -35,6 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /// this lookuptable has the following structure:
 /// 4 bits substitute color, 3x4 bit RGB values.
+/// this is a direct 1 <--> 1 conversion.
 const unsigned short rgblut[]={
 	0x0000,0x1400,0x3420,0x4004,0x5404,0x6044,0x7444,0x8222,0x9722,0xa272,0xb772,0xc227,0xd727,0xe277,0xf777,0x2121,
 	0xb554,0x9654,0x6454,0xa452,0x4223,0x7455,0x2342,0x8333,0x1322,0x7443,0x2230,0xc456,0xe565,0x7555,0xb653,0x0110,
@@ -53,41 +54,6 @@ const unsigned short rgblut[]={
 };
 #define	RGBLUTSIZE	213
 // another strategy would be to calculate the center of the clusters that make up the 16 colors.
-#if 0
-const unsigned short rgbcenters[16]={0x111,0x311,0x131,0x321,0x113,0x313,0x133,0x443,0x222,0x532,0x352,0x552,0x335,0x635,0x455,0x665};
-int default_findrgbcluster(int red,int green,int blue)
-{
-	int i;
-	int closest=0;
-	int mindelta=-1;
-	int delta;
-	int r0,r1,g0,g1,b0,b1;
-	r0=red;
-	g0=green;
-	b0=blue;
-
-	for (i=0;i<16;i++)
-	{
-		r1=(rgbcenters[i]>>8)&0xf;
-		g1=(rgbcenters[i]>>4)&0xf;
-		b1=(rgbcenters[i]>>0)&0xf;
-
-		r1*=PICTURE_MAX_RGB_VALUE;g1*=PICTURE_MAX_RGB_VALUE;b1*=PICTURE_MAX_RGB_VALUE;
-		r1/=7;g1/=7;b1/=7;
-	
-		delta =(r0-r1)*(r0-r1);
-		delta+=(g0-g1)*(g0-g1);
-		delta+=(b0-b1)*(b0-b1);
-		if (delta<mindelta || i==0)
-		{
-			closest=i;
-			mindelta=delta;
-			
-		}
-	}	
-	return closest;
-}
-#else
 const unsigned int rgbcenters[16]={0x0aa36cc2,0x217380c2,0x0f77049d,0x20f678b2,0x0c23cdb6,0x1b6249b6,0x107789c5,0x2799e638,0x16d57924,0x3487fd74,0x236c457f,0x366ba166,0x1be82eda,0x3ad81f1b,0x26dcbeda,0x36ce6323};
 int default_findrgbcluster(int red,int green,int blue)
 {
@@ -101,6 +67,7 @@ int default_findrgbcluster(int red,int green,int blue)
 	g0=green;
 	b0=blue;
 #if 0
+// if I ever want to calculate better rgb centers.
 	{
 		int rgbsums[16][3]={{0}};
 		int colcnt[16]={0};
@@ -155,7 +122,6 @@ int default_findrgbcluster(int red,int green,int blue)
 	}
 	return closest;
 }
-#endif
 
 int default_palette(tPicture* picture,unsigned char* maxplut)
 {

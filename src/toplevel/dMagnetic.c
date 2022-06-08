@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "linea.h"
 #include "default_callbacks.h"
 #include "maggfxloader.h"
+#define	SHAREDMEMSIZE	98304	// 98304 bytes ought to be enough for everybody
 #define	MAXMAGSIZE	(1<<20)
 #define	MAXGFXSIZE	(1<<22)
 
@@ -56,6 +57,7 @@ void dMagnetic_loaderfailed_message(char* argv0)
 	fprintf(stderr,"%s -msdosdir DIRECTORY/\n",argv0);
 	fprintf(stderr,"%s -tworsc DIRECTORY/TWO.RSC\n",argv0);
 	fprintf(stderr,"%s -d64 IMAGE1.d64,IMAGE2.d64\n",argv0);
+	fprintf(stderr,"%s -amstradcpc IMAGE1.DSK,IMAGE2.DSK\n",argv0);
 	fprintf(stderr,"\n");
 	fprintf(stderr,"You can get the .mag and .gfx files from\n");
 	fprintf(stderr," https://msmemorial.if-legends.org/\n");
@@ -137,7 +139,6 @@ int main(int argc,char** argv)
 	void* hLineA;
 	void* hGUI;
 	void* pSharedMem;
-	int sharedmemsize;
 	int sizeGUI;
 	int unknownopcode;
 	char *homedir;
@@ -239,13 +240,14 @@ int main(int argc,char** argv)
 		printf("\n");
 		printf("\n");
 		printf("PARAMETERS TO RUN THE GAME\n");
-		printf("-ini dMagnetic.ini  to provide an inifile\n");
-		printf("-mag MAGFILE.mag    to provide the game binary directly\n");
-		printf("-gfx GFXFILE.gfx    to provide the game graphics directly\n");
-		printf("-msdosdir DIR/      to provide the game binaries from MSDOS\n");
-		printf("-tworsc DIR/TWO.RSC to use resource files from Wonderland\n");
-		printf("                    or The Magnetic Scrolls Collection Vol.1\n");
-		printf("-d64 m1.d64,m2.d64  or use the D64 images. (Separated by ,)\n");
+		printf("-ini dMagnetic.ini       to provide an inifile\n");
+		printf("-mag MAGFILE.mag         to provide the game binary directly\n");
+		printf("-gfx GFXFILE.gfx         to provide the game graphics directly\n");
+		printf("-msdosdir DIR/           to provide the game binaries from MSDOS\n");
+		printf("-tworsc DIR/TWO.RSC      to use resource files from Wonderland\n");
+		printf("                         or The Magnetic Scrolls Collection Vol.1\n");
+		printf("-d64 m1.d64,m2.d64       or use the D64 images. (Separated by ,)\n");
+		printf("-amstradcpc 1.DSK,2.DSK  or use the DSK images. (Separated by ,)\n");
 		printf("\n");
 		printf("OPTIONAL PARAMETERS\n");
 		printf("-rmode RANDOMMODE  where mode is one of\n  [");
@@ -293,29 +295,35 @@ int main(int argc,char** argv)
 		printf("pawngfx=/usr/local/share/games/magneticscrolls/pawn.gfx\n");
 		printf(";pawnmsdos=/usr/local/share/games/magneticscrolls/msdosversions/PAWN\n");
 		printf(";pawnd64=/d64/PAWN1.d64,/d64/PAWN2.d64\n");
+		printf(";pawnamstradcpc=/dsk/PAWN1.DSK,/dsk/PAWN2.DSK\n");
 		printf("guildmag=/usr/local/share/games/magneticscrolls/guild.mag\n");
 		printf("guildgfx=/usr/local/share/games/magneticscrolls/guild.gfx\n");
 		printf(";guildmsdos=/usr/local/share/games/magneticscrolls/msdosversions/GUILD\n");
 		printf(";guildtworsc=/usr/local/share/games/magneticscrolls/MSC/GTWO.RSC\n");
 		printf(";guild64=/d64/GUILD1.d64,/d64/GUILD2.d64\n");
+		printf(";guildamstradcpc=/dsk/GUILD1.DSK,/dsk/GUILD2.DSK\n");
 		printf("jinxtermag=/usr/local/share/games/magneticscrolls/jinxter.mag\n");
 		printf("jinxtergfx=/usr/local/share/games/magneticscrolls/jinxter.gfx\n");
 		printf(";jinxtermsdos=/usr/local/share/games/magneticscrolls/msdosversions/JINXTER\n");
 		printf(";jinxterd64=/d64/JINXTER1.d64,/d64/JINXTER2.d64\n");
+		printf(";jinxteramstradcpc=/dsk/JINXTER1.DSK,/dsk/JINXTER2.DSK\n");
 		printf("corruptionmag=/usr/local/share/games/magneticscrolls/ccorrupt.mag\n");
 		printf("corruptiongfx=/usr/local/share/games/magneticscrolls/ccorrupt.gfx\n");
 		printf(";corruptionmsdos=/usr/local/share/games/magneticscrolls/msdosversions/CORRUPT\n");
 		printf(";corruptiontworsc=/usr/local/share/games/magneticscrolls/MSC/CTWO.RSC\n");
 		printf(";corruptiond64=/d64/CORRUPT1.d64,/d64/CORRUPT2.d64\n");
+		printf(";corruptionamstradcpc=/dsk/CORRUPTION1.DSK,/dsk/CORRUPTION2.DSK\n");
 		printf("fishmag=/usr/local/share/games/magneticscrolls/fish.mag\n");
 		printf("fishgfx=/usr/local/share/games/magneticscrolls/fish.gfx\n");
 		printf(";fishmsdos=/usr/local/share/games/magneticscrolls/msdosversions/FISH\n");
 		printf(";fishtworsc=/usr/local/share/games/magneticscrolls/MSC/FTWO.RSC\n");
 		printf(";fishd64=/d64/FISH1.d64,/d64/FISH2.d64\n");
+		printf(";fishamstradcpc=/dsk/FISH1.DSK,/dsk/FISH2.DSK\n");
 		printf("mythmag=/usr/local/share/games/magneticscrolls/myth.mag\n");
 		printf("mythgfx=/usr/local/share/games/magneticscrolls/myth.gfx\n");
 		printf(";mythmsdos=/usr/local/share/games/magneticscrolls/msdosversions/MYTH\n");
 		printf(";mythd64=/usr/local/share/games/magneticscrolls/MYTH.d64\n");
+		printf(";mythamstradcpc=/dsk/MYTH1.DSK,/dsk/MYTH2.DSK\n");
 		printf("wonderlandmag=/usr/local/share/games/magneticscrolls/wonder.mag\n");
 		printf("wonderlandgfx=/usr/local/share/games/magneticscrolls/wonder.gfx\n");
 		printf(";wonderlandtworsc=/usr/local/share/games/magneticscrolls/WONDER/TWO.RSC\n");
@@ -350,8 +358,7 @@ int main(int argc,char** argv)
 	}
 	fprintf(stderr,"Using .ini file: %s\n",inifilename);		
 	f_inifile=fopen(inifilename,"rb");
-	sharedmemsize=98304;
-	pSharedMem=malloc(sharedmemsize);
+	pSharedMem=malloc(SHAREDMEMSIZE);
 	if (pSharedMem==NULL)
 	{
 		fprintf(stderr,"ERROR: unable to allocate shared memory\n");
@@ -467,7 +474,7 @@ int main(int argc,char** argv)
 		}
 
 
-		retval=dMagnetic_init(&hVM68k,&hLineA,pSharedMem,sharedmemsize,magbuf,magsize,gfxbuf,gfxsize);
+		retval=dMagnetic_init(&hVM68k,&hLineA,pSharedMem,SHAREDMEMSIZE,magbuf,magsize,gfxbuf,gfxsize);
 		if (retval)
 		{
 			return 0;

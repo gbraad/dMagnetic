@@ -26,7 +26,7 @@
 
  */
 
-// the purpose of this file is to read the MS DOS Game binaries,
+// the purpose of this file is to read the D64 disk image files
 // and to translate them into the .mag/.gfx format.
 
 #include <stdio.h>

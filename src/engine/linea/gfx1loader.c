@@ -784,6 +784,8 @@ int gfxloader_gfx4(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte versio
 	return retval;
 }
 
+
+// the Commodore C64 pictures
 int gfxloader_gfx5(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPicture* pPicture)
 {
 	unsigned char tmpbuf[6080+760+760];	// maximum size for a picture. plus room for the threebuf
@@ -1007,7 +1009,142 @@ int gfxloader_gfx5(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPic
 	}
 	return 0;
 }
+// the Amstrad CPC pictures
+int gfxloader_gfx6(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPicture* pPicture)
+{
+	unsigned char codebook[16]={0x00,0x40,0x04,0x44,0x10,0x50,0x14,0x54,0x01,0x41,0x05,0x45,0x11,0x51,0x15,0x55};
+	unsigned int rgbvalues[27]={
+                0x000000,0x000080,0x0000ff,0x800000,0x800080,0x8000ff,
+                0xff0000,0xff0080,0xff00ff,0x008000,0x008080,0x0080ff,
+                0x808000,0x808080,0x8080ff,0xff8000,0xff8080,0xff80ff,
+                0x00ff00,0x00ff80,0x00ffff,0x80ff00,0x80ff80,0x80ffff,
+                0xffff00,0xffff80,0xffffff};
 
+	int i;
+	int paletteidx;
+	int outidx;
+	unsigned char byte;
+	unsigned char mask;
+	unsigned char symbol;
+	unsigned char code;
+	int bitidx;
+	int toggle;
+	int picoffs; 
+	int treeidx;
+	int retval;
+	
+
+	retval=0;
+	// find the index within the gfx buffer
+	picoffs=READ_INT32BE(gfxbuf,4+picnum*4);
+
+	treeidx=0;
+	pPicture->height=152;	// the size is always the same
+	pPicture->width =160;
+	paletteidx=0;
+	outidx=0;
+	byte=0;
+	bitidx=picoffs+1+(gfxbuf[picoffs]+1)*2;
+	mask=0;
+	pPicture->palette[paletteidx++]=rgbvalues[ 0];  // black
+	pPicture->palette[paletteidx++]=rgbvalues[26];  // bright white
+	symbol=0;
+	code=0;
+	toggle=0;
+	while ((outidx<(pPicture->height*pPicture->width))&& (bitidx<gfxsize||mask))
+	{
+		unsigned char branchl,branchr;
+		unsigned char branch;
+
+		if (mask==0x00)
+		{
+			byte=gfxbuf[bitidx++];
+			mask=0x80;
+		}
+
+		branchl=gfxbuf[picoffs+1+2*treeidx];	
+		branchr=gfxbuf[picoffs+2+2*treeidx];
+		branch=(byte&mask)?branchl:branchr;
+		mask>>=1;
+		if (branch&0x80)
+		{
+			treeidx=0;
+			branch&=0x7f;
+			if (paletteidx<16)      // the first two colours are fixed. and the rest comes from the first 14 terminal symbols
+			{
+				pPicture->palette[paletteidx++]=rgbvalues[branch];	// one of them
+			} else {
+				int loopcnt;
+				loopcnt=1;
+				if (branch&0x70)	// if bits 6..4 are set, it is a loop. it determines how often the previous code is being repeated
+				{
+					loopcnt=branch-0x10;
+				} else {	// otherwise, it is a code 
+					code=codebook[branch];
+				}
+				for (i=0;i<loopcnt && outidx<(pPicture->height*pPicture->width);i++)
+				{
+					// the symbol is being combined from two codes
+					symbol<<=1;	
+					symbol|=code;
+
+					toggle=1-toggle;
+					// when the symbol is finished
+					if (toggle==0)
+					{
+						unsigned char p0;
+						unsigned char p1;
+						// the images are Amstrad Mode 0 pictures. Which means that the pixel bits are being interleaved.
+						p0 =((symbol>>7)&0x1)<<0;
+						p0|=((symbol>>3)&0x1)<<1;
+						p0|=((symbol>>5)&0x1)<<2;
+						p0|=((symbol>>1)&0x1)<<3;
+
+						p1 =((symbol>>6)&0x1)<<0;
+						p1|=((symbol>>2)&0x1)<<1;
+						p1|=((symbol>>4)&0x1)<<2;
+						p1|=((symbol>>0)&0x1)<<3;
+						// at this point, the two pixels have been separated
+						pPicture->pixels[outidx++]=p0;
+						pPicture->pixels[outidx++]=p1;
+
+						// prepare the next symbol
+						symbol=0;
+					}
+				}
+			}
+		} else {
+			treeidx=branch;
+		}
+	}
+	// descramble the picture over two lines
+	for (i=2*pPicture->width;i<pPicture->width*pPicture->height;i++)
+	{
+		pPicture->pixels[i]^=pPicture->pixels[i-2*pPicture->width];
+	}
+	// make the picture wider
+	for (i=pPicture->width*pPicture->height;i>=0;i--)
+	{
+		pPicture->pixels[2*i+0]=pPicture->pixels[i];
+		pPicture->pixels[2*i+1]=pPicture->pixels[i];
+	}
+	pPicture->width*=2;
+	// final touch: convert the RGB palette to the correct bit width
+	for (i=0;i<16;i++)
+	{
+		unsigned int red,green,blue;
+		red	=(pPicture->palette[i]>>16)&0xff;
+		green	=(pPicture->palette[i]>> 8)&0xff;
+		blue	=(pPicture->palette[i]>> 0)&0xff;
+
+		red*=PICTURE_MAX_RGB_VALUE;green*=PICTURE_MAX_RGB_VALUE;blue*=PICTURE_MAX_RGB_VALUE;
+		red/=255;green/=255;blue/=255;
+
+		pPicture->palette[i]=(red<<(2*PICTURE_BITS_PER_RGB_CHANNEL))|(green<<(1*PICTURE_BITS_PER_RGB_CHANNEL))|blue;
+
+	}
+	return retval;
+}
 
 
 
@@ -1021,11 +1158,12 @@ int gfxloader_unpackpic(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte v
 	if (gfxbuf==NULL || pPicture==NULL) return -1;
 	if (gfxbuf[0]=='M' && gfxbuf[1]=='a' && gfxbuf[2]=='P')
 	{
-		if (gfxbuf[3]=='i') retval=gfxloader_gfx1(gfxbuf,gfxsize,version,picnum,pPicture);
-		if (gfxbuf[3]=='2') retval=gfxloader_gfx2(gfxbuf,gfxsize,version,picname,pPicture);
-		if (gfxbuf[3]=='3') retval=gfxloader_gfx3(gfxbuf,gfxsize,version,picnum,pPicture);
-		if (gfxbuf[3]=='4') retval=gfxloader_gfx4(gfxbuf,gfxsize,version,picname,pPicture,egamode);
-		if (gfxbuf[3]=='5') retval=gfxloader_gfx5(gfxbuf,gfxsize,version,picnum,pPicture);
+		if (gfxbuf[3]=='i') retval=gfxloader_gfx1(gfxbuf,gfxsize,version,picnum,pPicture);		// standard .mag/gfx format
+		if (gfxbuf[3]=='2') retval=gfxloader_gfx2(gfxbuf,gfxsize,version,picname,pPicture);		// taken from the magnetic windows .gfx files
+		if (gfxbuf[3]=='3') retval=gfxloader_gfx3(gfxbuf,gfxsize,version,picnum,pPicture);		// ms dos
+		if (gfxbuf[3]=='4') retval=gfxloader_gfx4(gfxbuf,gfxsize,version,picname,pPicture,egamode);	// read from magnetic windows resource files
+		if (gfxbuf[3]=='5') retval=gfxloader_gfx5(gfxbuf,gfxsize,version,picnum,pPicture);		// C64
+		if (gfxbuf[3]=='6') retval=gfxloader_gfx6(gfxbuf,gfxsize,version,picnum,pPicture);		// C64
 	}
 	return retval;
 }

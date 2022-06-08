@@ -1,7 +1,7 @@
 .\" Process this file with
 .\" groff -man -Tascii dMagnetic.1
 .\"
-.Dd July 08th, 2020
+.Dd October 30th, 2020
 .Os OpenBSD 
 .Dt dMagnetic 1
 .
@@ -28,6 +28,10 @@ You wake up on a sunny August morning with birds singing, and the air fresh and 
 .br
 .Nm
 .Op Fl d64 Ar DIRECTORY/FILE1.d64,DIRECTORY/FILE2.d64
+.Op Fl vmode Ar sixel
+.br
+.Nm
+.Op Fl amstradcpc Ar DIRECTORY/FILE1.DSK,DIRECTORY/FILE2.DSK
 .Op Fl vmode Ar sixel
 .br
 .Nm
@@ -143,6 +147,11 @@ A fourth option is to use D64 image files from the Commodore 64 releases. They c
 .Pp
 .Nm
 -d64 DIRECTORY/FILE1.d64,DIRECTORY/FILE2.d64 -vmode sixel
+.Pp
+A fifth option is to use DSK image files from the Amstrad CPC releases. They come in pairs, since noth sides of the floppy disk were occupied. So the parameter requires a list of them, separated by komma:
+.Pp
+.Nm
+-d64 DIRECTORY/FILE1.DSK,DIRECTORY/FILE2.DSK -vmode sixel
 .Pp
 It is also possible to edit the dMagnetic.ini file and start a specific game, by using one of
 .Pp
@@ -272,8 +281,11 @@ Shows an example for a working dMagnetic.ini file.
 .Pp
 .Op Fl d64 Ar DIRECTORY/FILE1.d64,DIRECTORY/FILE2.d64
 .br
+.Pp
+.Op Fl amstradcpc Ar DIRECTORY/FILE1.DSK,DIRECTORY/FILE2.DSK
+.br
 .Nm
-is a Magnetic Scrolls Interpreter. To actually play the games, their binaries have to be provided. Either in the .mag and .gfx format from https://msmemorial.if-legends.org/magnetic.php, as the name of the directory in which the original MS-DOS version can be found, the location and the name of the second resource file TWO.RSC, or as D64-images from the Commodore 64 releases.
+is a Magnetic Scrolls Interpreter. To actually play the games, their binaries have to be provided. Either in the .mag and .gfx format from https://msmemorial.if-legends.org/magnetic.php, as the name of the directory in which the original MS-DOS version can be found, the location and the name of the second resource file TWO.RSC, as D64-images from the Commodore 64 releases, or as DSK-images from the Amstrad/Schneider CPC releases.
 .Pp
 .Op Fl ini Ar dMagnetic.ini pawn
 .br

@@ -4,7 +4,7 @@
 *****************************************
 
 
-Welcome, brave adventurer. This is Version 0.25.
+Welcome, brave adventurer. This is Version 0.27.
 If you are interested in playing "The Pawn", just follow these simple steps.
 
 STEP 1: BUILD
@@ -81,6 +81,10 @@ you have to provide both sides of the floppy disks as filenames:
 
 % ./dMagnetic -ini dMagnetic.ini -d64 pawn1.d64,pawn2.d64
 
+For Amstrad CPC/Schneider CPC enthusiasts, there is the possibility to use
+image files in the DSK format.
+
+% ./dMagnetic -ini dMagnetic.ini -amstradcpc DISK1.DSK,DISK2.DSK
 
 
 

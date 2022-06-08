@@ -36,8 +36,18 @@
 #include "loader_msdos.h"
 #include "loader_mw.h"
 #include "loader_d64.h"
+#include "loader_amstradcpc.h"
 
 
+typedef	enum _eBinType
+{
+	BINTYPE_NONE,
+	BINTYPE_MAGGFX,
+	BINTYPE_MSDOS,
+	BINTYPE_TWORSC,
+	BINTYPE_D64,
+	BINTYPE_AMSTRADCPC
+} eBinType;
 int loader_init(int argc,char** argv,FILE *f_inifile,
 		char *magbuf,int* magsize,
 		char* gfxbuf,int* gfxsize)
@@ -45,15 +55,17 @@ int loader_init(int argc,char** argv,FILE *f_inifile,
 	FILE *f;
 	char magfilename[1024];
 	char gfxfilename[1024];
-	char msdosdirname[1024];
-	char tworscname[1024];
-	char d64name[1024];
+	char binname[1024];
+	eBinType binType;
+	
 	int gamenamegiven;
 	int n;
 	int retval;
 
+	binType=BINTYPE_NONE;
+
 	retval=0;
-	magfilename[0]=gfxfilename[0]=msdosdirname[0]=tworscname[0]=d64name[0]=0;
+	magfilename[0]=gfxfilename[0]=binname[0]=0;
 	gamenamegiven=0;
 	if ((retrievefromcommandline(argc,argv,"pawn",NULL,0))
 			|| (retrievefromcommandline(argc,argv,"guild",NULL,0))
@@ -71,200 +83,164 @@ int loader_init(int argc,char** argv,FILE *f_inifile,
 		fprintf(stderr,"please run %s -helpini for more help\n",argv[0]);
 		return 1;
 	}
-
-	if (retrievefromcommandline(argc,argv,"pawn",NULL,0))
 	{
-		magfilename[0]=gfxfilename[0]=0;
-		retrievefromini(f_inifile,"[FILES]","pawnmag",magfilename,sizeof(magfilename));
-		retrievefromini(f_inifile,"[FILES]","pawngfx",gfxfilename,sizeof(gfxfilename));
-		retrievefromini(f_inifile,"[FILES]","pawnmsdos",msdosdirname,sizeof(msdosdirname));
-		retrievefromini(f_inifile,"[FILES]","pawnd64",d64name,sizeof(d64name));
-	}
+		int i;
+		char* gameprefix[]={"pawn","guild","jinxter","corruption","fish","myth","wonderland"};
+		char magname[32];
+		char gfxname[32];
+		char msdosname[32];
+		char d64name[32];
+		char amstradcpcname[32];
+		for (i=0;i<7;i++)
+		{
+			snprintf(magname,32,"%smag",gameprefix[i]);
+			snprintf(gfxname,32,"%sgfx",gameprefix[i]);
+			snprintf(msdosname,32,"%smsdos",gameprefix[i]);
+			snprintf(d64name,32,"%sd64",gameprefix[i]);
+			snprintf(amstradcpcname,32,"%samstradcpc",gameprefix[i]);
 
-	if (retrievefromcommandline(argc,argv,"guild",NULL,0))
-	{
-		magfilename[0]=gfxfilename[0]=0;
-		retrievefromini(f_inifile,"[FILES]","guildmag",magfilename,sizeof(magfilename));
-		retrievefromini(f_inifile,"[FILES]","guildgfx",gfxfilename,sizeof(gfxfilename));
-		retrievefromini(f_inifile,"[FILES]","guildmsdos",msdosdirname,sizeof(msdosdirname));
-		retrievefromini(f_inifile,"[FILES]","guildtworsc",tworscname,sizeof(tworscname));
-		retrievefromini(f_inifile,"[FILES]","guildd64",d64name,sizeof(d64name));
+			if (retrievefromcommandline(argc,argv,gameprefix[i],NULL,0))
+			{
+				magfilename[0]=gfxfilename[0]=0;
+				if (retrievefromini(f_inifile,"[FILES]",magname,magfilename,sizeof(magfilename))&&
+						retrievefromini(f_inifile,"[FILES]",gfxname,gfxfilename,sizeof(gfxfilename)))
+				{
+					binType=BINTYPE_MAGGFX;
+				}
+				else if (retrievefromini(f_inifile,"[FILES]",msdosname,binname,sizeof(binname)))
+				{
+					binType=BINTYPE_MSDOS;
+				}
+				else if (retrievefromini(f_inifile,"[FILES]",d64name,binname,sizeof(binname)))
+				{
+					binType=BINTYPE_D64;
+				}
+				else if (retrievefromini(f_inifile,"[FILES]",amstradcpcname,binname,sizeof(binname)))
+				{
+					binType=BINTYPE_AMSTRADCPC;
+				}
+			}
+		}
 	}
-
-	if (retrievefromcommandline(argc,argv,"jinxter",NULL,0))
-	{
-		magfilename[0]=gfxfilename[0]=0;
-		retrievefromini(f_inifile,"[FILES]","jinxtermag",magfilename,sizeof(magfilename));
-		retrievefromini(f_inifile,"[FILES]","jinxtergfx",gfxfilename,sizeof(gfxfilename));
-		retrievefromini(f_inifile,"[FILES]","jinxtermsdos",msdosdirname,sizeof(msdosdirname));
-		retrievefromini(f_inifile,"[FILES]","jinxterd64",d64name,sizeof(d64name));
-	}
-
-	if (retrievefromcommandline(argc,argv,"corruption",NULL,0))
-	{
-		magfilename[0]=gfxfilename[0]=0;
-		retrievefromini(f_inifile,"[FILES]","corruptionmag",magfilename,sizeof(magfilename));
-		retrievefromini(f_inifile,"[FILES]","corruptiongfx",gfxfilename,sizeof(gfxfilename));
-		retrievefromini(f_inifile,"[FILES]","corruptionmsdos",msdosdirname,sizeof(msdosdirname));
-		retrievefromini(f_inifile,"[FILES]","corruptiontworsc",tworscname,sizeof(tworscname));
-		retrievefromini(f_inifile,"[FILES]","corruptiond64",d64name,sizeof(d64name));
-	}
-
-	if (retrievefromcommandline(argc,argv,"fish",NULL,0))
-	{
-		magfilename[0]=gfxfilename[0]=0;
-		retrievefromini(f_inifile,"[FILES]","fishmag",magfilename,sizeof(magfilename));
-		retrievefromini(f_inifile,"[FILES]","fishgfx",gfxfilename,sizeof(gfxfilename));
-		retrievefromini(f_inifile,"[FILES]","fishmsdos",msdosdirname,sizeof(msdosdirname));
-		retrievefromini(f_inifile,"[FILES]","fishtworsc",tworscname,sizeof(tworscname));
-		retrievefromini(f_inifile,"[FILES]","fishd64",d64name,sizeof(d64name));
-	}
-
-	if (retrievefromcommandline(argc,argv,"myth",NULL,0))
-	{
-		magfilename[0]=gfxfilename[0]=0;
-		retrievefromini(f_inifile,"[FILES]","mythmag",magfilename,sizeof(magfilename));
-		retrievefromini(f_inifile,"[FILES]","mythgfx",gfxfilename,sizeof(gfxfilename));
-		retrievefromini(f_inifile,"[FILES]","mythmsdos",msdosdirname,sizeof(msdosdirname));
-		retrievefromini(f_inifile,"[FILES]","mythd64",d64name,sizeof(d64name));
-	}
-
-
-	if (retrievefromcommandline(argc,argv,"wonderland",NULL,0))
-	{
-		magfilename[0]=gfxfilename[0]=0;
-		retrievefromini(f_inifile,"[FILES]","wonderlandmag",magfilename,sizeof(magfilename));
-		retrievefromini(f_inifile,"[FILES]","wonderlandgfx",gfxfilename,sizeof(gfxfilename));
-		retrievefromini(f_inifile,"[FILES]","wonderlandmsdos",msdosdirname,sizeof(msdosdirname));
-		retrievefromini(f_inifile,"[FILES]","wonderlandtworsc",tworscname,sizeof(tworscname));
-	}
-	// command line parameters should overwrite the .ini parameters.
 	if (retrievefromcommandline(argc,argv,"-mag",magfilename,sizeof(magfilename)))
 	{
 		gfxfilename[0]=0;
-		msdosdirname[0]=0;
-		tworscname[0]=0;
-		d64name[0]=0;
+		binname[0]=0;
+		binType=BINTYPE_MAGGFX;
 	}
 	if (retrievefromcommandline(argc,argv,"-gfx",gfxfilename,sizeof(gfxfilename)))
 	{
-		msdosdirname[0]=0;
-		tworscname[0]=0;
-		d64name[0]=0;
+		binname[0]=0;
+		binType=BINTYPE_MAGGFX;
 	}
-	if (retrievefromcommandline(argc,argv,"-msdosdir",msdosdirname,sizeof(msdosdirname)))
+	if (retrievefromcommandline(argc,argv,"-msdosdir",binname,sizeof(binname)))
 	{
-		gfxfilename[0]=magfilename[0]=0;
-		tworscname[0]=0;
-		d64name[0]=0;
+		binType=BINTYPE_MSDOS;
 	}
-	if (retrievefromcommandline(argc,argv,"-tworsc",tworscname,sizeof(tworscname)))
+	if (retrievefromcommandline(argc,argv,"-tworsc",binname,sizeof(binname)))
 	{
-		gfxfilename[0]=magfilename[0]=0;
-		msdosdirname[0]=0;
-		d64name[0]=0;
+		binType=BINTYPE_TWORSC;
 	}
-	if (retrievefromcommandline(argc,argv,"-d64",d64name,sizeof(tworscname)))
+	if (retrievefromcommandline(argc,argv,"-d64",binname,sizeof(binname)))
 	{
-		gfxfilename[0]=magfilename[0]=0;
-		msdosdirname[0]=0;
+		binType=BINTYPE_D64;
 	}
-	if (tworscname[0])
+	if (retrievefromcommandline(argc,argv,"-amstradcpc",binname,sizeof(binname)))
 	{
-		retval=loader_magneticwindows(tworscname,magbuf,magsize,gfxbuf,gfxsize);
+		binType=BINTYPE_AMSTRADCPC;
 	}
-	else if (d64name[0])
+	switch (binType)
 	{
-		retval=loader_d64(d64name,magbuf,magsize,gfxbuf,gfxsize);	
-	}
-	else if (msdosdirname[0])
-	{
-		retval=loader_msdos(msdosdirname,magbuf,magsize,gfxbuf,gfxsize);	
-	} else {
-		retval=0;
-		if (magfilename[0] && !gfxfilename[0])
-		{
-			// deducing the name of the gfx file from the mag file
-			int l;
-			int found;
-			found=0;
-			l=strlen(magfilename);
-			fprintf(stderr,"Warning! -mag given, but not -gfx. Deducing filename\n");
-			if (l>=4)
+		case BINTYPE_NONE:		fprintf(stderr,"Please provide the game binaries\n");return -1;break;
+		case BINTYPE_TWORSC:		retval=loader_magneticwindows(binname,magbuf,magsize,gfxbuf,gfxsize);break;
+		case BINTYPE_D64:		retval=loader_d64(binname,magbuf,magsize,gfxbuf,gfxsize);	break;
+		case BINTYPE_AMSTRADCPC:	retval=loader_amstradcpc(binname,magbuf,magsize,gfxbuf,gfxsize);	break;
+		case BINTYPE_MSDOS:		retval=loader_msdos(binname,magbuf,magsize,gfxbuf,gfxsize);	break;
+		case BINTYPE_MAGGFX:	
+			retval=0;
+			if (magfilename[0] && !gfxfilename[0])
 			{
-				if (strncmp(&magfilename[l-4],".mag",4)==0)
+				// deducing the name of the gfx file from the mag file
+				int l;
+				int found;
+				found=0;
+				l=strlen(magfilename);
+				fprintf(stderr,"Warning! -mag given, but not -gfx. Deducing filename\n");
+				if (l>=4)
 				{
-					memcpy(gfxfilename,magfilename,l+1);
-					found=1;
-					gfxfilename[l-4]='.';
-					gfxfilename[l-3]='g';
-					gfxfilename[l-2]='f';
-					gfxfilename[l-1]='x';
+					if (strncmp(&magfilename[l-4],".mag",4)==0)
+					{
+						memcpy(gfxfilename,magfilename,l+1);
+						found=1;
+						gfxfilename[l-4]='.';
+						gfxfilename[l-3]='g';
+						gfxfilename[l-2]='f';
+						gfxfilename[l-1]='x';
+					}
+				}
+				if (!found)
+				{
+					fprintf(stderr,"filename did not end in .mag (lower case)\n");
+					return 0;
 				}
 			}
-			if (!found)
+			if (!magfilename[0] && gfxfilename[0])
 			{
-				fprintf(stderr,"filename did not end in .mag (lower case)\n");
-				return 0;
-			}
-		}
-		if (!magfilename[0] && gfxfilename[0])
-		{
-			// deducing the name of the mag from the gfx
-			int l;
-			int found;
-			found=0;
-			l=strlen(gfxfilename);
-			fprintf(stderr,"warning! -gfx given, but not -mag. Deducing filename\n");
-			if (l>=4)
-			{
-				if (strncmp(&gfxfilename[l-4],".gfx",4)==0)
+				// deducing the name of the mag from the gfx
+				int l;
+				int found;
+				found=0;
+				l=strlen(gfxfilename);
+				fprintf(stderr,"warning! -gfx given, but not -mag. Deducing filename\n");
+				if (l>=4)
 				{
-					memcpy(magfilename,gfxfilename,l+1);
-					found=1;
-					magfilename[l-4]='.';
-					magfilename[l-3]='m';
-					magfilename[l-2]='a';
-					magfilename[l-1]='g';
+					if (strncmp(&gfxfilename[l-4],".gfx",4)==0)
+					{
+						memcpy(magfilename,gfxfilename,l+1);
+						found=1;
+						magfilename[l-4]='.';
+						magfilename[l-3]='m';
+						magfilename[l-2]='a';
+						magfilename[l-1]='g';
+					}
+				}
+				if (!found)
+				{
+					fprintf(stderr,"filename did not end in .gfx (lower case)\n");
+					return 0;
 				}
 			}
-			if (!found)
+			if ((!magfilename[0] || !gfxfilename[0]))
 			{
-				fprintf(stderr,"filename did not end in .gfx (lower case)\n");
-				return 0;
+				return 1;
 			}
-		}
-		if ((!magfilename[0] || !gfxfilename[0]))
-		{
-			return 1;
-		}
-		f=fopen(magfilename,"rb");
-		if (f==NULL)
-		{
-			fprintf(stderr,"ERROR: unable to open [%s]\n",magfilename);
-			fprintf(stderr,"This interpreter needs a the game's binaries in the .mag and .gfx\n");
-			fprintf(stderr,"format from the Magnetic Scrolls Memorial website. For details, \n");
-			fprintf(stderr,"see https://msmemorial.if-legends.org/memorial.php\n");
-			return -2;
-		}
-		n=fread(magbuf,sizeof(char),*magsize,f);
-		fclose(f);
-		*magsize=n;
-		f=fopen(gfxfilename,"rb");
-		if (f==NULL)
-		{
-			fprintf(stderr,"ERROR: unable to open [%s]\n",gfxfilename);
-			fprintf(stderr,"This interpreter needs a the game's binaries in the .mag and .gfx\n");
-			fprintf(stderr,"format from the Magnetic Scrolls Memorial website. For details, \n");
-			fprintf(stderr,"see https://msmemorial.if-legends.org/memorial.php\n");
-			return -2;
-		}
-		n=fread(gfxbuf,sizeof(char),*gfxsize,f);
-		*gfxsize=n;
-		fclose(f);
-		// at this point, they are stored in magbuf and gfxbuf.
-
+			f=fopen(magfilename,"rb");
+			if (f==NULL)
+			{
+				fprintf(stderr,"ERROR: unable to open [%s]\n",magfilename);
+				fprintf(stderr,"This interpreter needs a the game's binaries in the .mag and .gfx\n");
+				fprintf(stderr,"format from the Magnetic Scrolls Memorial website. For details, \n");
+				fprintf(stderr,"see https://msmemorial.if-legends.org/memorial.php\n");
+				return -2;
+			}
+			n=fread(magbuf,sizeof(char),*magsize,f);
+			fclose(f);
+			*magsize=n;
+			f=fopen(gfxfilename,"rb");
+			if (f==NULL)
+			{
+				fprintf(stderr,"ERROR: unable to open [%s]\n",gfxfilename);
+				fprintf(stderr,"This interpreter needs a the game's binaries in the .mag and .gfx\n");
+				fprintf(stderr,"format from the Magnetic Scrolls Memorial website. For details, \n");
+				fprintf(stderr,"see https://msmemorial.if-legends.org/memorial.php\n");
+				return -2;
+			}
+			n=fread(gfxbuf,sizeof(char),*gfxsize,f);
+			*gfxsize=n;
+			fclose(f);
+			break;
 	}		
+	// at this point, they are stored in magbuf and gfxbuf.
 
 	return retval;
 

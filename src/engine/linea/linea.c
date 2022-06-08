@@ -174,7 +174,7 @@ int lineA_parsegamefiles(tLineA* pLineA,void* pMag,int magsize,void* pGfx,int gf
 	if (pLineA->memsize<pLineA->codesize) return LINEA_NOK_NOT_ENOUGH_MEMORY;
 	
 	pLineA->memsize=pLineA->codesize;
-	if (pLineA->memsize<65536) pLineA->memsize=65536;
+	if (pLineA->memsize<0x10000) pLineA->memsize=0x10000;	// miminum memory size
 
 
 	idx=42;	// the header held 42 bytes.
