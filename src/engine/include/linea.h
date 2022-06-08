@@ -48,6 +48,7 @@ typedef int (*cbLineALoadGame)(void* context,char* filename,void* ptr,int len);
 // configuration functions
 int lineA_getsize(int* size);
 int lineA_init(void* hLineA,void* pSharedMem,int *sharedmemsize,void* pMag,int magsize,void* pGfx,int gfxsize);
+int lineA_configrandom(void* hLineA,char random_mode,unsigned int random_seed);
 int lineA_getVersion(void* hLineA,int* version);
 int lineA_setCBoutputChar(void* hLineA,cbLineAOutputChar pCB,void *context);
 int lineA_setCBoutputString(void* hLineA,cbLineAOutputString pCB,void* context);
@@ -56,6 +57,7 @@ int lineA_setCBDrawPicture(void* hLineA,cbLineADrawPicture pCB,void* context);
 int lineA_setCBSaveGame(void* hLineA,cbLineASaveGame pCB,void* context);
 int lineA_setCBLoadGame(void* hLineA,cbLineALoadGame pCB,void* context);
 
+int lineA_showTitleScreen(void* hLineA);
 // api
 int lineA_substitute_aliases(void* hLineA,unsigned short* opcode);
 int lineA_singlestep(void* hLineA,void* hVM68k,unsigned short opcode);

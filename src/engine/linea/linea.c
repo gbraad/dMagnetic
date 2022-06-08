@@ -86,6 +86,7 @@ typedef struct _tLineA
 
 	// persistent memory for some A0xx instructions.
 	tVM68k_slong	random_state;
+	tVM68k_bool  random_mode;
 	tVM68k_uword	properties_offset;
 	tVM68k_uword	linef_subroutine;			// version >0
 	tVM68k_uword	linef_tab;				// version >1
@@ -100,8 +101,8 @@ typedef struct _tLineA
 	int level;
 	int used;
 
-#define	MAXMAGBUF	183916
-#define	MAXGFXBUF	2534113
+#define	MAXMAGBUF	350000
+#define	MAXGFXBUF	3500000
 	// buffer for everything. Personally, I do not like restricting it. 
 	// on the other hand: I do not like mallocs spread around the code either.
 	tVM68k_ubyte magbuf[MAXMAGBUF];
@@ -109,13 +110,19 @@ typedef struct _tLineA
 	tVM68k_ubyte gfxbuf[MAXGFXBUF];
 	tVM68k_ulong gfxsize;
 
+
 	tPicture picture;
 } tLineA;
 
 tVM68k_ulong lineA_getrandom(tLineA* pLineA)
 {
-	pLineA->random_state*=1103515245ull;
-	pLineA->random_state+=12345ull;
+	if (pLineA->random_mode==0)
+	{
+		pLineA->random_state*=1103515245ull;
+		pLineA->random_state+=12345ull;
+	} else {
+		pLineA->random_state=rand();
+	}
 	return pLineA->random_state&0x7fffffff;
 }
 
@@ -129,7 +136,7 @@ int lineA_parsegamefiles(tLineA* pLineA,void* pMag,int magsize,void* pGfx,int gf
 
 	// lets start with the header.
 	// @0   4 bytes "MaSc"
-	// @4   12 bytes TODO
+	// @4   9 bytes TODO
 	// @13  1 byte version
 	// @14  4 bytes codesize
 	// @18  4 bytes string1size
@@ -224,6 +231,33 @@ int lineA_getsize(int* size)
 	*size=sizeof(tLineA);
 	return LINEA_OK;
 }
+int lineA_showTitleScreen(void* hLineA)
+{
+	tLineA* pLineA=(tLineA*)hLineA;
+	if (hLineA==NULL) return LINEA_NOK_INVALID_PTR;
+	// the pc version has title screens. it would be a shame not to show them.
+	if (pLineA->gfxsize) 
+	{
+		if (pLineA->gfxbuf[0]=='M' && pLineA->gfxbuf[1]=='a' && pLineA->gfxbuf[2]=='P' && pLineA->gfxbuf[3]=='3')	
+		{	
+			gfxloader_unpackpic(pLineA->gfxbuf,pLineA->gfxsize,pLineA->version,30,NULL,&pLineA->picture);
+			if (pLineA->pcbDrawPicture!=NULL)
+			{
+				pLineA->pcbDrawPicture(pLineA->contextDrawPicture,&pLineA->picture,1);	
+			}
+			if (pLineA->pcbOutputChar!=NULL)
+			{
+				pLineA->pcbOutputString(pLineA->contextOutputString,"Press Enter",0,0);
+			}
+			// wait for an ENTER
+			pLineA->level=0;
+			pLineA->pcbInputString(pLineA->contextInputString,&pLineA->level,pLineA->inputbuf);
+			pLineA->level=0;
+		}
+
+	}
+	return LINEA_OK;
+}
 int lineA_substitute_aliases(void* hLineA,unsigned short* opcode)
 {
 	tVM68k_uword inst;
@@ -245,6 +279,7 @@ int lineA_init(void* hLineA,void* pSharedMem,int *sharedmemsize,void* pMag,int m
 	if (hLineA==NULL) return LINEA_NOK_INVALID_PTR;
 	memset(pLineA,0,sizeof(tLineA));
 	pLineA->magic=MAGICVALUE;
+	pLineA->random_mode=0;
 	pLineA->random_state=12345;
 
 	pLineA->pMem=pSharedMem;			pLineA->memsize=*sharedmemsize;
@@ -261,6 +296,20 @@ int lineA_init(void* hLineA,void* pSharedMem,int *sharedmemsize,void* pMag,int m
 	*sharedmemsize=pLineA->memsize;
 	
 	return retval;
+}
+int lineA_configrandom(void* hLineA,char random_mode,unsigned int random_seed)
+{
+	tLineA* pLineA=(tLineA*)hLineA;
+	if (hLineA==NULL) return LINEA_NOK_INVALID_PTR;
+	if (pLineA->magic!=MAGICVALUE) return LINEA_NOK_INVALID_PARAM;
+	if (random_mode!=0 && random_mode!=1) return LINEA_NOK_INVALID_PARAM;
+	if (random_seed<1 || random_seed>0x7fffffff) return LINEA_NOK_INVALID_PARAM;
+
+	pLineA->random_mode=random_mode;
+	pLineA->random_state=random_seed;
+	srand(random_seed);
+
+	return 0;
 }
 int lineA_getVersion(void* hLineA,int* version)
 {

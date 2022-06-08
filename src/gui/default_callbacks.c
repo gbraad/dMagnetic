@@ -37,13 +37,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "default_callbacks.h"
 
 #define	MAGIC	0x68654879	// = yHeh, the place where I grew up ;)
+#define	MAXTEXTBUFFER	1024	// maximum number of buffered characters
+#define	MAXHEADLINEBUFFER	256	// maximum number of buffered headline characters
 typedef	struct _tContext
 {
 	unsigned int magic;
 	// ansi output
 	int	columns;
 	int	rows;
-	int	mode;	// 0=none. 1=ascii art. 2=ansi art. 3=high ansi	
+	int	mode;	// 0=none. 1=ascii art. 2=ansi art. 3=high ansi. 4=high ansi2
 	// log the input
 	FILE* f_logfile;
 	int	echomode;
@@ -60,7 +62,9 @@ typedef	struct _tContext
 	int	textalign;	// 0=left aligned. 1=block aligned
 	int	textlastspace;
 	int	textidx;
-	char	textoutput[640];	
+	char	textoutput[MAXTEXTBUFFER];
+	int	headlineidx;
+	char	headlineoutput[MAXHEADLINEBUFFER];
 } tContext;
 
 
@@ -184,13 +188,53 @@ int default_cbOutputChar(void* context,char c,unsigned char controlD2,unsigned c
 	unsigned char c2;
 	if (flag_headline && !pContext->headlineflagged) 
 	{
-		// highlight the headline
-		printf("\x1b[0;30;47m");
+		pContext->headlineidx=0;
 	}
 	if (!flag_headline && pContext->headlineflagged) 	// after the headline ends, a new paragraph is beginning.
 	{
+		int i;
 		pContext->capital=1;	// obviously, this starts with a captial letter.
-		printf("\x1b[0m\n");	// stop highlighting.
+		pContext->headlineoutput[pContext->headlineidx]=0;
+		// highlight the headline
+		//printf("\x1b[0;30;47m%s\x1b[0m\n",pContext->headlineoutput);
+
+
+		// first: remove the newlines from the headline text.
+		for (i=0;i<pContext->headlineidx;i++)
+		{
+			if (pContext->headlineoutput[i]==0x0a) 
+			{
+				pContext->headlineoutput[i]=0;
+				pContext->headlineidx--;
+			}
+		}
+
+		// second, print the ----[HEADLINE]-
+		for (i=0;i<pContext->columns-pContext->headlineidx-3;i++)
+		{
+			printf("-");
+		}
+		if (pContext->mode==2 || pContext->mode==3)	// high or low ansi -> make the headline text pop out
+			printf("[\x1b[0;30;47m%s\x1b[0m]-\n",pContext->headlineoutput);
+		else 
+			printf("[%s]-\n",pContext->headlineoutput);
+			
+
+/*		// second, print the >>>> HEADLINE <
+		for (i=0;i<pContext->columns-pContext->headlineidx-3;i++)
+		{
+			printf(">");
+		}
+		printf(" %s <\n",pContext->headlineoutput);
+*/
+/*
+		// second, print the //// HEADLINE /
+		for (i=0;i<pContext->columns-pContext->headlineidx-3;i++)
+		{
+			printf("/");
+		}
+		printf(" %s /\n",pContext->headlineoutput);
+*/
 	}
 	pContext->headlineflagged=flag_headline;
 
@@ -207,13 +251,18 @@ int default_cbOutputChar(void* context,char c,unsigned char controlD2,unsigned c
 		// after a . there has to be a space.
 		// and after a . The next letter has to be uppercase.
 		// multiple spaces are to be reduced to a single one.
-		// the characters ~ and ^ are to be transplated into line feeds.
+		// the characters ~ and ^ are to be translated into line feeds.
 		// the caracter 0xff makes the next one upper case.
+		// after a second newline comes a capital letter.
 
 		if (c2==9 || c2=='_') c2=' ';
 		if (flag_headline && (c2==0x5f || c2==0x40)) c2=' ';	// in a headline, those are the control codes for a space.
 		if (controlD2 && c2==0x40) return 0;	// end marker
 		if (c2==0x5e || c2==0x7e) c2=0x0a;	// ~ or ^ is actually a line feed.
+		if (c2==0x0a && pContext->lastchar==0x0a) 	// after two consequitive newlines comes a capital letter.
+		{
+			pContext->capital=1;
+		}
 		if (c2=='.' || c2=='!' || c2==':' || c2=='?')	// a sentence is ending.
 		{
 			pContext->capital=1;	
@@ -230,11 +279,15 @@ int default_cbOutputChar(void* context,char c,unsigned char controlD2,unsigned c
 		{
 			if (flag_headline) 
 			{
-				printf(" ");	// after those letters comes an extra space.
+				if (pContext->headlineidx<MAXHEADLINEBUFFER-1)
+					pContext->headlineoutput[pContext->headlineidx++]=' '; // after those letters comes an extra space.
 			}
 			else {
-				pContext->textlastspace=pContext->textidx;
-				pContext->textoutput[pContext->textidx++]=' ';
+				if (pContext->textidx<MAXTEXTBUFFER-1)
+				{
+					pContext->textlastspace=pContext->textidx;
+					pContext->textoutput[pContext->textidx++]=' ';
+				}
 			}
 			pContext->lastchar=' ';
 		}
@@ -248,8 +301,9 @@ int default_cbOutputChar(void* context,char c,unsigned char controlD2,unsigned c
 			{
 				if (flag_headline) 
 				{
-					printf("%c",c2&0x7f);
-				} else {
+					if (pContext->headlineidx<MAXHEADLINEBUFFER-1)
+					pContext->headlineoutput[pContext->headlineidx++]=c2&0x7f;
+				} else if (pContext->textidx<MAXTEXTBUFFER-1) {
 					if (c2==' ') pContext->textlastspace=pContext->textidx;
 					pContext->textoutput[pContext->textidx++]=c2;
 
@@ -334,38 +388,83 @@ int default_cbDrawPicture(void* context,tPicture* picture,int mode)
 		default_render_lowansi(pContext->low_ansi_characters,picture,pContext->rows,pContext->columns);	
 	}
 
-	if (pContext->mode==3)
+	if (pContext->mode==3 || pContext->mode==4)
 	{
-		accux=accuy=0;
-		for (i=0;i<picture->height;i++)
+		if (picture->halftones && pContext->mode==4)
 		{
-			accuy+=pContext->rows;
-			lastrgb=-1;
-			if (accuy>=picture->height || i==picture->height-1)
+			accux=accuy=0; 
+			for (i=1;i<picture->height-1;i+=2)
 			{
-				accux=0;
-				for (j=0;j<picture->width;j++)
+				accuy+=pContext->rows*2;
+				lastrgb=-1;
+				if (accuy>=picture->height || i==picture->height-1)
 				{
-					accux+=pContext->columns;
-					if (accux>=picture->width || j==picture->width-1)
+					accux=0;
+					for (j=1;j<picture->width-1;j+=2)
 					{
-						rgb=picture->palette[(int)(picture->pixels[i*(picture->width)+j])];
-						if (rgb!=lastrgb)
+						accux+=pContext->columns*2;
+						if (accux>=picture->width || j==picture->width-1)
 						{
-							printf("\x1b[48;2;%d;%d;%dm",
-									((rgb>>8)&0xf)*0x18,
-									((rgb>>4)&0xf)*0x18,
-									((rgb>>0)&0xf)*0x18);
+							unsigned int rgb1,rgb2,rgb3,rgb4;
+							int red,green,blue;
+							rgb1=picture->palette[(int)(picture->pixels[(i+0)*(picture->width)+j+0])];
+							rgb2=picture->palette[(int)(picture->pixels[(i+1)*(picture->width)+j+1])];
+							rgb3=picture->palette[(int)(picture->pixels[(i+0)*(picture->width)+j+1])];
+							rgb4=picture->palette[(int)(picture->pixels[(i+1)*(picture->width)+j+0])];
+							red=((rgb1>>8)&0xf)+((rgb2>>8)&0xf)+((rgb3>>8)&0xf)+((rgb4>>8)&0xf);
+							green=((rgb1>>4)&0xf)+((rgb2>>4)&0xf)+((rgb3>>4)&0xf)+((rgb4>>4)&0xf);
+							blue=((rgb1>>0)&0xf)+((rgb2>>0)&0xf)+((rgb3>>0)&0xf)+((rgb4>>0)&0xf);
+							red/=4;green/=4;blue/=4;
+							red*=32;green*=32;blue*=32;
+							rgb=(red<<16)|(green<<8)|blue;
+							if (rgb!=lastrgb)
+							{
+								printf("\x1b[48;2;%d;%d;%dm",
+										red,green,blue);
+							}
+							printf(" ");
+							lastrgb=rgb;
+							accux-=picture->width;
 						}
-						printf(" ");
-						lastrgb=rgb;
-						accux-=picture->width;
-					}
-				}		
+					}		
 
-				accuy-=picture->height;	
-				printf("\x1b[0m\n");
-			}		
+					accuy-=picture->height;	
+					printf("\x1b[0m\n");
+				}		
+			}
+			
+		} else {
+			accux=accuy=0; 
+			for (i=0;i<picture->height;i++)
+			{
+				accuy+=pContext->rows;
+				lastrgb=-1;
+				if (accuy>=picture->height || i==picture->height-1)
+				{
+					accux=0;
+					for (j=0;j<picture->width;j++)
+					{
+						accux+=pContext->columns;
+						if (accux>=picture->width || j==picture->width-1)
+						{
+							rgb=picture->palette[(int)(picture->pixels[i*(picture->width)+j])];
+							if (rgb!=lastrgb)
+							{
+								printf("\x1b[48;2;%d;%d;%dm",
+										((rgb>>8)&0xf)*0x18,
+										((rgb>>4)&0xf)*0x18,
+										((rgb>>0)&0xf)*0x18);
+							}
+							printf(" ");
+							lastrgb=rgb;
+							accux-=picture->width;
+						}
+					}		
+
+					accuy-=picture->height;	
+					printf("\x1b[0m\n");
+				}		
+			}
 		}
 	}
 
@@ -428,7 +527,7 @@ int default_open(void* hContext,FILE *f_inifile,int argc,char** argv)
 
 	pContext->rows=40;
 	pContext->columns=120;
-	pContext->mode=2;	// 0=none. 1=monochrome. 2=low_ansi. 3=high_ansi
+	pContext->mode=2;	// 0=none. 1=monochrome. 2=low_ansi. 3=high_ansi. 4=high_ansi2
 	pContext->f_logfile=NULL;
 	pContext->echomode=0;
 	pContext->textalign=1;
@@ -454,7 +553,8 @@ int default_open(void* hContext,FILE *f_inifile,int argc,char** argv)
 			if (strncmp(result,"none",4)==0) pContext->mode=0;	
 			if (strncmp(result,"monochrome",10)==0) pContext->mode=1;
 			if (strncmp(result,"low_ansi",8)==0) pContext->mode=2;
-			if (strncmp(result,"high_ansi",9)==0) pContext->mode=3;
+			if (strncmp(result,"high_ansi2",10)==0) pContext->mode=4;
+			else if (strncmp(result,"high_ansi",9)==0) pContext->mode=3;
 		}
 		if (retrievefromini(f_inifile,"[DEFAULTGUI]","align",result,sizeof(result)))
 		{
@@ -479,7 +579,7 @@ int default_open(void* hContext,FILE *f_inifile,int argc,char** argv)
 	if (argc)
 	{
 		char result[64];
-		if (retrievefromcommandline(argc,argv,"-valign",result,64))
+		if (retrievefromcommandline(argc,argv,"-valign",result,sizeof(result)))
 		{
 			if (strncmp(result,"left",4)==0) pContext->textalign=0;	
 			else if (strncmp(result,"block",5)==0) pContext->textalign=1;
@@ -493,11 +593,12 @@ int default_open(void* hContext,FILE *f_inifile,int argc,char** argv)
 				return DEFAULT_NOK;
 			}	
 		}
-		if (retrievefromcommandline(argc,argv,"-vmode",result,64))
+		if (retrievefromcommandline(argc,argv,"-vmode",result,sizeof(result)))
 		{
 			if (strncmp(result,"none",4)==0) pContext->mode=0;	
 			else if (strncmp(result,"monochrome",10)==0) pContext->mode=1;
 			else if (strncmp(result,"low_ansi",8)==0) pContext->mode=2;
+			else if (strncmp(result,"high_ansi2",10)==0) pContext->mode=4;
 			else if (strncmp(result,"high_ansi",9)==0) pContext->mode=3;
 			else {
 				printf("unknown parameter for -vmode. please use one of\n");
@@ -505,11 +606,12 @@ int default_open(void* hContext,FILE *f_inifile,int argc,char** argv)
 				printf("monochrome ");
 				printf("low_ansi ");
 				printf("high_ansi ");
+				printf("high_ansi2 ");
 				printf("\n");	
 				return DEFAULT_NOK;
 			}	
 		}
-		if (retrievefromcommandline(argc,argv,"-vrows",result,64))
+		if (retrievefromcommandline(argc,argv,"-vrows",result,sizeof(result)))
 		{
 			int rows;
 			rows=atoi(result);
@@ -520,13 +622,13 @@ int default_open(void* hContext,FILE *f_inifile,int argc,char** argv)
 			}
 			pContext->rows=rows;
 		}
-		if (retrievefromcommandline(argc,argv,"-vcols",result,64))
+		if (retrievefromcommandline(argc,argv,"-vcols",result,sizeof(result)))
 		{
 			int cols;
 			cols=atoi(result);
-			if (cols<1 || cols>500) 
+			if (cols<1 || cols>600) 
 			{
-				printf("illegal parameter for -vcols. please use values between 1 and 500\n");
+				printf("illegal parameter for -vcols. please use values between 1 and 600\n");
 				return DEFAULT_NOK;
 			}
 			pContext->columns=cols;
@@ -535,7 +637,7 @@ int default_open(void* hContext,FILE *f_inifile,int argc,char** argv)
 		{
 			pContext->echomode=1;
 		}
-		if (retrievefromcommandline(argc,argv,"-vlog",result,64))
+		if (retrievefromcommandline(argc,argv,"-vlog",result,sizeof(result)))
 		{
 			fprintf(stderr,"Opening logfile [%s] for writing\n",result);
 			pContext->f_logfile=fopen(result,"wb");	

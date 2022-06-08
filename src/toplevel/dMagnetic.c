@@ -33,54 +33,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "vm68k.h"
 #include "linea.h"
 #include "default_callbacks.h"
+#include "maggfxloader.h"
 #define	MAXMAGSIZE	(1<<20)
 #define	MAXGFXSIZE	(1<<22)
 
 
-int dMagnetic_init(void** hVM68k,void** hLineA,void* pSharedMem,int memsize,char* magfilename,char* gfxfilename)
+int dMagnetic_init(void** hVM68k,void** hLineA,void* pSharedMem,int memsize,char* magbuf,int magsize,char* gfxbuf,int gfxsize)
 {
 	int sizevm68k;
 	int sizelineA;
 	int retval;
 	int version;
-	char* magbuf;
-	char* gfxbuf;
-	int magsize;
-	int gfxsize;
-	FILE *f;
 
-	// step 1: load the game binaries
-	magbuf=malloc(MAXMAGSIZE);
-	gfxbuf=malloc(MAXGFXSIZE);
-	if (magbuf==NULL || gfxbuf==NULL) 
-	{
-		fprintf(stderr,"ERROR: unable to allocate memory for the data files\n");
-		return -1;
-	}
-	f=fopen(magfilename,"rb");
-	if (f==NULL)
-	{
-		fprintf(stderr,"ERROR: unable to open [%s]\n",magfilename);
-		fprintf(stderr,"This interpreter needs a the game's binaries in the .mag and .gfx\n");
-		fprintf(stderr,"format from the Magnetic Scrolls Memorial webseiite. For details, \n");
-		fprintf(stderr,"see https://msmemorial.if-legends.org/memorial.php\n");
-		return -2;
-	}
-	magsize=fread(magbuf,sizeof(char),MAXMAGSIZE,f);
-	fclose(f);
-	f=fopen(gfxfilename,"rb");
-	if (f==NULL)
-	{
-		fprintf(stderr,"ERROR: unable to open [%s]\n",gfxfilename);
-		fprintf(stderr,"This interpreter needs a the game's binaries in the .mag and .gfx\n");
-		fprintf(stderr,"format from the Magnetic Scrolls Memorial webseiite. For details, \n");
-		fprintf(stderr,"see https://msmemorial.if-legends.org/memorial.php\n");
-		return -2;
-	}
-	gfxsize=fread(gfxbuf,sizeof(char),MAXGFXSIZE,f);
-	fclose(f);
 
-	// at this point, they are stored in magbuf and gfxbuf.
 
 
 	// step 2: start the engine.
@@ -134,16 +99,11 @@ int dMagnetic_init(void** hVM68k,void** hLineA,void* pSharedMem,int memsize,char
 		return retval;
 	}
 	
-	// the relevant data from the game binaries has been copied.
-	free(gfxbuf);
-	free(magbuf);
 	return 0;
 }
 int main(int argc,char** argv)
 {
 	char inifilename[1024];
-	char magfilename[1024];
-	char gfxfilename[1024];
 	int retval;
 	FILE *f_inifile=NULL;
 
@@ -155,13 +115,14 @@ int main(int argc,char** argv)
 	int sizeGUI;
 	int unknownopcode;
 	char *homedir;
-	int gamenamegiven;
+	char random_mode;
+	unsigned int random_seed;
+	char* magbuf;	
+	char* gfxbuf;
 	
 
 
 	// figure out the location of the inifile.
-	magfilename[0]=0;
-	gfxfilename[0]=0;
 	if (!(retrievefromcommandline(argc,argv,"--version",NULL,0)))
 	{
 		fprintf(stderr,"*** dMagnetic %d.%d%d\n",VERSION_MAJOR,VERSION_MINOR,VERSION_REVISION);
@@ -317,22 +278,30 @@ int main(int argc,char** argv)
 		printf("\n");
 		printf("\n");
 		printf("PARAMETERS TO RUN THE GAME\n");
-		printf("-ini dMagnetic.ini   to provide an inifile\n");
-		printf("-mag MAGFILE.mag     to provide the game binary directly\n");
-		printf("-gfx GFXFILE.gfx     to provide the game graphics directly\n");
+		printf("-ini dMagnetic.ini to provide an inifile\n");
+		printf("-mag MAGFILE.mag   to provide the game binary directly\n");
+		printf("-gfx GFXFILE.gfx   to provide the game graphics directly\n");
 		printf("\n");
 		printf("OPTIONAL PARAMETERS\n");
-		printf("-vrows ROWS    to set the number of rows for the pictures\n");
-		printf("-vcols COLUMNS to set the number of columns for the pictures\n");
-		printf("-vmode MODE    where mode is one of\n  [");
+		printf("-rmode RANDOMMODE  where mode is one of\n  [");
+			printf("pseudo ");
+			printf("real");
+			printf("]");
+		printf("\n");
+		printf("-rseed RANDOMSEED  to set the random seed between 1 and %d\n",0x7fffffff);
+
+		printf("-vrows ROWS        to set the number of rows for the pictures\n");
+		printf("-vcols COLUMNS     to set the number of columns for the pictures\n");
+		printf("-vmode MODE        where mode is one of\n  [");
 			printf("none ");
 			printf("monochrome ");
 			printf("low_ansi ");
 			printf("high_ansi");
+			printf("high_ansi2");
 			printf("]");
 		printf("\n");
-		printf("-vlog LOGFILE  to write a log of the commands used\n");
-		printf("-vecho         to reprint the commands (useful for | tee)\n");
+		printf("-vlog LOGFILE      to write a log of the commands used\n");
+		printf("-vecho             to reprint the commands (useful for | tee)\n");
 		printf("\n");
 	
 		printf(" OTHER PARAMETERS\n");
@@ -353,8 +322,10 @@ int main(int argc,char** argv)
 		printf("[FILES]\n");
 		printf("pawnmag=/usr/local/share/games/magneticscrolls/pawn.mag\n");
 		printf("pawngfx=/usr/local/share/games/magneticscrolls/pawn.gfx\n");
+		printf(";pawnmsdos=/usr/local/share/games/magneticscrolls/msdosversions/PAWN\n");
 		printf("guildmag=/usr/local/share/games/magneticscrolls/guild.mag\n");
 		printf("guildgfx=/usr/local/share/games/magneticscrolls/guild.gfx\n");
+		printf(";guildmsdos=/usr/local/share/games/magneticscrolls/msdosversions/GUILD\n");
 		printf("jinxtermag=/usr/local/share/games/magneticscrolls/jinxter.mag\n");
 		printf("jinxtergfx=/usr/local/share/games/magneticscrolls/jinxter.gfx\n");
 		printf("corruptionmag=/usr/local/share/games/magneticscrolls/ccorrupt.mag\n");
@@ -366,6 +337,11 @@ int main(int argc,char** argv)
 		printf("wonderlandmag=/usr/local/share/games/magneticscrolls/wonder.mag\n");
 		printf("wonderlandgfx=/usr/local/share/games/magneticscrolls/wonder.gfx\n");
 		printf("\n");
+		printf("[RANDOM]\n");
+		printf("mode=pseudo\n");
+		printf(";mode=real\n");
+		printf("seed=12345\n");
+		printf("\n");
 		printf("[DEFAULTGUI]\n");
 		printf("rows=40\n");
 		printf("columns=120\n");
@@ -376,158 +352,16 @@ int main(int argc,char** argv)
 		printf(";mode=monochrome\n");
 		printf(";mode=low_ansi\n");
 		printf("mode=high_ansi\n");
+		printf(";mode=high_ansi2\n");
 		printf("low_ansi_characters=\\\\/|=\n");
 		printf("monochrome_characters= .:-=+*x#@$X\n");
 		printf("--------------------------------------------------------------------------------\n");
 		return 1;
 	}
-	magfilename[0]=gfxfilename[0]=0;
-
 	if (retrievefromcommandline(argc,argv,"-ini",inifilename,sizeof(inifilename))) 
 	{
 	}
 	f_inifile=fopen(inifilename,"rb");
-	gamenamegiven=0;
-	if ((retrievefromcommandline(argc,argv,"pawn",NULL,0))
-			|| (retrievefromcommandline(argc,argv,"guild",NULL,0))
-			|| (retrievefromcommandline(argc,argv,"jinxter",NULL,0))
-			|| (retrievefromcommandline(argc,argv,"corruption",NULL,0))
-			|| (retrievefromcommandline(argc,argv,"fish",NULL,0))
-			|| (retrievefromcommandline(argc,argv,"myth",NULL,0))
-			|| (retrievefromcommandline(argc,argv,"wonderland",NULL,0)))
-	{
-		gamenamegiven=1;
-	}
-
-	if (!f_inifile && gamenamegiven) 
-	{
-		fprintf(stderr,"error opening %s\n",inifilename);
-		fprintf(stderr,"please run %s -helpini for more help\n",argv[0]);
-		return 1;
-	}
-	if (retrievefromcommandline(argc,argv,"pawn",NULL,0))
-	{
-		magfilename[0]=gfxfilename[0]=0;
-		retval=retrievefromini(f_inifile,"[FILES]","pawnmag",magfilename,sizeof(magfilename));
-		retval=retrievefromini(f_inifile,"[FILES]","pawngfx",gfxfilename,sizeof(gfxfilename));
-	}
-
-	if (retrievefromcommandline(argc,argv,"guild",NULL,0))
-	{
-		magfilename[0]=gfxfilename[0]=0;
-		retval=retrievefromini(f_inifile,"[FILES]","guildmag",magfilename,sizeof(magfilename));
-		retval=retrievefromini(f_inifile,"[FILES]","guildgfx",gfxfilename,sizeof(gfxfilename));
-	}
-
-	if (retrievefromcommandline(argc,argv,"jinxter",NULL,0))
-	{
-		magfilename[0]=gfxfilename[0]=0;
-		retval=retrievefromini(f_inifile,"[FILES]","jinxtermag",magfilename,sizeof(magfilename));
-		retval=retrievefromini(f_inifile,"[FILES]","jinxtergfx",gfxfilename,sizeof(gfxfilename));
-	}
-
-	if (retrievefromcommandline(argc,argv,"corruption",NULL,0))
-	{
-		magfilename[0]=gfxfilename[0]=0;
-		retval=retrievefromini(f_inifile,"[FILES]","corruptionmag",magfilename,sizeof(magfilename));
-		retval=retrievefromini(f_inifile,"[FILES]","corruptiongfx",gfxfilename,sizeof(gfxfilename));
-	}
-
-	if (retrievefromcommandline(argc,argv,"fish",NULL,0))
-	{
-		magfilename[0]=gfxfilename[0]=0;
-		retval=retrievefromini(f_inifile,"[FILES]","fishmag",magfilename,sizeof(magfilename));
-		retval=retrievefromini(f_inifile,"[FILES]","fishgfx",gfxfilename,sizeof(gfxfilename));
-	}
-
-	if (retrievefromcommandline(argc,argv,"myth",NULL,0))
-	{
-		magfilename[0]=gfxfilename[0]=0;
-		retval=retrievefromini(f_inifile,"[FILES]","mythmag",magfilename,sizeof(magfilename));
-		retval=retrievefromini(f_inifile,"[FILES]","mythgfx",gfxfilename,sizeof(gfxfilename));
-	}
-
-
-	if (retrievefromcommandline(argc,argv,"wonderland",NULL,0))
-	{
-		magfilename[0]=gfxfilename[0]=0;
-		retval=retrievefromini(f_inifile,"[FILES]","wonderlandmag",magfilename,sizeof(magfilename));
-		retval=retrievefromini(f_inifile,"[FILES]","wonderlandgfx",gfxfilename,sizeof(gfxfilename));
-	}
-	// command line parameters should overwrite the .ini parameters.
-	if (retrievefromcommandline(argc,argv,"-mag",magfilename,sizeof(magfilename)))
-	{
-		gfxfilename[0]=0;
-	}
-	if (retrievefromcommandline(argc,argv,"-gfx",gfxfilename,sizeof(gfxfilename)))
-	{
-
-	}
-	if (magfilename[0] && !gfxfilename[0])
-	{
-		// deducing the name of the gfx file from the mag file
-		int l;
-		int found;
-		found=0;
-		l=strlen(magfilename);
-		fprintf(stderr,"Warning! -mag given, but not -gfx. Deducing filename\n");
-		if (l>=4)
-		{
-			if (strncmp(&magfilename[l-4],".mag",4)==0)
-			{
-				memcpy(gfxfilename,magfilename,l+1);
-				found=1;
-				gfxfilename[l-4]='.';
-				gfxfilename[l-3]='g';
-				gfxfilename[l-2]='f';
-				gfxfilename[l-1]='x';
-			}
-		}
-		if (!found)
-		{
-			fprintf(stderr,"filename did not end in .mag (lower case)\n");
-			return 0;
-		}
-	}
-	if (!magfilename[0] && gfxfilename[0])
-	{
-		// deducing the name of the mag from the gfx
-		int l;
-		int found;
-		found=0;
-		l=strlen(gfxfilename);
-		fprintf(stderr,"warning! -gfx given, but not -mag. Deducing filename\n");
-		if (l>=4)
-		{
-			if (strncmp(&gfxfilename[l-4],".gfx",4)==0)
-			{
-				memcpy(magfilename,gfxfilename,l+1);
-				found=1;
-				magfilename[l-4]='.';
-				magfilename[l-3]='m';
-				magfilename[l-2]='a';
-				magfilename[l-1]='g';
-			}
-		}
-		if (!found)
-		{
-			fprintf(stderr,"filename did not end in .gfx (lower case)\n");
-			return 0;
-		}
-	}
-	if ((!magfilename[0] || !gfxfilename[0]))
-	{
-		fprintf(stderr,"Please provide a game via commandline. Please use either\n");
-		fprintf(stderr," %s -mag MAGFILE.mag or %s -ini dMagnetic.ini pawn\n",argv[0],argv[0]);
-		fprintf(stderr,"\n");
-		fprintf(stderr,"you need to provide a working dMagnetic.ini file\n");
-		fprintf(stderr,"please run %s -helpini for more help\n",argv[0]);
-		return 1;
-
-	}
-
-
-///////////////////////////////////////////// init
 	sharedmemsize=98304;
 	pSharedMem=malloc(sharedmemsize);
 	if (pSharedMem==NULL)
@@ -554,19 +388,92 @@ int main(int argc,char** argv)
 		return 0;
 	}
 
+//////////////////////////////////////////////// random
+	random_mode=0;
+	random_seed=12345;
+	if (f_inifile)
+	{
+		char result[64];
 
+		if (retrievefromini(f_inifile,"[RANDOM]","mode",result,sizeof(result)))
+		{
+			if (result[0]=='p') random_mode=0;
+			else if (result[0]=='r') random_mode=1;
+			else {
+				printf("illegal random mode in inifile. please use one of ");
+				printf("pseudo ");
+				printf("real ");
+				return 0;
+			}
+		}
+		if (retrievefromini(f_inifile,"[RANDOM]","seed",result,sizeof(result)))
+		{
+			random_seed=atoi(result);
+			if (random_seed<1 || random_seed>0x7fffffff)
+			{
+				printf("illegal random seed. please use a value between %d and %d\n",1,0x7fffffff);
+				return 0;
+			}
+		}
+	}	
+
+	if (argc)
+	{
+		char result[64];
+		if (retrievefromcommandline(argc,argv,"-rmode",result,sizeof(result)))
+		{
+			if (result[0]=='p') random_mode=0;
+			else if (result[0]=='r') random_mode=1;
+			else {
+				printf("illegal parameter for -rmode. please use one of ");
+				printf("pseudo ");
+				printf("real ");
+				printf("\n");
+				return 0;
+			}
+		}
+		if (retrievefromcommandline(argc,argv,"-rseed",result,sizeof(result)))
+		{
+			random_seed=atoi(result);
+			if (random_seed<1 || random_seed>0x7fffffff)
+			{
+				printf("illegal parameter for -rseed. please use a value between %d and %d\n",1,0x7fffffff);
+				return 0;
+			}
+		}
+	}	
 
 
 	if (f_inifile) fclose(f_inifile);
+	magbuf=malloc(MAXMAGSIZE);
+	gfxbuf=malloc(MAXGFXSIZE);
 
 	// this is the main loop.
 	do
 	{
-		retval=dMagnetic_init(&hVM68k,&hLineA,pSharedMem,sharedmemsize,magfilename,gfxfilename);
+		int magsize;
+		int gfxsize;
+
+		magsize=MAXMAGSIZE;
+		gfxsize=MAXGFXSIZE;
+		if (magbuf==NULL || gfxbuf==NULL) 
+		{
+			fprintf(stderr,"ERROR: unable to allocate memory for the data files\n");
+			return -1;
+		}
+		f_inifile=fopen(inifilename,"rb");
+		if (loader_init(argc,argv,f_inifile, magbuf,&magsize,gfxbuf,&gfxsize))
+		{
+			return 1;
+		}
+
+
+		retval=dMagnetic_init(&hVM68k,&hLineA,pSharedMem,sharedmemsize,magbuf,magsize,gfxbuf,gfxsize);
 		if (retval)
 		{
 			return 0;
 		}
+		retval|=lineA_configrandom(hLineA,random_mode,random_seed);
 		// set the call back hooks for this GUI
 		retval|=lineA_setCBoutputChar(hLineA,default_cbOutputChar,	hGUI);
 		retval|=lineA_setCBoutputString(hLineA,default_cbOutputString,	hGUI);
@@ -581,6 +488,7 @@ int main(int argc,char** argv)
 		}
 		/////////////////////////////////////////////		
 
+		lineA_showTitleScreen(hLineA);	// some versions of the game have a title screen.
 		// everything is good. have fun playing!
 		do
 		{
@@ -598,6 +506,8 @@ int main(int argc,char** argv)
 			//		if (retval==LINEA_OK_QUIT) printf("\x1b[0m\n\x1b[0;37;44mGoodbye!\x1b[0m\n");
 		} while (!unknownopcode && !retval);	
 	} while (retval==LINEA_OK_RESTART);
+	free(gfxbuf);
+	free(magbuf);
 	// this concludes the main loop
 
 	free(pSharedMem);

@@ -15,10 +15,11 @@ just run
 STEP 2: GET THE BINARIES
 Get the files pawn.mag and pawn.gfx. For example from this excellent website 
 https://msmemorial.if-legends.org/games.htm/pawn.php
-
+Alternatively, if you have the MS-DOS version of the games, copy them onto
+your harddrive. 
 
 STEP 3: CONFIGURE
-edit dMagnetic.ini, especially the lines ????mag= and ???gfx=.
+edit dMagnetic.ini, especially the lines ????mag= and ???gfx=, or ???msdosdir=.
 
 STEP 4: RUN
 run one of
@@ -47,11 +48,18 @@ You can select output modes by using one of the following parameters:
 ./dMagnetic -ini dMagnetic.ini pawn -vmode monochrome -vrows 40 -vcols 120
 ./dMagnetic -ini dMagnetic.ini pawn -vmode low_ansi   -vrows 40 -vcols 120
 ./dMagnetic -ini dMagnetic.ini pawn -vmode high_ansi  -vrows 40 -vcols 120
+./dMagnetic -ini dMagnetic.ini pawn -vmode high_ansi2 -vrows 40 -vcols 120
 
 The defaut mode is "low_ansi", since it works on most terminals. The mode 
 called "high_ansi" provides the richest amount of colors, even though the 
-graphics are slightly block-y. 
+graphics are slightly block-y. When playing the PC version, the high_ansi2
+mode is recommended.
 if your terminal does not support them, please try one of the others. 
+
+STEP 6: LOGGING
+In case you would like to retrace our steps, you can use -vlog LOGFILE.log and
+-vecho to be able to see what you have typed in before. This helps when trying
+to figure out what you did wrong, and why you have been killed. :)
 
 -------------------------------------------------------------------------------
 What about GLK?

@@ -25,17 +25,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 */
-#ifndef	PICTURE_H
-#define	PICTURE_H
+#ifndef	MAGGFXLOADER_H
+#define	MAGGFXLOADER_H
+int loader_init(int argc,char** argv,FILE *f_inifile,
+	char *magbuf,int* magsize,
+	char* gfxbuf,int* gfxsize);
 
-// the purpose of this file is to provide the data structure for the pictures.
-typedef	struct _tPicture
-{
-	unsigned int palette[16];
-	int height;
-	int width;
-	char pixels[262144];
-	char halftones;
-} tPicture;
 #endif
 

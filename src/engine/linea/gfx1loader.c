@@ -30,6 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "vm68k_macros.h"
 #include "gfx1loader.h"
 #include "linea.h"	// for the picture
+#include <string.h>
 #include <stdio.h>
 
 int gfxloader_gfx1(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte version,int picnum,tPicture* pPicture)
@@ -49,6 +50,7 @@ int gfxloader_gfx1(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte versio
 	tVM68k_ubyte curbyte;
 	tVM68k_ubyte curpixel;
 	
+	pPicture->halftones=0;	// only gfx3 offers halftone pictures
 	retval=0;
 	picnum&=0xffff;
 	picoffs=READ_INT32BE(gfxbuf,8+4*picnum);	// the .gfx file starts with the index pointers to the actual picture data.
@@ -156,6 +158,7 @@ int gfxloader_gfx2(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte versio
 
 	pPicture->width=0;
 	pPicture->height=0;
+	pPicture->halftones=0;	// only gfx3 offers halftone pictures
 	// the gfx2 buffer starts with the magic value, and then a directory
 	directorysize=READ_INT16BE(gfxbuf,4);
 
@@ -259,6 +262,253 @@ int gfxloader_gfx2(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte versio
 	return retval;
 }
 
+
+// the gfx3 format stored some values as little endian.
+#define READ_INT32LE(ptr,idx)   (\
+        (((tVM68k_ulong)((ptr)[((idx)+3)])&0xff)<<24)   |\
+        (((tVM68k_ulong)((ptr)[((idx)+2)])&0xff)<<16)   |\
+        (((tVM68k_ulong)((ptr)[((idx)+1)])&0xff)<< 8)   |\
+        (((tVM68k_ulong)((ptr)[((idx)+0)])&0xff)<< 0)   |\
+        0)
+#define	MAXPICWIDTH	512
+int gfxloader_gfx3(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte version,int picnum,tPicture* pPicture)
+{
+	//  0.. 3: 4 bytes "MaP3"
+	//  4.. 8: 4 bytes length of index
+	//  8..11: 4 bytes length of disk1.pix
+	// 11..15: 4 bytes length of disk2.pix
+	// then the index
+	// then the disk1.pix data
+	// then the disk2.pix data
+	int retval;
+	int offs1;
+	int offs2;
+	int offset;
+	int indexoffs,indexlen;
+	int disk1offs,disk1len;
+	int disk2offs;
+	int i,n;
+
+	int huffsize;
+	int tableidx;
+	int byteidx;
+	int unhufcnt;
+	int pixelcnt;
+	int state;
+
+	unsigned char mask;
+	unsigned char byte;
+	unsigned int unpackedsize;
+	int max_stipple;
+	unsigned char pl_lut[128];	// lookup table for left pixels
+	unsigned char pr_lut[128];	// lookup table for right pixels
+	unsigned char xorbuf[MAXPICWIDTH*2];	// ring buffer, to perform an XOR over two lines of stipples
+	unsigned char rgbbuf[16];		// RGB values are 6 bits wide. 2 bits red, 2 bits green, 2 bits blue. 
+	unsigned char last_stipple;
+	int state_cnt;
+	int height,width;
+
+	picnum&=0xffff;
+	pPicture->halftones=1;	// this format offers half tones.
+
+	indexlen=READ_INT32BE(gfxbuf, 4);
+	disk1len=READ_INT32BE(gfxbuf, 8);
+//	disk2len=READ_INT32BE(gfxbuf,12);
+
+	indexoffs=16;
+	disk1offs=indexoffs+indexlen;
+	disk2offs=disk1offs+disk1len;
+
+	retval=0;
+
+	// step 1: find the offset of the picture within the index.
+	// the way it is stored is that the offsets within disk1 are stored in the first half,
+	// and the offsets for disk2 are in the second half.
+	// in case the offset is -1, it must be in the other one.
+	offs1=(tVM68k_slong)READ_INT32LE(gfxbuf,indexoffs+picnum*4);
+	offs2=(tVM68k_slong)READ_INT32LE(gfxbuf,indexoffs+indexlen/2+picnum*4);
+
+	if (picnum==30 && offs1==-1 && offs2==-1) offs1=0;	// special case: the title screen for the GUILD of thieves is the first picture in DISK1.PIX
+	if (offs1!=-1) offset=offs1+disk1offs;			// in case the index was found in the first half, use disk1
+	else if (offs2!=-1) offset=offs2+disk2offs;		// in case the index was found in the second half, use disk2
+	else return -1;	///  otherwise: ERROR
+
+	
+	// the picture is stored in layers.
+	// the first layer is a hufman table.
+	// this unpacks the second layer, which contains repitions
+	// and a "stipple" table. from this, the actual pixels are being 
+	// calculated.	
+
+	huffsize=gfxbuf[offset+0];
+	unpackedsize=READ_INT16BE(gfxbuf,offset+huffsize+1);
+	unpackedsize*=4;
+	unpackedsize+=3;
+	unpackedsize&=0xffff;	// it was designed for 16 bit machines.
+
+	pixelcnt=-1;
+	unhufcnt=0;
+	state=0;
+	tableidx=0;
+	mask=0;
+	byteidx=offset+huffsize+2+1;	// the beginning of the bitstream starts after the hufman table and the unpackedsize
+	byte=0;
+	width=0;
+	height=0;
+	memset(xorbuf,0,sizeof(xorbuf));	// initialize the xor buffer with 0
+	state_cnt=0;
+	max_stipple=last_stipple=0;
+
+	while (unhufcnt<unpackedsize && (pixelcnt<(2*width*height)))
+	{
+		// first layer: the bytes for the unhuf buf are stored as a bitstream, which are used to traverse a hufman table.
+		unsigned char bleft,bright,b;
+		if (mask==0)
+		{
+			byte=gfxbuf[byteidx];
+			byteidx++;
+			mask=0x80;			// MSB first
+		}
+		bleft =gfxbuf[offset+1+tableidx*2+0];
+		bright=gfxbuf[offset+1+tableidx*2+1];
+		b=(byte&mask)?bleft:bright;		// when the bit is =1, go left.
+		mask>>=1;				// MSB first.
+		if (b&0x80)		// leaves have the highest bit set. terminal symbols only have 7 bit.
+		{
+			tableidx=0;
+			b&=0x7f;	// terminal symbols have 7 bit
+			//
+			//
+			// the second layer begins here
+			switch (state)
+			{
+				case 0:	// first state: the ID should be "0x77"
+					if (b!=0x77)	return -1;	// illegal format
+					state=1;
+				break;
+				case 1: // second byte is the number of "stipples"
+					max_stipple=b;
+					state=2;
+				break;
+				case 2:	// width, stored as 2*6 bit Big Endian
+					width<<=6;	// 2*6 bit. big endian;
+					width|=b&0x3f;
+					state_cnt++;
+					if (state_cnt==2)	state=3;
+				break;
+				case 3:	// height, stored as 2*6 bit Big Endian
+					height<<=6;	// 2*6 bit. big endian;
+					height|=b&0x3f;
+					state_cnt++;
+					if (state_cnt==4)	
+					{
+						if (height<=0 || width<=0) 	return -2;	// error in decoding the height and the width
+						pixelcnt=0;
+						state_cnt=0;
+						state=4;
+					}
+				break;
+				case 4:	// rgb values
+					rgbbuf[state_cnt++]=b;
+					if (state_cnt==16) 
+					{
+						state_cnt=0;
+						state=5;
+					}
+				break;
+				case 5:	// lookup-table to retrieve the left pixel value from the stipple
+					pl_lut[state_cnt++]=b;
+					if (state_cnt==max_stipple)
+					{
+						state_cnt=0;
+						state=6;
+					}
+				break;
+				case 6:	// lookup-table to retrieve the right pixel value from the stipple
+					pr_lut[state_cnt++]=b;
+					if (state_cnt==max_stipple)
+					{
+						last_stipple=0;
+						state_cnt=0;
+						state=7;
+					}
+				break;
+				case 7:	
+				case 8:
+					// now for the stipple table
+					// this is actually a third layer of encoding.
+					// it contains terminal symbols [0... max_stipple)
+					// 
+					// if the symbol is <max_stipple, it is a terminal symbol, a stipple
+					// if the symbol is =max_stipple, it means that the next byte is being escaped
+					// if the symbol is >max_stipple, it means that the previous symbol is being repeated.
+					n=0;
+					if (state==8)	// this character has been "escaped"
+					{
+						state=7;
+						n=1;
+						last_stipple=b;
+					}
+					else if (b<max_stipple)
+					{
+						last_stipple=b;	// store this symbol for the next repeat instruction	
+						n=1;
+					} else {
+						if (b==max_stipple)	// "escape" the NEXT symbol. use it, even though it might be >=max_stipple.
+						{			// this is necessary for the XOR operation.
+							state=8;
+							n=0;
+						} else if (b>max_stipple) 
+						{
+							n=b-max_stipple;	// repeat the previous stipple
+							b=last_stipple;
+						}
+					}
+					for (i=0;i<n;i++)
+					{
+						unsigned char x;
+						xorbuf[state_cnt]^=b;			// descramble the symbols
+						x=xorbuf[state_cnt];
+						state_cnt=(state_cnt+1)%(2*width);
+						pPicture->pixels[pixelcnt++]=pl_lut[x];
+						pPicture->pixels[pixelcnt++]=pr_lut[x];
+					}
+				break;
+			}
+		} else {
+			tableidx=b;	// non terminal -> traverse the tree further down
+		}
+	}
+	pPicture->height=height;
+	pPicture->width=width*2;
+	// the other image formats have 9 bit wide rgb values.
+	for (i=0;i<16;i++)
+	{
+		unsigned int red,green,blue;
+		red  =(rgbbuf[i]>>4)&0x3;
+		green=(rgbbuf[i]>>2)&0x3;
+		blue =(rgbbuf[i]>>0)&0x3;
+
+		red*=  0x7;
+		green*=0x7;
+		blue*= 0x7;
+		
+		red/=  0x3;
+		green/=0x3;
+		blue/= 0x3;
+	
+		red&=0x7;green&=0x7;blue&=0x7;
+
+		pPicture->palette[i] =(  red<<8);
+		pPicture->palette[i]|=(green<<4);
+		pPicture->palette[i]|=( blue<<0);
+	}
+	
+
+	return retval;
+}
+
+
 int gfxloader_unpackpic(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte version,int picnum,tVM68k_ubyte* picname,tPicture* pPicture)
 {
 	int retval;
@@ -268,6 +518,7 @@ int gfxloader_unpackpic(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte v
 	if (gfxbuf==NULL || pPicture==NULL) return -1;
 	if (gfxbuf[0]=='M' && gfxbuf[1]=='a' && gfxbuf[2]=='P' && gfxbuf[3]=='i') retval=gfxloader_gfx1(gfxbuf,gfxsize,version,picnum,pPicture);
 	if (gfxbuf[0]=='M' && gfxbuf[1]=='a' && gfxbuf[2]=='P' && gfxbuf[3]=='2') retval=gfxloader_gfx2(gfxbuf,gfxsize,version,picname,pPicture);
+	if (gfxbuf[0]=='M' && gfxbuf[1]=='a' && gfxbuf[2]=='P' && gfxbuf[3]=='3') retval=gfxloader_gfx3(gfxbuf,gfxsize,version,picnum,pPicture);
 	return retval;
 }
 int gfxloader_picture_calcxpmsize(tPicture* pPicture,int* xpmsize)

@@ -29,6 +29,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef	VM68K_DATATYPES_H
 #define	VM68K_DATATYPES_H
 // the purpose of this file is to provide the shared datatypes needed for the virtual machine
+#ifdef __sgi__
+typedef	unsigned char		tVM68k_bool;
+typedef	unsigned char		tVM68k_ubyte;
+typedef	unsigned short		tVM68k_uword;
+typedef	unsigned int		tVM68k_ulong;
+typedef	unsigned long long	tVM68k_uint64;
+
+typedef	signed char		tVM68k_sbyte;
+typedef	signed short		tVM68k_sword;
+typedef	signed int		tVM68k_slong;
+typedef	signed long long	tVM68k_sint64;
+
+
+#else
 #include <stdint.h>
 
 
@@ -44,6 +58,7 @@ typedef	int_least8_t	tVM68k_sbyte;
 typedef	int_least16_t	tVM68k_sword;
 typedef	int_least32_t	tVM68k_slong;
 typedef	int_least64_t	tVM68k_sint64;
+#endif
 
 
 

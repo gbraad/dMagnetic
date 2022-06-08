@@ -1,7 +1,7 @@
 .\" Process this file with
 .\" groff -man -Tascii dMagnetic.1
 .\"
-.Dd November 9th, 2019
+.Dd December 27th, 2019
 .Os OpenBSD 
 .Dt dMagnetic 1
 .
@@ -17,6 +17,10 @@ You wake up on a sunny August morning with birds singing, and the air fresh and 
 .Nm
 .Op Fl mag Ar MAGFILE.mag
 .Op Fl gfx Ar GFXFILE.gfx
+.br
+.Nm
+.Op Fl msdosdir Ar DIRECTORY/
+.Op Fl vmode Ar high_ansi2
 .br
 .Nm
 .Op Fl ini Ar ini-file 
@@ -51,6 +55,11 @@ You wake up on a sunny August morning with birds singing, and the air fresh and 
 .Nm
 .Op Fl ini Ar ini-file 
 .Op GAME
+.Op Fl vmode Ar high_ansi2
+.br
+.Nm
+.Op Fl ini Ar ini-file 
+.Op GAME
 .Op Fl valign Ar left
 .br
 .Nm
@@ -75,7 +84,7 @@ is an interpreter for classic text adventure games, or interactive fiction, such
 .El
 .
 .Sh GAME BINARIES
-Currently, only binaries in the .mag and .gfx format from the 
+Currently, binaries in the .mag and .gfx format from the 
 magnetic scrolls memorial at
 https://msmemorial.if-legends.org/memorial.php 
 are being supported. 
@@ -87,8 +96,20 @@ Once the game(s) have been downloaded, the .mag and .gfx files can be provided v
 .Pp
 .Nm
 -mag pawn.mag -gfx pawn.gfx
+.Pp
+Alternatively, binaries from the MSDOS version of 
+"The Pawn"
+or
+"The Guild of Thieves"
+can be used. The directory, in which they are, has to be provided via
+.Pp
+.Nm
+-msdosdir DIRECTORY/ -vmode high_ansi
 .Pp 
-It is also possible to edit thedMagnetic.ini file and start a specific game, by using one of
+It is recommended to use the 
+.Op Fl vmode Ar high_ansi2
+option, since this renders the half-tone images slightly different.
+It is also possible to edit the dMagnetic.ini file and start a specific game, by using one of
 .Pp
 .Nm
 -ini dMagnetic.ini pawn
@@ -154,6 +175,11 @@ has been developed with ANSI-consoles in mind. To select a video output that bes
 .Op Fl ini Ar ini-file 
 .Op GAME
 .Op Fl vmode Ar high_ansi
+.br
+.Nm
+.Op Fl ini Ar ini-file 
+.Op GAME
+.Op Fl vmode Ar high_ansi2
 .Pp
 To change the number of rows/columns to render the images, use
 .Pp
@@ -184,8 +210,11 @@ Shows an example for a working dMagnetic.ini file.
 .Op Fl mag Ar MAGFILE.mag
 .Op Fl gfx Ar GFXFILE.gfx
 .br
+.Pp
+.Op Fl msdosdir Ar DIRECTORY/
+.br
 .Nm
-is a Magnetic Scrolls Interpreter. To actually play the games, their binaries have to be provided in the .mag and .gfx format from https://msmemorial.if-legends.org/magnetic.php. This command says where the .mag and .gfx file can be found.
+is a Magnetic Scrolls Interpreter. To actually play the games, their binaries have to be provided. Either in the .mag and .gfx format from https://msmemorial.if-legends.org/magnetic.php, or as the name of the directory in which the original MS-DOS version can be found.
 .Pp
 .Op Fl ini Ar dMagnetic.ini pawn
 .br
@@ -203,7 +232,7 @@ is a Magnetic Scrolls Interpreter. To actually play the games, their binaries ha
 .br
 .Op Fl ini Ar dMagnetic.ini wonderland
 .br
-An alternative way to provide the location of the .mag and .gfx is through a dMagnetic.ini file. See helpini or
+An alternative way to provide the location of the .mag and .gfx, or the directory name, is through a dMagnetic.ini file. See helpini or
 .Xr dMagneticini 5
 for an example of a working dMagnetic.ini file.
 .br
@@ -212,6 +241,15 @@ IT SHOULD BE NOTED that the default location for dMagnetic.ini is in the user's 
 .Nm
 pawn
 .br
+.Pp
+.Op Fl rmode Ar pseudo
+.Op Fl rseed Ar SEED
+.br
+.Op Fl rmode Ar real
+.br
+Certain elements of the game rely on chance. For this, the virtual machine within
+.Nm
+offers two possibilities: Playing against a "pseudo" random generator, which results in a certain degree of determinism. On the other hand, playing with "real" random values from the operating system, allows for a completely new experience. 
 .Pp
 .Op Fl vrows Ar ROWS
 .br
@@ -241,6 +279,8 @@ Sort of a travel journal, this option lets you write the commands that where typ
 .Op Fl vmode Ar low_ansi
 .br
 .Op Fl vmode Ar high_ansi
+.br
+.Op Fl vmode Ar high_ansi2
 .br
 This option allows for selecting a different mode to render the images, should the actual one prove to be unsuitable for the preferred terminal program.
 .br

@@ -29,15 +29,18 @@ INSTALLMAN=$(PREFIX)/share/man
 
 CC?=gcc
 AR?=ar
-#CFLAGS=-g
+#CFLAGS=-g -O0
 CFLAGS?=-O3
 CFLAGS+=-Wall
 #CFLAGS+=-Werror
 PROJ_HOME=./
-INCFLAGS=-I$(PROJ_HOME)src/gui -I$(PROJ_HOME)src/toplevel -I$(PROJ_HOME)src/engine/vm68k -I$(PROJ_HOME)src/engine/linea -I$(PROJ_HOME)src/engine/include
+INCFLAGS=-I$(PROJ_HOME)src/gui -I$(PROJ_HOME)src/toplevel -I$(PROJ_HOME)src/loader -I$(PROJ_HOME)src/engine/vm68k -I$(PROJ_HOME)src/engine/linea -I$(PROJ_HOME)src/engine/include 
 OBJDIR=$(PROJ_HOME)obj/
 LINK=$(CC)
 LDFLAGS="-L"$(OBJDIR)
+
+SOURCES_LOADER=	\
+	src/loader/maggfxloader.c
 
 SOURCES_LINEA=	\
 	src/engine/linea/gfx1loader.c	\
@@ -57,6 +60,7 @@ SOURCES_TOPLEVEL=	\
 	src/toplevel/configuration.c	\
 	src/toplevel/dMagnetic.c
 
+OBJ_LOADER=${SOURCES_LOADER:.c=.o}
 OBJ_LINEA=${SOURCES_LINEA:.c=.o}
 OBJ_VM68K=${SOURCES_VM68K:.c=.o}
 OBJ_GUI=${SOURCES_GUI:.c=.o}
@@ -67,6 +71,7 @@ all:	dMagnetic
 
 clean:
 	rm -rf dMagnetic
+	rm -rf $(OBJ_LOADER)
 	rm -rf $(OBJ_LINEA)
 	rm -rf $(OBJ_VM68K)
 	rm -rf $(OBJ_GUI)
@@ -86,8 +91,8 @@ install: all dMagnetic.1 dMagneticini.5
 	cp dMagnetic.ini $(INSTALLSHARE)/dMagnetic
 
 
-dMagnetic:	$(OBJ_LINEA) $(OBJ_VM68K) $(OBJ_GUI) $(OBJ_TOPLEVEL)
-	$(LINK) -o $@ $(OBJ_LINEA) $(OBJ_VM68K) $(OBJ_GUI) $(OBJ_TOPLEVEL)
+dMagnetic:	$(OBJ_LOADER) $(OBJ_LINEA) $(OBJ_VM68K) $(OBJ_GUI) $(OBJ_TOPLEVEL)
+	$(LINK) -o $@ $(OBJ_LOADER) $(OBJ_LINEA) $(OBJ_VM68K) $(OBJ_GUI) $(OBJ_TOPLEVEL)
 
 .c.o:
 	$(CC) $(CFLAGS) $(CFLAGS_EXTRA) $(INCFLAGS) -c -o $@ $<

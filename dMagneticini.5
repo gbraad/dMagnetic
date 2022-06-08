@@ -2,7 +2,7 @@
 .\" groff -man -Tascii dMagneticini.5
 .\"
 .
-.Dd November 9th, 2019
+.Dd December 27th, 2019
 .Os OpenBSD 
 .Dt dMagneticini 5
 .
@@ -56,9 +56,25 @@ For example:
 pawnmag=/usr/local/share/games/magneticscrolls/pawn.mag
 .br
 pawngfx=/home/games/magneticscrolls/pawn.gfx
+.br
+;pawnmsdos=/home/games/magneticscrolls/msdosversions/PAWN
 .Pp
-The .mag and .gfx packages can be downloaded from https://msmemorial.if-legends.org/memorial.php, btw.
+The .mag and .gfx packages can be downloaded from https://msmemorial.if-legends.org/memorial.php, btw. If you are lucky enough to have a copy of the MSDOS version stored on your harddrive, you can provide the directory with the pawnmsdos entry.
 .
+.Sh SECTION [RANDOM]
+This section configures the random number generator.
+.Pp
+.br
+mode=pseudo
+.br
+;mode=real
+.br
+seed=12345
+.Pp
+The mode can be one of two: "pseudo" or "real". Each one of them offers a different experience whilst playing. When testing the software, or playing with scripts, the "pseudo" option should be chosen. This offers a certain degree of determinsm.
+.br
+Legal values for seed are in the range of 1 to 2147483647.
+.Pp
 .Sh SECTION [DEFAULTGUI]
 This section is configuring the default output Interface. 
 .Pp
@@ -83,6 +99,8 @@ align=block
 .br
 mode=high_ansi
 .br
+;mode=high_ansi2
+.br
 low_ansi_characters=\\\\/=|\\;
 .br
 monochrome_characters= .:-=+*x#@$X
@@ -102,9 +120,13 @@ pawnmag=/usr/local/share/games/magneticscrolls/pawn.mag
 .br
 pawngfx=/usr/local/share/games/magneticscrolls/pawn.gfx
 .br
+;pawnmsdos=/usr/local/share/games/magneticscrolls/msdosversions/PAWN
+.br
 guildmag=/usr/local/share/games/magneticscrolls/guild.mag
 .br
 guildgfx=/usr/local/share/games/magneticscrolls/guild.gfx
+.br
+;guildmsdos=/usr/local/share/games/magneticscrolls/msdosversions/GUILD
 .br
 jinxtermag=/usr/local/share/games/magneticscrolls/jinxter.mag
 .br
@@ -128,6 +150,16 @@ wonderlandgfx=/usr/local/share/games/magneticscrolls/wonder.gfx
 .br
 .br
 .br
+[RANDOM]
+.br
+mode=pseudo
+.br
+;mode=real
+.br
+seed=12345
+.br
+.br
+.br
 [DEFAULTGUI]
 .br
 rows=40
@@ -147,6 +179,8 @@ align=block
 ;mode=low_ansi
 .br
 mode=high_ansi
+.br
+;mode=high_ansi2
 .Pp
 .Sh BUGS
 Report bugs to

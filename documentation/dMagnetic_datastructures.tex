@@ -8,7 +8,7 @@
 \begin{document}
 \title{dMagnetic- Data structures}
 \author{dettus@dettus.net}
-\date{March 4th, 2019}
+\date{December 27th, 2019}
 \maketitle
 {\tiny
 \begin{verbatim}
@@ -115,7 +115,7 @@ Decoding of the Pixels is MSB first, so it starts at Byte $66+HT+BS$ with Bit 7 
 \subsection{Decoding the pixels}
 If the retrieved entry $e$ is a non terminal symbol, the new pointer $ptr$ is evaluated as $ptr^\prime=66+2\cdot e$.\\
 If it is terminal symbol, and $repeat=0$, the pixel has been decoded as $p_j=pixel(e)$. The pointer is reset to the end of the Huffman table $ptr^\prime=66+HT-1$\\
-If it is terminal symbol, and $repeat\ne 0$, the previous pixel is being used again, $p_j=p_{j-1}$. Afterwards, the repeat and the pixel section are being decremented. $repeat(e)^\prime=repeat(e)-1$ and $pixel(e)^\prime=pixel(e)-1$. If this results in $pixel(e)^\prime=0$, the pointer is being reset to the end of the Hufmann Table $ptr^\prime=66+HT-1$.\\
+If it is terminal symbol, and $repeat\ne 0$, the previous pixel is being used again, $p_j=p_{j-1}$. Afterwards, the repeat and the pixel section are being decremented. $repeat(e)^\prime=repeat(e)-1$ and $pixel(e)^\prime=pixel(e)-1$. If this results in $pixel(e)^\prime=0$, the pointer is being reset to the end of the Huffmann Table $ptr^\prime=66+HT-1$.\\
 
 Once all the pixels in a line have been decoded, they are being XORed with the previous line:
 \begin{eqnarray*}
@@ -395,6 +395,143 @@ In case $cel_{anim,step}==-1$, the animation has ended and should be hidden.\\
 
 Once all the frames for Command "0x02" have been rendered, the selected animations will no longer be shown. The next command is being parsed, until the last command has been finished.\\
 
+\section{DISK1.PIX and DISK2.PIX file format for the MS DOS version}
+The graphics for the MS DOS version are stored in a total of 3 files: DISK1.PIX, DISK2.PIX and an individual index file, ending with a 4. (PAWN4, GUILD4, JINX4, FILE4, CORR4).\\
+Within, images are stored as half-tone images. Meaning, that each pixel is in fact encoding 2 pixels. On a cathode ray screen, this produced the illusion of pictures with a richer amount of colours.
+\subsection{Index file}
+The index file (ending in a 4), contains the offsets into the DISK1.PIX, DISK2.PIX. It is always 256 bytes in size, and broken down into two sections. The first section of 128 bytes contains 32 values (signed 32 bit, little endian), used as offsets into the DISK1.PIX file. The section section uses the 32 values as offsets into the DISK2.PIX file.\\
+
+\beginpicture
+\setcoordinatesystem units <5ex,5ex>
+\setplotarea x from 0 to 6, y from 0 to 6
+\plot 0 0  3 0 3 3 0 3 0 0 /
+\plot 0 3  3 3 3 6 0 6 0 3 /
+
+\plot 0 0.5 3 0.5 /
+\plot 0 1.0 3 1.0 /
+\plot 0 1.5 3 1.5 /
+\plot 0 2.0 3 2.0 /
+\plot 0 2.5 3 2.5 /
+\plot 0 3.5 3 3.5 /
+\plot 0 4.0 3 4.0 /
+\plot 0 4.5 3 4.5 /
+\plot 0 5.0 3 5.0 /
+\plot 0 5.5 3 5.5 /
+\put {Section 2} at 5 1.5
+\put {Section 1} at 5 4.5
+\setshadegrid span <2pt>
+\hshade 0 0 3  3 0 3 /
+\setshadegrid span <1pt>
+\hshade 3 0 3  6 0 3 /
+
+\put {-1} at 1.5 5.75
+\put {18} at 1.5 5.25
+\put {-1} at 1.5 4.75
+\put {-1} at 1.5 4.25
+\put {-1} at 1.5 3.75
+\put { 5} at 1.5 3.25
+
+\put {13} at 1.5 2.75
+\put {-1} at 1.5 2.25
+\put {23} at 1.5 1.75
+\put {42} at 1.5 1.25
+\put {65} at 1.5 0.75
+\put {-1} at 1.5 0.25
+\endpicture
+
+
+To read the offset, the $picnum$-th value is read from both sections. One of them has a $-1$, the other one has a valid offset.\\
+\begin{tabular}{l@{$\;\;\;$}cc}
+&{\bf Section1}&{\bf Section 2}\\
+&-1&13\\
+&18&-1\\
+&-1&23\\
+$\Rightarrow$&-1&42\\
+&-1&65\\
+\end{tabular}
+
+It should be noted that the Title screen is typically picture number 30. If not, it is stored in offset 0 within the DISK1.PIX file.
+
+\subsection{DISK1.PIX and DISK2.PIX}
+Images in this format are encoded in three layers: The Huffman layer, the Repetition layer, and the XOR layer.\\
+At the offset read from the index file, the image starts with a Huffman table. 
+
+\begin{tabular}{r|rl}
+Bytes&&Description\\\hline
+0&$h$&Length of the Huffman tree (in bytes)\\
+1..$h$&$H$&Huffman tree\\
+$h+1$..$h+2$&$u$&Unpacked size (16 bit, big endian) in words\\
+$h+3$..??&&Bitstream\\
+\end{tabular}
+
+The actual size of the unpacked, "unhuffed" buffer is given in 32 bit words. The size in bytes is $4*u+3$. Information like the rgb values, the height and the width is part of the unhuffed buffer.
+\subsubsection{Layer 1: Huffman}
+The Huffman tree is being read from the beginning, i.e. byte 1. The entries in the Huffman tree are either nodes or leaves. They are stored in pairs of two bytes. If the bitstream (which is being read MSB first) has a bit set, the left byte is being evaluated. Otherwise the right one.\\
+In case the evaluated byte has bit 7 set, it is a leaf. The terminal symbol can be extracted by removing this bit. Thus, terminal symbols in the "unhuffed" buffer will only be 7 bits wide.\\
+Otherwise it is a node, a link to the next entry within the tree: To translate it into a byte address $a$, the calculation $a=2 n_j+1$ has to be performed.\\
+Then $b_{a+0}$ will be the next left node, and $b_{a+1}$ will be the next right entry.\\
+Once the image has been "unhuffed", the data starts with a header.
+
+\begin{tabular}{r|rl}
+Bytes&&Description\\\hline
+0&"0x77"&A magic marker\\
+1&$m$&The number of half tone pixels\\
+&& called "stipples"\\
+2..3&$w$&Width (2x6 bit Big endian)\\
+4..5&$h$&Height (2x6 bit Big endian)\\
+6..21&$rgb(0),\dots,rgb(15)$&RGB values (3x2 bit)\\\hline
+$22..22+2\cdot m$&&Stipple translation table\\
+$22..22+m$&$p_l$&Left pixels\\
+$22+m..22+2\cdot m$&$p_r$&right pixels\\\hline
+$23+2\cdot m..23+2\cdot m+x$&$S$&Stipple string\\
+\end{tabular}
+$w$ and $h$ are stored as 2x6 bit big endian values, since terminal symbols in the Huffman tree can only be 7 bits wide. To translate them into "real" values can be done by
+\begin{eqnarray*}
+w&=&b_2*64+b_3\\
+h&=&b_4*64+b_5\\
+\end{eqnarray*}
+The rgb values are stored as, MSB first: 2 bits 00, 2 bits red,  2 bits green and 2 bits blue.\\
+Thus, 0x00 is black, 0x3f is bright white, 0x30 is bright red.
+
+\subsubsection{Layer 2: Repetitions}
+The stipple image is a string of stipples 
+
+\begin{eqnarray*}
+S&=&\left\{s_0,\dots,s_j,\dots,s_x\right\}
+\end{eqnarray*}
+This will be translated into 
+\begin{eqnarray*}
+T&=&\left\{t_0,\dots,t_k,\dots,t_y\right\}
+\end{eqnarray*}
+with $x\leq y$ and $y=w\cdot h-1$.\\
+
+Each $s_j\in S$ can be one of three cases:
+\begin{itemize}
+\item{$s_j<m$ is a terminal stipple. $t_k=s_j$}
+\item{$s_j=m$ and $s_{j-1}\ne m$ is a very special character. $s_j$ will be ignored, but $s_{j+1}$ will be used verbatim. $t_k=s_{j+1}$}
+\item{$s_j>m$ and $s_{j-1}\ne m$ is a special character, denoting a repetition of the previous stipple. $t_{k},\dots,t_{k+s_j-m-1}=t_k{-1}$}
+\end{itemize}
+
+\subsection{Layer 3: XOR}
+The translated image $T$ has the dimensions of the final image. However, it has to be XORed over two lines. This extra step resulted in a better packing ratio for the half tone images.\\
+\begin{eqnarray*}
+u_k&=&\left\{\begin{array}{l@{\;when\;}l}t_k \oplus t_{k-2\cdot w}&k\geq 2\cdot w\\t_k&k<2\cdot w\\\end{array}\right. %\}
+\end{eqnarray*}
+\subsection{Translation into pixels}
+The image is a halftone image. Meaning, that each $u_k$ is actually encoding 2 rgb values. They can be restored from the stipple translation tables $p_l$ for the left and $p_r$ for the right pixel by
+\begin{eqnarray*}
+c_l&=&rgb\left[ p_l \left(u_k\right)\right]\\
+c_r&=&rgb\left[ p_r \left(u_k\right)\right]\\
+\end{eqnarray*}
+\section{The Pseudo-GFX3 format}
+Internally, dMagnetic is using a MaP3 format to combine the index file and the DISK1.PIX and DISK2.PIX in a single buffer.\\
+The buffer starts with the magic word "MaP3". Then there is 4 bytes BIG endian for the length of the Index section (always =256).\\
+Afterwards, 4 bytes of length for the DISK1.PIX file (BIG endian).\\
+Afterwards, 4 bytes of length for the DISK2.PIX file (BIG endian).\\
+\\
+Then the Index file.\\
+Then the DISK1.PIX file.\\
+Then the DISK2.PIX file.\\
 \chapter{Objects}
 Objects are stored in a 14 byte structure. \\
 \begin{tabular}{l|l|l}
@@ -410,6 +547,7 @@ Bytes&Bits&Description\\\hline
 8..9&&parent object\\
 10..13&&UNKNOWN\\
 \end{tabular}
+
 \chapter{Strings}
 Strings are Huffman-Coded. The Decoding table is stored in the Strings2 section of the Mag-File. The Bitstreams are stored in the Strings1 section.
 \section{Strings2: The Huffman Table}
