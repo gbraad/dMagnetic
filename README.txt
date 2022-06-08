@@ -4,7 +4,7 @@
 *****************************************
 
 
-Welcome, brave adventurer. This is Version 0.28.
+Welcome, brave adventurer. This is Version 0.29.
 If you are interested in playing "The Pawn", just follow these simple steps.
 
 STEP 1: BUILD
@@ -37,8 +37,8 @@ your harddrive.
 
 STEP 4: CONFIGURE
 edit dMagnetic.ini, especially the lines that start with one of ????mag= and 
-???gfx=, ???msdosdir= or ???tworsc=. Make sure that only one of those three
-methods (mag&gfx, msdosdir, tworsc) is being commented in.
+???gfx=, ???msdosdir= or ???tworsc=. Make sure that only one of those methods
+is being commented in.
 
 
 STEP 5: RUN
@@ -102,6 +102,7 @@ You can select output modes by using one of the following parameters:
 % ./dMagnetic -ini dMagnetic.ini pawn -vmode high_ansi      -vrows 40 -vcols 120
 % ./dMagnetic -ini dMagnetic.ini pawn -vmode high_ansi2     -vrows 40 -vcols 120
 % ./dMagnetic -ini dMagnetic.ini pawn -vmode sixel     -sres 1024x768 -vcols 120
+% ./dMagnetic -ini dMagnetic.ini pawn -vmode utf            -vrows 40 -vcols 120
 
 The defaut mode is "low_ansi", since it works on most terminals. The mode 
 called "high_ansi" provides the richest amount of colors, even though the 
@@ -113,6 +114,9 @@ The sixel mode can be used in certain terminal emulators, such as mlterm, or
 some variants of xterm, when run with 
 
 % xterm -ti vt340.
+
+The UTF mode should work on terminals that can handle the high_ansi modes as
+well.
 
 STEP 6: LOGGING
 In case you would like to retrace our steps, you can use -vlog LOGFILE.log and

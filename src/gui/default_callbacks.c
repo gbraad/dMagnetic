@@ -48,7 +48,8 @@ typedef enum _tMode
 	eMODE_LOW_ANSI2,
 	eMODE_HIGH_ANSI,
 	eMODE_HIGH_ANSI2,
-	eMODE_SIXEL
+	eMODE_SIXEL,
+	eMODE_UTF
 } tMode;
 typedef	struct _tContext
 {
@@ -609,6 +610,143 @@ int default_cbDrawPicture(void* context,tPicture* picture,int mode)
 		}
 		printf("\x1b\\\n");
 	}
+	if (pContext->mode==eMODE_UTF) 	// utf
+	{
+	// By choosing the following utf-characters:
+        // 0x20,0xe29680,0xe29690,0xe2969a,0xe29696,0xe29697,0xe29698,0xe2969d
+	//
+	// i could transform each character field into a 2x2 bitmap:
+        //  ..     ##        .#        #.     ..        ..     #.       .#
+        //  ..     ..        .#        .#     #.        .#     ..       ..
+	// 
+	// when choosing the background and the foreground colour wisely, it
+	// would create the illusion of finer grained pixels, even though,
+	// technically, it is not exact. It would work best when each 2x2 bitmap
+	// has only 1 or 2 colours. But with 3 or 4 it creates artifacts. 
+	// they are negligable!
+	// 
+	// it can easily be seen that those 8 utf symbols are enough
+
+
+#define	NUM_utf8chars	8
+#define	CALC_RGBDELTA(rgb1,rgb2)	( \
+		(PICTURE_GET_RED(rgb1)-PICTURE_GET_RED(rgb2))*(PICTURE_GET_RED(rgb1)-PICTURE_GET_RED(rgb2))+	\
+		(PICTURE_GET_GREEN(rgb1)-PICTURE_GET_GREEN(rgb2))*(PICTURE_GET_GREEN(rgb1)-PICTURE_GET_GREEN(rgb2))+	\
+		(PICTURE_GET_BLUE(rgb1)-PICTURE_GET_BLUE(rgb2))*(PICTURE_GET_BLUE(rgb1)-PICTURE_GET_BLUE(rgb2)))
+#define	NUM_COLOURS	16
+	// for each of the utf characters, define a bitmap according to the following scheme:
+        //  12
+        //  48
+		const unsigned int default_cbDrawPicture_utf8chars[NUM_utf8chars]={0x200000,0xe29680,0xe29690,0xe2969a,0xe29696,0xe29697,0xe29698,0xe2969d};
+	        const unsigned char default_cbDrawPicture_utf8map[NUM_utf8chars] ={0x0,     1|2,     2|8,     1|8,     4,       8,       1,       2};
+
+		int x;
+		int y;
+		int accux;
+		int accuy;
+
+		accuy=0;
+		for (y=0;y<picture->height;y++)
+		{
+			accuy+=pContext->rows;
+			if (accuy>=picture->height)
+			{
+				accuy-=picture->height;
+				accux=0;	
+				for (x=0;x<picture->width;x++)
+				{
+					unsigned int lastfg,lastbg;
+					lastfg=lastbg=0xffffffff;
+					accux+=pContext->columns;
+					if (accux>=picture->width)
+					{
+						unsigned int rgb1,rgb2,rgb4,rgb8;
+						unsigned int mindelta;
+						unsigned int bestutfsymbol;
+						unsigned int bestfg;
+						unsigned int bestbg;
+						int fg,bg,sym;
+						int fgred,fggreen,fgblue;
+						int bgred,bggreen,bgblue;
+						accux-=picture->width;
+						// find out what colours are in the 2x2 bitmap
+						rgb1=rgb2=rgb4=rgb8=picture->palette[(int)(picture->pixels[(y+0)*(picture->width)+x+0])];
+						if (x<picture->width-1) rgb2=picture->palette[(int)(picture->pixels[(y+0)*(picture->width)+x+1])];
+						if (y<picture->height-1) rgb4=rgb8=picture->palette[(int)(picture->pixels[(y+1)*(picture->width)+x+0])];
+						if (x<picture->width-1 && y<picture->height-1) rgb8=picture->palette[(int)(picture->pixels[(y+1)*(picture->width)+x+1])];
+
+						// now for the main event: try to find a matching foreground/background/symbol combination
+						// using a neighest neighbour-approach with the RGB values helps in nuanced picture to 
+						// mask some artifacts
+						mindelta=bestfg=bestbg=0xffffffff;
+						bestutfsymbol=0;
+						for (fg=0;fg<NUM_COLOURS;fg++)
+						{
+							for (bg=0;bg<NUM_COLOURS;bg++)
+							{
+								for (sym=0;sym<NUM_utf8chars;sym++)
+								{
+									unsigned int delta;
+									delta =CALC_RGBDELTA(rgb1,(default_cbDrawPicture_utf8map[sym]&1)?picture->palette[fg]:picture->palette[bg]);
+									delta+=CALC_RGBDELTA(rgb2,(default_cbDrawPicture_utf8map[sym]&2)?picture->palette[fg]:picture->palette[bg]);
+									delta+=CALC_RGBDELTA(rgb4,(default_cbDrawPicture_utf8map[sym]&4)?picture->palette[fg]:picture->palette[bg]);
+									delta+=CALC_RGBDELTA(rgb8,(default_cbDrawPicture_utf8map[sym]&8)?picture->palette[fg]:picture->palette[bg]);
+
+									if (delta<mindelta || mindelta==0xffffffff)
+									{
+										mindelta=delta;
+										bestfg=picture->palette[fg];
+										bestbg=picture->palette[bg];
+										bestutfsymbol=default_cbDrawPicture_utf8chars[sym];
+									}
+								}
+							}
+						}
+						// now the best fg/bg/sym combination is known. let's render it!
+						// first: the colour
+						if (lastfg!=bestfg)
+						{
+							lastfg=bestfg;
+							fgred  =PICTURE_GET_RED(bestfg);
+							fggreen=PICTURE_GET_GREEN(bestfg);
+							fgblue =PICTURE_GET_BLUE(bestfg);
+							fgred*=255;fggreen*=255;fgblue*=255;
+							fgred  /=PICTURE_MAX_RGB_VALUE;
+							fggreen/=PICTURE_MAX_RGB_VALUE;
+							fgblue /=PICTURE_MAX_RGB_VALUE;
+							printf("\x1b[38;2;%d;%d;%dm",fgred,fggreen,fgblue);
+						}
+
+						if (lastbg!=bestbg)
+						{
+							lastbg=bestbg;
+							bgred  =PICTURE_GET_RED(bestbg);
+							bggreen=PICTURE_GET_GREEN(bestbg);
+							bgblue =PICTURE_GET_BLUE(bestbg);
+							bgred*=255;bggreen*=255;bgblue*=255;
+							bgred  /=PICTURE_MAX_RGB_VALUE;
+							bggreen/=PICTURE_MAX_RGB_VALUE;
+							bgblue /=PICTURE_MAX_RGB_VALUE;
+							printf("\x1b[48;2;%d;%d;%dm",bgred,bggreen,bgblue);
+						}
+
+
+						// since the uft8symbols above are defined as BIG endian numbers, and do not have a 0x00 at the end,
+						// they can be displayed one byte at a time. MSB first.
+						while (bestutfsymbol)
+						{
+							printf("%c",(bestutfsymbol>>16)&0xff);
+							bestutfsymbol<<=8;
+							bestutfsymbol&=0x00ffff00;
+						}
+					}
+				}
+				// that was one line
+				printf("\x1b[0m\n");
+			}
+		}
+		
+	}
 
 	return 0;
 }
@@ -703,6 +841,7 @@ int default_open(void* hContext,FILE *f_inifile,int argc,char** argv)
 			else if (strncmp(result,"high_ansi2",10)==0) pContext->mode=eMODE_HIGH_ANSI2;
 			else if (strncmp(result,"high_ansi",9)==0) pContext->mode=eMODE_HIGH_ANSI;
 			else if (strncmp(result,"sixel",5)==0) pContext->mode=eMODE_SIXEL;
+			else if (strncmp(result,"utf",4)==0) pContext->mode=eMODE_UTF;
 		}
 		if (retrievefromini(f_inifile,"[DEFAULTGUI]","align",result,sizeof(result)))
 		{
@@ -773,6 +912,7 @@ int default_open(void* hContext,FILE *f_inifile,int argc,char** argv)
 			else if (strncmp(result,"high_ansi2",10)==0) pContext->mode=eMODE_HIGH_ANSI2;
 			else if (strncmp(result,"high_ansi",9)==0) pContext->mode=eMODE_HIGH_ANSI;
 			else if (strncmp(result,"sixel",5)==0) pContext->mode=eMODE_SIXEL;
+			else if (strncmp(result,"utf",4)==0) pContext->mode=eMODE_UTF;
 			else {
 				printf("unknown parameter for -vmode. please use one of\n");
 				printf("none ");
@@ -783,6 +923,7 @@ int default_open(void* hContext,FILE *f_inifile,int argc,char** argv)
 				printf("high_ansi ");
 				printf("high_ansi2 ");
 				printf("sixel ");
+				printf("utf ");
 				printf("\n");	
 				return DEFAULT_NOK;
 			}	

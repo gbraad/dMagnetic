@@ -60,6 +60,7 @@ void dMagnetic_loaderfailed_message(char* argv0)
 	fprintf(stderr,"%s -amstradcpc IMAGE1.DSK,IMAGE2.DSK\n",argv0);
 	fprintf(stderr,"%s -spectrum IMAGE.DSK\n",argv0);
 	fprintf(stderr,"%s -archimedes IMAGE.adf\n",argv0);
+	fprintf(stderr,"%s -atarixl IMAGE1.atr,IMAGE2.atr\n",argv0);
 	fprintf(stderr,"\n");
 	fprintf(stderr,"You can get the .mag and .gfx files from\n");
 	fprintf(stderr," https://msmemorial.if-legends.org/\n");
@@ -252,6 +253,7 @@ int main(int argc,char** argv)
 		printf("-amstradcpc 1.DSK,2.DSK  or use the DSK images. (Separated by ,)\n");
 		printf("-spectrum image.DSK      or use DSK images from the Spectrum+3\n");
 		printf("-archimedes image.adf    or use adf/adl images from the Archimedes\n");
+		printf("-atarixl 1.ATR,2.ATR     or use .atr images from the AtariXL\n");
 		printf("\n");
 		printf("OPTIONAL PARAMETERS\n");
 		printf("-rmode RANDOMMODE  where mode is one of\n  [");
@@ -264,14 +266,15 @@ int main(int argc,char** argv)
 		printf("-vrows ROWS        to set the number of rows for the pictures\n");
 		printf("-vcols COLUMNS     to set the number of columns for the pictures\n");
 		printf("-vmode MODE        where mode is one of\n  [");
-			printf("none ");
-			printf("monochrome ");
-			printf("monochrome_inv ");
-			printf("low_ansi ");
-			printf("low_ansi2 ");
-			printf("high_ansi\n   ");
-			printf("high_ansi2 ");
-			printf("sixel");
+			printf("none");
+			printf(" monochrome");
+			printf(" monochrome_inv");
+			printf(" low_ansi");
+			printf(" low_ansi2");
+			printf(" high_ansi\n  ");
+			printf(" high_ansi2");
+			printf(" sixel");
+			printf(" utf");
 			printf("]");
 		printf("\n");
 		printf("-vlog LOGFILE      to write a log of the commands used\n");
@@ -302,6 +305,7 @@ int main(int argc,char** argv)
 		printf(";pawnamstradcpc=/dsk/PAWN1.DSK,/dsk/PAWN2.DSK\n");
 		printf(";pawnspectrum=/dsk/PAWNspectrum.DSK\n");
 		printf(";pawnarchimedes=/adf/PAWNarchimedes.adf\n");
+		printf(";pawnatarixl=/atr/PAWN1.ATR,/atr/PAWN2.ATR\n");
 		printf("guildmag=/usr/local/share/games/magneticscrolls/guild.mag\n");
 		printf("guildgfx=/usr/local/share/games/magneticscrolls/guild.gfx\n");
 		printf(";guildmsdos=/usr/local/share/games/magneticscrolls/msdosversions/GUILD\n");
@@ -310,6 +314,7 @@ int main(int argc,char** argv)
 		printf(";guildamstradcpc=/dsk/GUILD1.DSK,/dsk/GUILD2.DSK\n");
 		printf(";guildspectrum=/dsk/GUILDspectrum.DSK\n");
 		printf(";guildarchimedes=/adf/GUILDarchimedes.adf\n");
+		printf(";guildatarixl=/atr/GUILD1.ATR,/atr/GUILD2.ATR\n");
 		printf("jinxtermag=/usr/local/share/games/magneticscrolls/jinxter.mag\n");
 		printf("jinxtergfx=/usr/local/share/games/magneticscrolls/jinxter.gfx\n");
 		printf(";jinxtermsdos=/usr/local/share/games/magneticscrolls/msdosversions/JINXTER\n");
@@ -317,6 +322,7 @@ int main(int argc,char** argv)
 		printf(";jinxteramstradcpc=/dsk/JINXTER1.DSK,/dsk/JINXTER2.DSK\n");
 		printf(";jinxterspectrum=/dsk/JINXTERspectrum.DSK\n");
 		printf(";jinxterarchimedes=/adf/JINXTERarchimedes.adf\n");
+		printf(";jinxteratarixl=/atr/JINXTER1.ATR,/atr/JINXTER2.ATR\n");
 		printf("corruptionmag=/usr/local/share/games/magneticscrolls/ccorrupt.mag\n");
 		printf("corruptiongfx=/usr/local/share/games/magneticscrolls/ccorrupt.gfx\n");
 		printf(";corruptionmsdos=/usr/local/share/games/magneticscrolls/msdosversions/CORRUPT\n");

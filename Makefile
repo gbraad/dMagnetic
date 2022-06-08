@@ -47,6 +47,7 @@ SOURCES_LOADER=	\
 	src/loader/loader_d64.c		\
 	src/loader/loader_dsk.c		\
 	src/loader/loader_archimedes.c	\
+	src/loader/loader_atarixl.c	\
 	src/loader/maggfxloader.c
 
 SOURCES_LINEA=	\

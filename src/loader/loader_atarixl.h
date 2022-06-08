@@ -25,10 +25,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 */
-#ifndef	LOADER_ATARIXL_H
-#define	LOADER_ATARIXL_H
+#ifndef	LOADER_D64_H
+#define	LOADER_D64_H
 
-int loader_atarixl(char* atarixlname,
+int loader_d64(char* d64name,
 		char *magbuf,int* magsize,
 		char* gfxbuf,int* gfxsize);
 

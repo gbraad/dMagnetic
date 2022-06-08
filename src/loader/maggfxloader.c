@@ -38,6 +38,7 @@
 #include "loader_d64.h"
 #include "loader_dsk.h"
 #include "loader_archimedes.h"
+#include "loader_atarixl.h"
 
 
 typedef	enum _eBinType
@@ -49,7 +50,8 @@ typedef	enum _eBinType
 	BINTYPE_D64,
 	BINTYPE_AMSTRADCPC,
 	BINTYPE_SPECTRUM,
-	BINTYPE_ARCHIMEDES
+	BINTYPE_ARCHIMEDES,
+	BINTYPE_ATARIXL
 } eBinType;
 int loader_init(int argc,char** argv,FILE *f_inifile,
 		char *magbuf,int* magsize,
@@ -96,6 +98,7 @@ int loader_init(int argc,char** argv,FILE *f_inifile,
 		char amstradcpcname[32];
 		char spectrumname[32];
 		char archimedesname[32];
+		char atarixlname[32];
 		for (i=0;i<7;i++)
 		{
 			snprintf(magname,32,"%smag",gameprefix[i]);
@@ -105,6 +108,7 @@ int loader_init(int argc,char** argv,FILE *f_inifile,
 			snprintf(amstradcpcname,32,"%samstradcpc",gameprefix[i]);
 			snprintf(spectrumname,32,"%sspectrum",gameprefix[i]);
 			snprintf(archimedesname,32,"%sarchimedes",gameprefix[i]);
+			snprintf(atarixlname,32,"%satarixl",gameprefix[i]);
 
 			if (retrievefromcommandline(argc,argv,gameprefix[i],NULL,0))
 			{
@@ -133,6 +137,10 @@ int loader_init(int argc,char** argv,FILE *f_inifile,
 				else if (retrievefromini(f_inifile,"[FILES]",archimedesname,binname,sizeof(binname)))
 				{
 					binType=BINTYPE_ARCHIMEDES;
+				}
+				else if (retrievefromini(f_inifile,"[FILES]",atarixlname,binname,sizeof(binname)))
+				{
+					binType=BINTYPE_ATARIXL;
 				}
 			}
 		}
@@ -172,6 +180,10 @@ int loader_init(int argc,char** argv,FILE *f_inifile,
 	{
 		binType=BINTYPE_ARCHIMEDES;
 	}
+	if (retrievefromcommandline(argc,argv,"-atarixl",binname,sizeof(binname)))
+	{
+		binType=BINTYPE_ATARIXL;
+	}
 	switch (binType)
 	{
 		case BINTYPE_NONE:		fprintf(stderr,"Please provide the game binaries\n");return -1;break;
@@ -180,6 +192,7 @@ int loader_init(int argc,char** argv,FILE *f_inifile,
 		case BINTYPE_AMSTRADCPC:	retval=loader_dsk(binname,magbuf,magsize,gfxbuf,gfxsize,0);	break;
 		case BINTYPE_SPECTRUM:		retval=loader_dsk(binname,magbuf,magsize,gfxbuf,gfxsize,1);break;
 		case BINTYPE_ARCHIMEDES:	retval=loader_archimedes(binname,magbuf,magsize,gfxbuf,gfxsize); break;
+		case BINTYPE_ATARIXL:		retval=loader_atarixl(binname,magbuf,magsize,gfxbuf,gfxsize); break;
 		case BINTYPE_MSDOS:		retval=loader_msdos(binname,magbuf,magsize,gfxbuf,gfxsize);	break;
 		case BINTYPE_MAGGFX:	
 			retval=0;

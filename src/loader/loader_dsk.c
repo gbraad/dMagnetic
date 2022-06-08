@@ -52,7 +52,7 @@
 #define	SIZE_TRACKHEADER	256
 #define	SIZE_SECTORHEADER	8
 #define	SIZE_DIRENTRY		32
-#define	MAX_DIRENTRIES		64	// TODO???
+#define	MAX_DIRENTRIES		32	// TODO???
 #define	MAX_SECTORNUMPERTRACK	64
 #define	MAX_SECTORNUMPERDISK	(DSK_IMAGESIZE/MINSECTORSIZE)
 #define	MAX_DISKS		2
@@ -568,6 +568,7 @@ int loader_dsk(char* amstradcpcname,
 	for (i=0;i<diskcnt;i++)
 	{
 		int j,k,l;
+		int validfilename;
 		unsigned char *ptr;
 		for (j=0;j<(blocksize/sectorsize)*2;j++)
 		{
@@ -583,14 +584,18 @@ int loader_dsk(char* amstradcpcname,
 					}
 					dirEntries[entrycnt].name[MAXFILENAMELEN]=0;
 					dirEntries[entrycnt].fileID=-1;
-					if (gamedetected==-1)
+					validfilename=0;
+//					if (gamedetected==-1)
 					{
 						int m;
 						for (m=0;m<NUM_GAMES;m++)
 						{
-							if (strncmp(dirEntries[entrycnt].name,loader_dsk_knownGames[m].gamefilename,strlen(loader_dsk_knownGames[m].gamefilename))==0)
+							if (strncmp(dirEntries[entrycnt].name,loader_dsk_knownGames[m].gamefilename,strlen(loader_dsk_knownGames[m].gamefilename))==0
+								&& (dirEntries[entrycnt].name[strlen(loader_dsk_knownGames[m].gamefilename)]>='0' && dirEntries[entrycnt].name[strlen(loader_dsk_knownGames[m].gamefilename)]<='8')
+							)
 							{
 								gamedetected=m;
+								validfilename=1;
 							}	
 						}
 					}
@@ -634,7 +639,7 @@ int loader_dsk(char* amstradcpcname,
 								}
 							}
 						}
-						entrycnt++;
+						if (entrycnt<MAX_DIRENTRIES && validfilename) entrycnt++;
 					}
 				}
 			}

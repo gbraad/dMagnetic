@@ -1146,6 +1146,212 @@ int gfxloader_gfx6(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPic
 	return retval;
 }
 
+// Atari XL
+int gfxloader_gfx7(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPicture* pPicture)
+{
+	int retval;
+	int idx;
+	unsigned char mask;
+	unsigned char byte;
+	unsigned char treesize;
+	int treeidx;
+	int treeoffs;
+	int state;
+	int rgbcnt;
+	int rlenum;
+	int rlecnt;
+	unsigned char rlebuf[256];
+	unsigned char threebuf[3];
+	int threecnt;
+	int pixcnt;
+	unsigned char lc;
+	int rlerep;
+	int i;
+	int blackcnt;
+
+	retval=0;
+	idx=READ_INT32BE(gfxbuf,4+4*picnum);
+	treesize=gfxbuf[idx];
+	byte=0;
+	mask=0;
+	treeidx=0;
+	treeoffs=idx+1;
+	//		idx=idx+treesize*2+3;
+	idx=idx+treesize*2+3;
+	threecnt=0;
+	rlenum=0;
+	rlecnt=0;
+	rgbcnt=0;
+	pixcnt=0;
+	state=0;
+
+	pPicture->width=160*2;	// the original images were stored as 160x152 pixels. However, they look better when being scaled up to 320x152
+	pPicture->height=152;
+
+	blackcnt=0;
+	while (idx<gfxsize && pixcnt<pPicture->width*pPicture->height && state!=3)
+	{
+		unsigned char branchl,branchr,branch;
+		if (mask==0)
+		{
+			byte=gfxbuf[idx++];
+			mask=0x80;
+		}
+		branchl=gfxbuf[treeoffs+treeidx*2+0];
+		branchr=gfxbuf[treeoffs+treeidx*2+1];
+		branch=(byte&mask)?branchl:branchr;
+		mask>>=1;
+
+		if (branch&0x80)
+		{
+			treeidx=branch&0x7f;
+		} else {
+			treeidx=0;
+			if (threecnt!=3)
+			{
+				threebuf[threecnt++]=branch;
+
+			} else {
+				int j;
+				for (i=0;i<threecnt;i++)
+				{
+					unsigned char c;
+					unsigned int rgb;
+					c=threebuf[i]|((branch<<2)&0xc0);branch<<=2;
+					switch (state)
+					{
+						case 0:	// collect rgb values
+#if 1
+							{
+								// the way atari colors work is by packing a basecolor and the brightness within a byte.
+								// the upper 4 bits are the color.
+								// the lower 4 bits are the brightness
+								// what I am doing is to interpolate between the darkest and the brightest rgb values I found.
+
+								// TODO: Translate to 10 bits per colour channel
+								unsigned int ataripalette[16][2]=
+								{
+									{0x000000,0xf9f9f9},
+									{0x412000,0xffffaa},
+									{0x451904,0xffe6ab},
+									{0x5d1f0c,0xffdad0},
+
+									{0x4a1700,0xffcade},
+									{0x490036,0xffcade},
+									{0x48036c,0xe6b6ff},
+									{0x051e81,0xcdd3ff},
+
+									{0x0b0779,0xd3d1ff},
+									{0x1d295a,0xc0ebff},
+									{0x004b59,0xc7f6ff},
+									{0x004800,0xcdffcd},
+
+									{0x164000,0xbcff9a},
+									{0x2c3500,0xf2ffab},
+									{0x463a09,0xfdf3be},
+									{0x401a02,0xffda96}
+								};
+
+								unsigned int red_dark,green_dark,blue_dark;
+								unsigned int red_bright,green_bright,blue_bright;
+								int r,g,b;
+								int basecolor;
+								int brightness;
+
+								basecolor=(c>>4)&0xf;
+								brightness=(c>>0)&0xf;
+
+								red_dark	=(ataripalette[basecolor][0]>>16)&0xff;	
+								green_dark	=(ataripalette[basecolor][0]>> 8)&0xff;	
+								blue_dark	=(ataripalette[basecolor][0]>> 0)&0xff;	
+
+								red_bright	=(ataripalette[basecolor][1]>>16)&0xff;	
+								green_bright	=(ataripalette[basecolor][1]>> 8)&0xff;	
+								blue_bright	=(ataripalette[basecolor][1]>> 0)&0xff;	
+
+
+
+								r=red_dark	+((red_bright	-red_dark)*brightness)/16;
+								g=green_dark	+((green_bright	-green_dark)*brightness)/16;
+								b=blue_dark	+((blue_bright	-blue_dark)*brightness)/16;
+
+								r&=0xff;g&=0xff;b&=0xff;
+								r*=PICTURE_MAX_RGB_VALUE;g*=PICTURE_MAX_RGB_VALUE;b*=PICTURE_MAX_RGB_VALUE;
+								r/=255;g/=255;b/=255;
+
+								rgb=(r<<(2*PICTURE_BITS_PER_RGB_CHANNEL))|(g<<(1*PICTURE_BITS_PER_RGB_CHANNEL))|b;
+
+
+							}
+#else
+							switch(rgbcnt)
+							{
+								case 0:rgb=0x00000300;break;
+								case 1:rgb=0x00300000;break;
+								case 2:rgb=0x00300300;break;
+								case 3:rgb=0x00ffffff;break;
+								default:rgb=0x0;break;
+							}	
+#endif
+							pPicture->palette[rgbcnt++]=rgb;
+							if (c==0) blackcnt++;
+							if (rgbcnt==16) 
+							{
+								state=1;
+								if (treesize==0x3e) state=1; else state=2;
+								if (blackcnt<12) state=3;
+							}
+							break;
+						case 1:	// rle lookup table
+							if (rlenum==0) 
+							{
+								rlenum=c;
+								rlecnt=0;
+								if (rlenum==128 || rlenum==1) rlenum=0;
+							} else {
+								rlebuf[rlecnt++]=c;
+							}
+							if (rlenum==rlecnt) state=2;
+							break;
+						case 2:	// and the pixel information
+							rlerep=0;
+							for (j=0;j<rlecnt;j++)
+							{
+								if (c==rlebuf[j]) rlerep=j+1;
+							}
+							if (rlerep==0) {lc=c;rlerep=1;}
+							for (j=0;j<rlerep;j++)
+							{
+								// rendering the pictures T W I C E as wide as intended means using the pixels twice
+								pPicture->pixels[pixcnt++]=(lc>>6)&0x3; pPicture->pixels[pixcnt++]=(lc>>6)&0x3;
+								pPicture->pixels[pixcnt++]=(lc>>4)&0x3; pPicture->pixels[pixcnt++]=(lc>>4)&0x3;
+								pPicture->pixels[pixcnt++]=(lc>>2)&0x3; pPicture->pixels[pixcnt++]=(lc>>2)&0x3;
+								pPicture->pixels[pixcnt++]=(lc>>0)&0x3; pPicture->pixels[pixcnt++]=(lc>>0)&0x3;
+							}
+							break;
+					}
+				}
+				threecnt=0;
+			}
+
+		}
+	}
+	if (rlenum!=0)
+	{
+		for (i=pPicture->width*2;i<pixcnt;i++)
+		{
+			pPicture->pixels[i]^=pPicture->pixels[i-pPicture->width*2];
+		}
+	}
+
+	
+	return retval;
+
+
+}
+
+
+
 
 
 int gfxloader_unpackpic(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte version,int picnum,tVM68k_ubyte* picname,tPicture* pPicture,int egamode)
@@ -1163,7 +1369,8 @@ int gfxloader_unpackpic(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte v
 		if (gfxbuf[3]=='3') retval=gfxloader_gfx3(gfxbuf,gfxsize,version,picnum,pPicture);		// ms dos
 		if (gfxbuf[3]=='4') retval=gfxloader_gfx4(gfxbuf,gfxsize,version,picname,pPicture,egamode);	// read from magnetic windows resource files
 		if (gfxbuf[3]=='5') retval=gfxloader_gfx5(gfxbuf,gfxsize,version,picnum,pPicture);		// C64
-		if (gfxbuf[3]=='6') retval=gfxloader_gfx6(gfxbuf,gfxsize,version,picnum,pPicture);		// C64
+		if (gfxbuf[3]=='6') retval=gfxloader_gfx6(gfxbuf,gfxsize,version,picnum,pPicture);		// Amstrad CPC
+		if (gfxbuf[3]=='7') retval=gfxloader_gfx7(gfxbuf,gfxsize,version,picnum,pPicture);		// AtariXL
 	}
 	return retval;
 }

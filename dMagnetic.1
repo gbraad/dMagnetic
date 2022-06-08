@@ -1,7 +1,7 @@
 .\" Process this file with
 .\" groff -man -Tascii dMagnetic.1
 .\"
-.Dd November 22nd,2020
+.Dd December 24th,2020
 .Os OpenBSD 
 .Dt dMagnetic 1
 .
@@ -32,7 +32,7 @@ You wake up on a sunny August morning with birds singing, and the air fresh and 
 .br
 .Nm
 .Op Fl amstradcpc Ar DIRECTORY/FILE1.DSK,DIRECTORY/FILE2.DSK
-.Op Fl vmode Ar sixel
+.Op Fl vmode Ar utf
 .br
 .Nm
 .Op Fl spectrum Ar DIRECTORY/DISKIMAGE.DSK
@@ -40,6 +40,9 @@ You wake up on a sunny August morning with birds singing, and the air fresh and 
 .br
 .Nm
 .Op Fl archimedes Ar DIRECTORY/DISKIMAGE.adf
+.br
+.Nm
+.Op Fl atarixl Ar DIRECTORY/FILE1.ATR,DIRECTORY/FILE2.ATR
 .br
 .Nm
 .Op Fl ini Ar ini-file 
@@ -80,6 +83,11 @@ You wake up on a sunny August morning with birds singing, and the air fresh and 
 .Op Fl ini Ar ini-file 
 .Op GAME
 .Op Fl vmode Ar high_ansi2
+.br
+.Nm
+.Op Fl ini Ar ini-file 
+.Op GAME
+.Op Fl vmode Ar utf
 .br
 .Nm
 .Op Fl ini Ar ini-file 
@@ -127,8 +135,9 @@ the MS-DOS binaries,
 the Magnetic Windows Resource Files, 
 the Commodore C64 images in the d64 format, 
 Amstrad CPC and Spectrum128 images in the DSK format.
-and finally
 Acorn Archimedes images in the ADF/ADL (aka ADFS) format.
+and finally
+AtariXL/Atari800 images in the ATR format.
 .Sh STARTING THE GAME
 Once the game(s) have been downloaded, the .mag and .gfx files can be provided via
 .Pp
@@ -177,6 +186,11 @@ A seventh option is to use ADF/ADL/ADFS image files from the Acorn Archimedes re
 .Pp
 .Nm
 -archimedes DIRECTORY/DISKIMAGE.ADF 
+.Pp
+An eigth option is to use ATR image files from the AtariXL/Atari800 releases. Those come in pairs.
+.Pp
+.Nm
+-atarixl DIRECTORY/FILE1.ATR,DIRECTORY/FILE2.ATR
 .Pp
 It is also possible to edit the dMagnetic.ini file and start a specific game, by using one of
 .Pp
@@ -256,6 +270,12 @@ has been developed with ANSI-consoles in mind. To select a video output that bes
 .Op Fl vmode Ar high_ansi2
 .br
 .Pp
+.Nm
+.Op Fl ini Ar ini-file
+.Op GAME
+.Op Fl vmode Ar utf
+.Pp
+.br
 To change the number of rows/columns to render the images, use
 .Pp
 .Nm
@@ -281,6 +301,7 @@ where the -sres
 option offers a way to scale the images. The maximum allowed width is 1024 pixels.
 .Sh GRAPHICS IN WONDERLAND AND THE MAGNETIC SCROLLS COLLECTION
 Before you can see the beautiful graphics in "Wonderland", or from the Magnetic Scrolls Collection, you have to type in "graphics" to enable them.
+
 .Sh COMMAND LINE OPTIONS
 .Op Fl bsd
 .br
@@ -314,12 +335,16 @@ Shows an example for a working dMagnetic.ini file.
 .br
 .Pp
 .Op Fl archimedes Ar DIRECTORY/DISKIMAGES.ADF
+.Pp
+.br
+.Op Fl atarixl Ar DIRECTORY/FILE1.ATR,DIRECTORY/FILE2.ATR
 .br
 .Nm
 is a Magnetic Scrolls Interpreter. To actually play the games, their binaries have to be provided. Either in the .mag and .gfx format from https://msmemorial.if-legends.org/magnetic.php, as the name of the directory in which the original MS-DOS version can be found, the location and the name of the second resource file TWO.RSC, as D64-images from the Commodore 64 releases, 
 as DSK-images from the Amstrad/Schneider CPC releases,
 as DSK-images from the Spectrum releases,
-or even as ADF/ADL/ADFS images from the Acorn Archimedes releases.
+as ADF/ADL/ADFS images from the Acorn Archimedes releases,
+or even as ATR images from the AtariXL/Atari800 releases.
 .Pp
 .Op Fl ini Ar dMagnetic.ini pawn
 .br
@@ -337,7 +362,7 @@ or even as ADF/ADL/ADFS images from the Acorn Archimedes releases.
 .br
 .Op Fl ini Ar dMagnetic.ini wonderland
 .br
-An alternative way to provide the location of the .mag and .gfx, or the directory name, is through a dMagnetic.ini file. See helpini or
+An alternative way to provide the location of the .mag and .gfx, the image files or the directory name, is through a dMagnetic.ini file. See helpini or
 .Xr dMagneticini 5
 for an example of a working dMagnetic.ini file.
 .br
@@ -388,6 +413,8 @@ Sort of a travel journal, this option lets you write the commands that where typ
 .Op Fl vmode Ar high_ansi
 .br
 .Op Fl vmode Ar high_ansi2
+.br
+.Op Fl vmode Ar utf
 .br
 .Op Fl vmode Ar sixel
 .Op Fl sres Ar 1024x768

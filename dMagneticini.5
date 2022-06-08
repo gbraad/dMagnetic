@@ -2,7 +2,7 @@
 .\" groff -man -Tascii dMagneticini.5
 .\"
 .
-.Dd November 22nd, 2020
+.Dd December 24th, 2020
 .Os OpenBSD 
 .Dt dMagneticini 5
 .
@@ -126,6 +126,14 @@ To use ADF/ADL/ADFS images from the Acorn Archimedes releases, the parameters ar
 ;mytharchimedes=/games/archimedes/myth.ADF
 .br
 .Pp
+To use ATR images from the AtariXL/Atari800 releases, the parameters are as followed:
+.br
+;pawnatarixl=/atr/PAWN1.ATR,/atr/PAWN2.ATR
+.br
+;guildatarixl=/atr/GUILD1.ATR,/atr/GUILD2.ATR
+.br
+;jinxteratarixl=/atr/JINXTER1.ATR,/atr/JINXTER2.ATR
+.Pp
 To avoid any form of misunderstanding, it is recommended to make sure that the .ini file is providing only one of the five methods. The other four should be commented out.
 .Sh SECTION [RANDOM]
 This section configures the random number generator.
@@ -206,6 +214,8 @@ pawngfx=/usr/local/share/games/magneticscrolls/pawn.gfx
 .br
 ;pawnarchimedes=/adf/PAWNarchimedes.adf
 .br
+;pawnatarixl=/atr/PAWN1.ATR,/atr/PAWN2.ATR
+.br
 guildmag=/usr/local/share/games/magneticscrolls/guild.mag
 .br
 guildgfx=/usr/local/share/games/magneticscrolls/guild.gfx
@@ -222,6 +232,8 @@ guildgfx=/usr/local/share/games/magneticscrolls/guild.gfx
 .br
 ;guildarchimedes=/adf/GUILDarchimedes.adf
 .br
+;guildatarixl=/atr/GUILD1.ATR,/atr/GUILD2.ATR
+.br
 jinxtermag=/usr/local/share/games/magneticscrolls/jinxter.mag
 .br
 jinxtergfx=/usr/local/share/games/magneticscrolls/jinxter.gfx
@@ -235,6 +247,8 @@ jinxtergfx=/usr/local/share/games/magneticscrolls/jinxter.gfx
 ;jinxterspectrum=/dsk/JINXTERspectrum.DSK
 .br
 ;jinxterarchimedes=/adf/JINXTERarchimedes.adf
+.br
+;jinxteratarixl=/atr/JINXTER1.ATR,/atr/JINXTER2.ATR
 .br
 corruptionmag=/usr/local/share/games/magneticscrolls/ccorrupt.mag
 .br

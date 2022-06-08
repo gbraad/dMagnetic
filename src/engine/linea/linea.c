@@ -755,6 +755,7 @@ int lineA_singlestep(void* hLineA,void* hVM68k,unsigned short opcode)
 				} else {
 					byteidx=pLineA->interrupted_byteidx;
 					bitidx=pLineA->interrupted_bitidx;
+
 				}
 				val=0;
 				stringidx=0;

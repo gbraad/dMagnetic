@@ -43,7 +43,8 @@ CHECKS=        \
 	check-low_ansi2 \
 	check-high_ansi \
 	check-high_ansi2        \
-	check-sixel
+	check-sixel	\
+	check-utf
 
 ### this is the input. it does not really matter, but I thought I put in some easter egg in here.
 ### :::W WEYHE IST BUNT!!
@@ -52,9 +53,10 @@ INPUT_monochrome=	"Sudweyhe"
 INPUT_monochrome_inv=	"Melchiorshausen"
 INPUT_low_ansi=		"Ahausen"
 INPUT_low_ansi2=	"Kirchweyhe"
-INPUT_high_ansi=	"Jebel"
+INPUT_high_ansi=	"Jeebel"
 INPUT_high_ansi2=	"Erichshof"
 INPUT_sixel=		"Dreye"
+INPUT_utf=		"Lahausen"
 
 ### this is the output
 CHECKSUM_none=		"3211640dc669f6b960a84a51559fc88a25bbc26966f01cdf44b9f4d9f4d71e1c"
@@ -62,9 +64,10 @@ CHECKSUM_monochrome=	"d8bc9ccf30b5cc53f545ac5458e1a864e27c18c3debdb9ac4278862379
 CHECKSUM_monochrome_inv="79ff5931e4b8b0812bfa15c49fce9dde985495e962dacd59c3e61d881bc91e01"
 CHECKSUM_low_ansi=	"7ce4a85016794d60979e9b3543c036e30514e0cb3097a569cfb9b48506c567be"
 CHECKSUM_low_ansi2=	"05e7fdd4d2ae3476db0baa38bf5dac6255a13cc46d71505c4d63a57cfa40e1fe"
-CHECKSUM_high_ansi=	"48dada903b5196311f1f73aea3efd592a1120dc3731003ceac099b9be0df2cf4"
+CHECKSUM_high_ansi=	"bcc24e07c6e207bd4988e11d7e3cbaa0594820670bf1f3df530722700934e970"
 CHECKSUM_high_ansi2=	"e83e480afc67de933cc51dacf7a68d3c5c3fa4221fb299edf4bda495caf68bdc"
 CHECKSUM_sixel=		"eb20c0de385696b55320ce15e703690e38be2e238b7dbddfb424b54023286180"
+CHECKSUM_utf=		"f484470b10a415b6a6aea37778055c7a2649e285078a32f33ef558de0228de85"
 
 
 
@@ -101,6 +104,9 @@ check-high_ansi2:	dMagnetic
 	if [ "`${ECHO_CMD} ${INPUT_${@:check-%=%}}    | ./dMagnetic -ini dMagnetic.ini -vmode "${@:check-%=%}" -vcols 300 -vrows 300 -vecho -sres 1024x768 -mag testcode/minitest.mag | ${SHA256_CMD} | ${AWK_CMD} -F' ' '{ print $$1; }' - `" = ${CHECKSUM_${@:check-%=%}} ]       ; then ${ECHO_CMD} "$@ OK" ; else ${ECHO_CMD} "$@ failed" ; exit 1 ; fi
 
 check-sixel:		dMagnetic
+	if [ "`${ECHO_CMD} ${INPUT_${@:check-%=%}}    | ./dMagnetic -ini dMagnetic.ini -vmode "${@:check-%=%}" -vcols 300 -vrows 300 -vecho -sres 1024x768 -mag testcode/minitest.mag | ${SHA256_CMD} | ${AWK_CMD} -F' ' '{ print $$1; }' - `" = ${CHECKSUM_${@:check-%=%}} ]       ; then ${ECHO_CMD} "$@ OK" ; else ${ECHO_CMD} "$@ failed" ; exit 1 ; fi
+
+check-utf:		dMagnetic
 	if [ "`${ECHO_CMD} ${INPUT_${@:check-%=%}}    | ./dMagnetic -ini dMagnetic.ini -vmode "${@:check-%=%}" -vcols 300 -vrows 300 -vecho -sres 1024x768 -mag testcode/minitest.mag | ${SHA256_CMD} | ${AWK_CMD} -F' ' '{ print $$1; }' - `" = ${CHECKSUM_${@:check-%=%}} ]       ; then ${ECHO_CMD} "$@ OK" ; else ${ECHO_CMD} "$@ failed" ; exit 1 ; fi
 
 
