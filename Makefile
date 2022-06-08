@@ -41,10 +41,12 @@ LINK=$(CC)
 LDFLAGS+="-L"$(OBJDIR)
 
 SOURCES_LOADER=	\
+	src/loader/loader_common.c	\
 	src/loader/loader_msdos.c	\
 	src/loader/loader_mw.c		\
 	src/loader/loader_d64.c		\
-	src/loader/loader_amstradcpc.c	\
+	src/loader/loader_dsk.c		\
+	src/loader/loader_archimedes.c	\
 	src/loader/maggfxloader.c
 
 SOURCES_LINEA=	\

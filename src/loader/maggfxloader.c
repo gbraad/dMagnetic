@@ -36,7 +36,8 @@
 #include "loader_msdos.h"
 #include "loader_mw.h"
 #include "loader_d64.h"
-#include "loader_amstradcpc.h"
+#include "loader_dsk.h"
+#include "loader_archimedes.h"
 
 
 typedef	enum _eBinType
@@ -46,7 +47,9 @@ typedef	enum _eBinType
 	BINTYPE_MSDOS,
 	BINTYPE_TWORSC,
 	BINTYPE_D64,
-	BINTYPE_AMSTRADCPC
+	BINTYPE_AMSTRADCPC,
+	BINTYPE_SPECTRUM,
+	BINTYPE_ARCHIMEDES
 } eBinType;
 int loader_init(int argc,char** argv,FILE *f_inifile,
 		char *magbuf,int* magsize,
@@ -91,6 +94,8 @@ int loader_init(int argc,char** argv,FILE *f_inifile,
 		char msdosname[32];
 		char d64name[32];
 		char amstradcpcname[32];
+		char spectrumname[32];
+		char archimedesname[32];
 		for (i=0;i<7;i++)
 		{
 			snprintf(magname,32,"%smag",gameprefix[i]);
@@ -98,6 +103,8 @@ int loader_init(int argc,char** argv,FILE *f_inifile,
 			snprintf(msdosname,32,"%smsdos",gameprefix[i]);
 			snprintf(d64name,32,"%sd64",gameprefix[i]);
 			snprintf(amstradcpcname,32,"%samstradcpc",gameprefix[i]);
+			snprintf(spectrumname,32,"%sspectrum",gameprefix[i]);
+			snprintf(archimedesname,32,"%sarchimedes",gameprefix[i]);
 
 			if (retrievefromcommandline(argc,argv,gameprefix[i],NULL,0))
 			{
@@ -118,6 +125,14 @@ int loader_init(int argc,char** argv,FILE *f_inifile,
 				else if (retrievefromini(f_inifile,"[FILES]",amstradcpcname,binname,sizeof(binname)))
 				{
 					binType=BINTYPE_AMSTRADCPC;
+				}
+				else if (retrievefromini(f_inifile,"[FILES]",spectrumname,binname,sizeof(binname)))
+				{
+					binType=BINTYPE_SPECTRUM;
+				}
+				else if (retrievefromini(f_inifile,"[FILES]",archimedesname,binname,sizeof(binname)))
+				{
+					binType=BINTYPE_ARCHIMEDES;
 				}
 			}
 		}
@@ -149,12 +164,22 @@ int loader_init(int argc,char** argv,FILE *f_inifile,
 	{
 		binType=BINTYPE_AMSTRADCPC;
 	}
+	if (retrievefromcommandline(argc,argv,"-spectrum",binname,sizeof(binname)))
+	{
+		binType=BINTYPE_SPECTRUM;
+	}
+	if (retrievefromcommandline(argc,argv,"-archimedes",binname,sizeof(binname)))
+	{
+		binType=BINTYPE_ARCHIMEDES;
+	}
 	switch (binType)
 	{
 		case BINTYPE_NONE:		fprintf(stderr,"Please provide the game binaries\n");return -1;break;
 		case BINTYPE_TWORSC:		retval=loader_magneticwindows(binname,magbuf,magsize,gfxbuf,gfxsize);break;
-		case BINTYPE_D64:		retval=loader_d64(binname,magbuf,magsize,gfxbuf,gfxsize);	break;
-		case BINTYPE_AMSTRADCPC:	retval=loader_amstradcpc(binname,magbuf,magsize,gfxbuf,gfxsize);	break;
+		case BINTYPE_D64:		retval=loader_d64(binname,magbuf,magsize,gfxbuf,gfxsize);break;
+		case BINTYPE_AMSTRADCPC:	retval=loader_dsk(binname,magbuf,magsize,gfxbuf,gfxsize,0);	break;
+		case BINTYPE_SPECTRUM:		retval=loader_dsk(binname,magbuf,magsize,gfxbuf,gfxsize,1);break;
+		case BINTYPE_ARCHIMEDES:	retval=loader_archimedes(binname,magbuf,magsize,gfxbuf,gfxsize); break;
 		case BINTYPE_MSDOS:		retval=loader_msdos(binname,magbuf,magsize,gfxbuf,gfxsize);	break;
 		case BINTYPE_MAGGFX:	
 			retval=0;

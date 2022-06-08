@@ -4,7 +4,7 @@
 *****************************************
 
 
-Welcome, brave adventurer. This is Version 0.27.
+Welcome, brave adventurer. This is Version 0.28.
 If you are interested in playing "The Pawn", just follow these simple steps.
 
 STEP 1: BUILD
@@ -86,6 +86,9 @@ image files in the DSK format.
 
 % ./dMagnetic -ini dMagnetic.ini -amstradcpc DISK1.DSK,DISK2.DSK
 
+For the Spectrum+3/Spectrum128 releases, the commandline would be this one:
+
+% ./dMagnetic -ini dMagnetic.ini -spectrum DISKIMAGE.DSK
 
 
 STEP 6: GRAPHICS

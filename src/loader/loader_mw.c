@@ -31,6 +31,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "loader_common.h"
 #include "loader_mw.h"
 #include "configuration.h"
 #include "vm68k_macros.h"
@@ -279,21 +280,19 @@ int loader_mw_mkmag(char* two_rsc,int* sizes,char* magbuf,int* bytes)
 	int text1size=0;
 	int text2size=0;
 	int dictsize=0;
-	int undosize=0;
-	int undopc=0;
+	//int undosize=0;
+	//int undopc=0;
 	int wtabsize=0;
 
 	int codeoffs=0;
 	int textoffs=0;
 	int dictoffs=0;
 	int wtaboffs=0;
-	int total;
 	int magidx;
 	int wonderland=0;
 
 	int i;
 
-	undosize=undopc=0;
 
 	// step one: find the directory. it is stored in the very first 4 bytes.
 	loader_mw_readresource(two_rsc,sizes,0,magbuf,4);
@@ -330,20 +329,8 @@ int loader_mw_mkmag(char* two_rsc,int* sizes,char* magbuf,int* bytes)
 	}
 	if (codeoffs==-1 || textoffs==-1 || dictoffs==-1 || wtaboffs==-1) return 0;
 	magidx=0;
-	magbuf[0]='M';magbuf[1]='a';magbuf[2]='S';magbuf[3]='c';magidx+=4;
 
-	total=42+codesize+text1size+dictsize+wtabsize;
-	WRITE_INT32BE(magbuf,4,total);
-	WRITE_INT32BE(magbuf,8,42);
-	magbuf[13]=4;   // version
-	WRITE_INT32BE(magbuf,14,codesize);
-	WRITE_INT32BE(magbuf,18,(text1size>=0x10000)?0x10000:0xe000);
-	if (text1size>0x10000) text2size=text1size+dictsize-0x10000; else text2size=text1size+dictsize-0xe000;
-	WRITE_INT32BE(magbuf,22,text2size);
-	WRITE_INT32BE(magbuf,26,wtabsize);
-	WRITE_INT32BE(magbuf,30,text1size);
-	WRITE_INT32BE(magbuf,34,undosize);     // undosize
-	WRITE_INT32BE(magbuf,38,undopc);     // undopc
+
 
 	magidx=42;
 	loader_mw_readresource(two_rsc,sizes,codeoffs,&magbuf[magidx],codesize);    
@@ -351,8 +338,6 @@ int loader_mw_mkmag(char* two_rsc,int* sizes,char* magbuf,int* bytes)
 	loader_mw_readresource(two_rsc,sizes,textoffs,&magbuf[magidx],text1size);   magidx+=text1size;
 	loader_mw_readresource(two_rsc,sizes,dictoffs,&magbuf[magidx],dictsize);    magidx+=dictsize;
 	loader_mw_readresource(two_rsc,sizes,wtaboffs,&magbuf[magidx],wtabsize);    magidx+=wtabsize;
-
-	*bytes=magidx;
 	// finishing patch
 	if (wonderland)
 	{
@@ -362,6 +347,10 @@ int loader_mw_mkmag(char* two_rsc,int* sizes,char* magbuf,int* bytes)
 			magbuf[0x67a3]=0x75;
 		}
 	}
+
+	if (text1size>0x10000) text2size=text1size+dictsize-0x10000; else text2size=text1size+dictsize-0xe000;
+	loader_common_addmagheader((unsigned char*)magbuf,magidx,4,codesize,(text1size>=0x10000)?0x10000:0xe000,text2size,wtabsize,text1size);
+	*bytes=magidx;
 
 	return 1;
 }

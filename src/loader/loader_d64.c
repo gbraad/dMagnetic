@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "loader_d64.h"
+#include "loader_common.h"
 #include "configuration.h"
 #include "vm68k_macros.h"
 
@@ -597,19 +598,7 @@ int loader_d64(char* d64name,
 		}
 		
 		magidx+=string1size+string2size+dictsize;
-		
-		// now the information is complete, write the header	
-		magbuf[0]='M';magbuf[1]='a';magbuf[2]='S';magbuf[3]='c';	//  0.. 3: the magic word
-		WRITE_INT32BE(magbuf, 4 ,magidx);				//  4.. 7: the total size
-		WRITE_INT32BE(magbuf, 8 ,42);				//  8..11: the size of the header
-		WRITE_INT16BE(magbuf,12 ,loader_d64_gameinfo[gameID].version);	// 12..13: the version for the virtual machine
-		WRITE_INT32BE(magbuf,14 ,code1size+code2size);		// 14..17 the size of the game code
-		WRITE_INT32BE(magbuf,18 ,string1size);			// 18..21 the size of the string1
-		WRITE_INT32BE(magbuf,22 ,string2size);			// 22..25 the size of the string2
-		WRITE_INT32BE(magbuf,26 ,dictsize);			// 26..29 the size of the dictionary
-		WRITE_INT32BE(magbuf,30 ,huffmantreeidx)		// 30..33 the beginning of the huffman tree within the string buffer
-		WRITE_INT32BE(magbuf,34 ,0);				//  34..37: undo size
-		WRITE_INT32BE(magbuf,38 ,0);				//  38..41: undo pc
+		loader_common_addmagheader((unsigned char*)magbuf,magidx,loader_d64_gameinfo[gameID].version,code1size+code2size,string1size,string2size,dictsize,huffmantreeidx);	
 
 		if (loader_d64_gameinfo[gameID].game==GAME_MYTH && magbuf[0x3080]==0x66) magbuf[0x3080]=0x60;	// final touch
 	

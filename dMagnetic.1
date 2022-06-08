@@ -1,7 +1,7 @@
 .\" Process this file with
 .\" groff -man -Tascii dMagnetic.1
 .\"
-.Dd October 30th, 2020
+.Dd November 22nd,2020
 .Os OpenBSD 
 .Dt dMagnetic 1
 .
@@ -33,6 +33,13 @@ You wake up on a sunny August morning with birds singing, and the air fresh and 
 .Nm
 .Op Fl amstradcpc Ar DIRECTORY/FILE1.DSK,DIRECTORY/FILE2.DSK
 .Op Fl vmode Ar sixel
+.br
+.Nm
+.Op Fl spectrum Ar DIRECTORY/DISKIMAGE.DSK
+.Op Fl vmode Ar none
+.br
+.Nm
+.Op Fl archimedes Ar DIRECTORY/DISKIMAGE.adf
 .br
 .Nm
 .Op Fl ini Ar ini-file 
@@ -95,7 +102,7 @@ You wake up on a sunny August morning with birds singing, and the air fresh and 
 .Op Fl bsd
 .Sh DESCRIPTION
 .Nm
-is an interpreter for classic text adventure games, or interactive fiction, such as "The Pawn" or "The Guild of Thieves". The following games are being supported:
+is an interpreter for classic text adventure games, or interactive fiction, such as "The Pawn" and "The Guild of Thieves". The following games are being supported:
 .Bl -tag -width 10
 .It "The Pawn"
 .It "The Guild of Thieves"
@@ -114,6 +121,14 @@ are being supported.
 Once downloaded, their position has to be made available to 
 .Nm
 by editing dMagnetic.ini first. 
+.br
+Other possibilities are loading the games from original releases, such as i
+the MS-DOS binaries, 
+the Magnetic Windows Resource Files, 
+the Commodore C64 images in the d64 format, 
+Amstrad CPC and Spectrum128 images in the DSK format.
+and finally
+Acorn Archimedes images in the ADF/ADL (aka ADFS) format.
 .Sh STARTING THE GAME
 Once the game(s) have been downloaded, the .mag and .gfx files can be provided via
 .Pp
@@ -151,7 +166,17 @@ A fourth option is to use D64 image files from the Commodore 64 releases. They c
 A fifth option is to use DSK image files from the Amstrad CPC releases. They come in pairs, since noth sides of the floppy disk were occupied. So the parameter requires a list of them, separated by komma:
 .Pp
 .Nm
--d64 DIRECTORY/FILE1.DSK,DIRECTORY/FILE2.DSK -vmode sixel
+-amstradcpc DIRECTORY/FILE1.DSK,DIRECTORY/FILE2.DSK -vmode sixel
+.Pp
+A sixth option is to use DSK image files from the Spectrum releases. Since this platform did not have the pictures, a single floppy disk was enough:
+.Pp
+.Nm
+-spectrum DIRECTORY/DISKIMAGE.DSK -vmode none
+.Pp
+A seventh option is to use ADF/ADL/ADFS image files from the Acorn Archimedes releases. 
+.Pp
+.Nm
+-archimedes DIRECTORY/DISKIMAGE.ADF 
 .Pp
 It is also possible to edit the dMagnetic.ini file and start a specific game, by using one of
 .Pp
@@ -284,8 +309,17 @@ Shows an example for a working dMagnetic.ini file.
 .Pp
 .Op Fl amstradcpc Ar DIRECTORY/FILE1.DSK,DIRECTORY/FILE2.DSK
 .br
+.Pp
+.Op Fl spectrum Ar DIRECTORY/DISKIMAGES.DSK
+.br
+.Pp
+.Op Fl archimedes Ar DIRECTORY/DISKIMAGES.ADF
+.br
 .Nm
-is a Magnetic Scrolls Interpreter. To actually play the games, their binaries have to be provided. Either in the .mag and .gfx format from https://msmemorial.if-legends.org/magnetic.php, as the name of the directory in which the original MS-DOS version can be found, the location and the name of the second resource file TWO.RSC, as D64-images from the Commodore 64 releases, or as DSK-images from the Amstrad/Schneider CPC releases.
+is a Magnetic Scrolls Interpreter. To actually play the games, their binaries have to be provided. Either in the .mag and .gfx format from https://msmemorial.if-legends.org/magnetic.php, as the name of the directory in which the original MS-DOS version can be found, the location and the name of the second resource file TWO.RSC, as D64-images from the Commodore 64 releases, 
+as DSK-images from the Amstrad/Schneider CPC releases,
+as DSK-images from the Spectrum releases,
+or even as ADF/ADL/ADFS images from the Acorn Archimedes releases.
 .Pp
 .Op Fl ini Ar dMagnetic.ini pawn
 .br

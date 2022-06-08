@@ -341,6 +341,7 @@ int lineA_singlestep(void* hLineA,void* hVM68k,unsigned short opcode)
 	tLineA* pLineA=(tLineA*)hLineA;
 	tVM68k* pVM68k=(tVM68k*)hVM68k;
 
+
 	int retval=LINEA_NOK_UNKNOWN_INSTRUCTION;
 	if (pLineA==NULL) return LINEA_NOK_INVALID_PTR;
 	if (pVM68k==NULL) return LINEA_NOK_INVALID_PTR;

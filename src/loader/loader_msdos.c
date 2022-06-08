@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "loader_msdos.h"
+#include "loader_common.h"
 #include "configuration.h"
 #include "vm68k_macros.h"
 typedef enum _eGame
@@ -232,14 +233,11 @@ int loader_msdos(char* msdosdir,
 	{
 		int codesize=0;
 		int dictsize=0;
-		int string0size=0;
 		int string1size=0;
 		int string2size=0;
 		int magidx=0;
 
 		magidx=42;
-		magbuf[0]='M';magbuf[1]='a';magbuf[2]='S';magbuf[3]='c';
-		WRITE_INT32BE(magbuf,8,magidx);
 		// the program for the 68000 machine is stored in the file ending with 1.
 		snprintf(filename,1024,"%s/%s1%c",msdosdir,gameInfo[gameID].prefix,postfix);
 		OPENFILE(filename);
@@ -277,23 +275,8 @@ int loader_msdos(char* msdosdir,
 		}
 		// TODO: what about the 5?
 
-		WRITE_INT32BE(magbuf, 4,codesize+dictsize+string1size+string2size+42);
-		WRITE_INT32BE(magbuf,14,codesize);
-		string0size=string1size;
-		if (string1size>=0x10000) 
-		{
-			string2size+=(string1size-0x10000);
-			string1size=0x10000;
-		}
-		WRITE_INT32BE(magbuf,18,string1size);
-		WRITE_INT32BE(magbuf,22,string2size);
-		WRITE_INT32BE(magbuf,26,dictsize);
-		WRITE_INT32BE(magbuf,30,string0size);
-		WRITE_INT32BE(magbuf,34,0);	// undosize
-		WRITE_INT32BE(magbuf,38,0);	// undopc
-
-		magbuf[13]=gameInfo[gameID].version;
 		if (gameInfo[gameID].game==GAME_MYTH && magbuf[0x314a]==0x66) magbuf[0x314a]=0x60;	// final touch
+		loader_common_addmagheader((unsigned char*)magbuf,magidx,gameInfo[gameID].version,codesize,string1size,string2size,dictsize,-1);
 	
 		*magsize=magidx;
 	}	

@@ -25,12 +25,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 */
+#ifndef	LOADER_DSK_H
+#define	LOADER_DSK_H
 
+int loader_dsk(char* amstradcpcname,
+		char *magbuf,int* magsize,
+		char* gfxbuf,int* gfxsize,
+		int amstrad0spectrum1);
 
-#ifndef	VERSION_H
-#define	VERSION_H
-
-#define	VERSION_MAJOR		0
-#define	VERSION_MINOR		2
-#define	VERSION_REVISION	8
 #endif

@@ -25,10 +25,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 */
-#ifndef	LOADER_AMSTRADCPC_H
-#define	LOADER_AMSTRADCPC_H
+#ifndef	LOADER_ARCHIMEDES_H
+#define	LOADER_ARCHIMEDES_H
 
-int loader_amstradcpc(char* amstradcpcname,
+int loader_archimedes(char* archimedesname,
 		char *magbuf,int* magsize,
 		char* gfxbuf,int* gfxsize);
 
