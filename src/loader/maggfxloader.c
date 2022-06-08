@@ -42,15 +42,78 @@ typedef struct _tGameInfo
 } tGameInfo;
 // TODO: so far, i have understood the formats for PAWN, THE GUILD OF THIEVES and JINXTER
 // The others have some opcodes which I can not decode (yet)
-#define	KNOWN_GAMES	3	
+#define	KNOWN_GAMES	5	
 const tGameInfo gameInfo[KNOWN_GAMES]={
 	{"PAWN",		209529,0},
 	{"GUILD",		185296,1},
 	{"JINX",		159027,2},
-//	{"CORR",		160678,3},
-//	{"FILE",		162541,3}
+	{"CORR",		160678,3},
+	{"FILE",		162541,3}
 };
 
+int loader_huffman_unpack(unsigned char* magbuf,int* decodedbytes,FILE *f)
+{
+	unsigned char huffsize;
+	unsigned char hufftab[256];
+	int huffidx;
+	unsigned short todo;
+	unsigned char byte;
+	unsigned char mask;
+	int threebytes;
+	int n;	// this variable is getting rid of some compiler warnings.
+	int magidx;
+
+	magidx=0;
+
+	n=fread(&huffsize,sizeof(char),1,f);
+	n+=fread(hufftab,sizeof(char),huffsize,f);
+	n+=fread(&todo,sizeof(short),1,f);	// what are those two bytes?
+	mask=0;
+	huffidx=0;
+	threebytes=0;
+	while (!feof(f))
+	{
+		unsigned char branchr,branchl;
+		unsigned char branch;
+		if (mask==0)
+		{
+			n+=fread(&byte,sizeof(char),1,f);
+			mask=0x80;
+		}
+		branchl=hufftab[2*huffidx+0];
+		branchr=hufftab[2*huffidx+1];
+		branch=(byte&mask)?branchl:branchr;
+		if (branch&0x80)	// the highest bit signals a terminal symbol.
+		{
+			huffidx=0;
+			branch&=0x7f;
+			// the terminal symbols from the tree are only 6 bits wide.  
+			// to extend this to 8 bits, each third symbol contains the
+			// two MSB for the previous three:
+			// 00AAAAAA 00BBBBBB 00CCCCCC 00aabbcc
+			if (threebytes==3)
+			{
+				int i;
+				threebytes=0;
+				for (i=0;i<3;i++)
+				{
+					// add the 2 MSB to the existing 6.
+					magbuf[magidx-3+i]|=((branch<<2)&0xc0);
+					branch<<=2;	// MSB first
+				}
+			} else {
+				magbuf[magidx]=branch;
+				magidx++;
+				threebytes++;
+			}
+		} else {
+			huffidx=branch;
+		}
+		mask>>=1;
+	}
+	*decodedbytes=magidx;
+	return (n==0);
+}
 int loader_msdos(char* msdosdir,
 	char *magbuf,int* magsize,
 	char* gfxbuf,int* gfxsize)
@@ -140,7 +203,12 @@ int loader_msdos(char* msdosdir,
 		// the program for the 68000 machine is stored in the file ending with 1.
 		snprintf(filename,1024,"%s/%s1",msdosdir,gameInfo[gameid].prefix);
 		OPENFILE(filename);
-		codesize=fread(&magbuf[magidx],sizeof(char),magsize0-magidx,f);
+		if (gameInfo[gameid].version>=3)	// beginning with version 3, it is huffman-encoded.
+		{
+			if (loader_huffman_unpack(&magbuf[magidx],&codesize,f)) return -1;
+		} else {
+			codesize=fread(&magbuf[magidx],sizeof(char),magsize0-magidx,f);
+		}
 		fclose(f);
 		magidx+=codesize;
 		// the strings for the game are stored in the files ending with 3 and 2
@@ -159,69 +227,13 @@ int loader_msdos(char* msdosdir,
 		if (gameInfo[gameid].version>=2)
 		{
 			// dictionaries are packed. 
-			unsigned char huffsize;
-			unsigned char hufftab[256];
-			int huffidx;
-			unsigned short todo;
-			unsigned char byte;
-			unsigned char mask;
-			int threebytes;
-			int n;
 			
+			dictsize=0;
 			snprintf(filename,1024,"%s/%s0",msdosdir,gameInfo[gameid].prefix);
 			OPENFILE(filename);
-			n=fread(&huffsize,sizeof(char),1,f);
-			n+=fread(hufftab,sizeof(char),huffsize,f);
-			n+=fread(&todo,sizeof(short),1,f);	// what are those two bytes?
-			dictsize=0;
-			mask=0;
-			huffidx=0;
-			threebytes=0;
-			while (!feof(f))
-			{
-				unsigned char branchr,branchl;
-				unsigned char branch;
-				if (mask==0)
-				{
-					n+=fread(&byte,sizeof(char),1,f);
-					mask=0x80;
-				}
-				branchl=hufftab[2*huffidx+0];
-				branchr=hufftab[2*huffidx+1];
-				branch=(byte&mask)?branchl:branchr;
-				if (branch&0x80)	// the highest bit signals a terminal symbol.
-				{
-					huffidx=0;
-					branch&=0x7f;
-					// the terminal symbols from the tree are only 6 bits wide.  
-					// to extend this to 8 bits, each third symbol contains the
-					// two MSB for the previous three:
-					// 00AAAAAA 00BBBBBB 00CCCCCC 00aabbcc
-					if (threebytes==3)
-					{
-						int i;
-						threebytes=0;
-						for (i=0;i<3;i++)
-						{
-							// add the 2 MSB to the existing 6.
-							magbuf[magidx-3+i]|=((branch<<2)&0xc0);
-							branch<<=2;	// MSB first
-						}
-					} else {
-						magbuf[magidx]=branch;
-						magidx++;
-						dictsize++;
-						threebytes++;
-					}
-				} else {
-					huffidx=branch;
-				}
-				mask>>=1;
-			}
+			if (loader_huffman_unpack(&magbuf[magidx],&dictsize,f)) return -1;
 			fclose(f);
-			if (n==0) return -1;
-			// &magbuf[magidx];
-//			magidx+=dictsize;
+			magidx+=dictsize;
 		}
 		// TODO: what about the 5?
 
@@ -241,12 +253,6 @@ int loader_msdos(char* msdosdir,
 		WRITE_INT32BE(magbuf,38,0);	// undopc
 	
 		magbuf[13]=gameInfo[gameid].version;
-		{
-			FILE *g;
-			g=fopen("debug.mag","wb");
-			fwrite(magbuf,sizeof(char),magidx,g);
-			fclose(g);
-		}
 		
 		*magsize=magidx;
 	}	

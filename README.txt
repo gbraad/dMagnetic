@@ -4,7 +4,7 @@
 *****************************************
 
 
-Welcome, brave adventurer. This is Version 0.20.
+Welcome, brave adventurer. This is Version 0.21.
 If you are interested in playing "The Pawn", just follow these simple steps.
 
 STEP 1: BUILD
