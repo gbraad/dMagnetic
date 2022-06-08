@@ -1,7 +1,7 @@
 .\" Process this file with
 .\" groff -man -Tascii dMagnetic.1
 .\"
-.Dd April 26th, 2020
+.Dd July 08th, 2020
 .Os OpenBSD 
 .Dt dMagnetic 1
 .
@@ -25,6 +25,10 @@ You wake up on a sunny August morning with birds singing, and the air fresh and 
 .Nm
 .Op Fl tworsc Ar DIRECTORY/TWO.RSC
 .Op Fl vmode Ar high_ansi
+.br
+.Nm
+.Op Fl d64 Ar DIRECTORY/FILE1.d64,DIRECTORY/FILE2.d64
+.Op Fl vmode Ar sixel
 .br
 .Nm
 .Op Fl ini Ar ini-file 
@@ -131,9 +135,14 @@ A third option is to use the resource files from "Wonderland" or the magnetic sc
 -tworsc DIRECTORY/TWO.RSC -vmode high_ansi
 .br
 .Nm
--tworsc DIRECTORY/GTWO.RSC -vmode high_ansi
+-tworsc DIRECTORY/GTWO.RSC -vmode high_ansi -ega
 .br
-The names of the other resource files is being calculated from that.
+The names of the other resource files is being calculated from that. With the optional parameter -ega, the EGA versions of the pictures are being shown.
+.Pp
+A fourth option is to use D64 image files from the Commodore 64 releases. They come in pairs, since noth sides of the floppy disk were occupied. So the parameter requires a list of them, separated by komma:
+.Pp
+.Nm
+-d64 DIRECTORY/FILE1.d64,DIRECTORY/FILE2.d64 -vmode sixel
 .Pp
 It is also possible to edit the dMagnetic.ini file and start a specific game, by using one of
 .Pp
@@ -260,8 +269,11 @@ Shows an example for a working dMagnetic.ini file.
 .Pp
 .Op Fl tworsc Ar DIRECTORY/TWO.RSC
 .br
+.Pp
+.Op Fl d64 Ar DIRECTORY/FILE1.d64,DIRECTORY/FILE2.d64
+.br
 .Nm
-is a Magnetic Scrolls Interpreter. To actually play the games, their binaries have to be provided. Either in the .mag and .gfx format from https://msmemorial.if-legends.org/magnetic.php, as the name of the directory in which the original MS-DOS version can be found, or as the location and the name of the second resource file TWO.RSC.
+is a Magnetic Scrolls Interpreter. To actually play the games, their binaries have to be provided. Either in the .mag and .gfx format from https://msmemorial.if-legends.org/magnetic.php, as the name of the directory in which the original MS-DOS version can be found, the location and the name of the second resource file TWO.RSC, or as D64-images from the Commodore 64 releases.
 .Pp
 .Op Fl ini Ar dMagnetic.ini pawn
 .br

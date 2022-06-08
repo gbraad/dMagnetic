@@ -29,6 +29,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef	PICTURE_H
 #define	PICTURE_H
 
+typedef	enum _ePictureType
+{
+	PICTURE_DEFAULT,
+	PICTURE_HALFTONE,
+	PICTURE_C64
+} ePictureType;
 // the purpose of this file is to provide the data structure for the pictures.
 typedef	struct _tPicture
 {
@@ -36,7 +42,7 @@ typedef	struct _tPicture
 	int height;
 	int width;
 	char pixels[262144];
-	char halftones;
+	ePictureType pictureType;
 } tPicture;
 #endif
 

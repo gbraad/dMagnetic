@@ -25,20 +25,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 */
-#ifndef	DEFAULT_PALETTE_H
-#define	DEFAULT_PALETTE_H
+#ifndef	LOADER_MSDOS_H
+#define	LOADER_MSDOS_H
 
-#include "picture.h"
-
-// the purpose of those functions is to transform the RGB palette into ANSI colors.
-unsigned short default_2bit_to_3bitconverstion(ePictureType pictureType,unsigned short rgb);
-
-// one strategy could be to find the center of 16 clusters that could be interpreted as "red", for example
-int default_findrgbcluster(int red,int green,int blue);
-
-// the other involves heavy experimentation.
-int default_palette(tPicture* picture,unsigned char* maxplut);
-
+int loader_msdos(char* msdosdir,
+		char *magbuf,int* magsize,
+		char* gfxbuf,int* gfxsize);
 
 #endif
-

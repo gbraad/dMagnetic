@@ -29,6 +29,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef	VM68K_MACROS_H
 #define	VM68K_MACROS_H
 #include "vm68k_datatypes.h"
+// the gfx2 format introduced MIXED ENDIAN. 
+#define READ_INT32ME(ptr,idx)   (\
+        (((tVM68k_ulong)((ptr)[((idx)+1)])&0xff)<<24)   |\
+        (((tVM68k_ulong)((ptr)[((idx)+0)])&0xff)<<16)   |\
+        (((tVM68k_ulong)((ptr)[((idx)+3)])&0xff)<< 8)   |\
+        (((tVM68k_ulong)((ptr)[((idx)+2)])&0xff)<< 0)   |\
+        0)
+
 
 #define	READ_INT32BE(ptr,idx)	(\
 	(((tVM68k_ulong)((ptr)[((idx)+0)])&0xff)<<24)	|\

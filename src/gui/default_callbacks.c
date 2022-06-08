@@ -339,8 +339,6 @@ int default_cbOutputString(void* context,char* string,unsigned char controlD2,un
 	do
 	{
 		c2=string[i++]&0x7f;
-		//if (c2==9) c2=' ';
-		//if (c2>=32 && c2<127) printf("%c",c2);
 		default_cbOutputChar(context,c2,controlD2,flag_headline);
 	} while (c2>=32);
 	return 0;
@@ -349,7 +347,6 @@ int default_cbInputString(void* context,int* len,char* string)
 {
 	int l;
 	tContext *pContext=(tContext*)context;
-	//printf("? ");
 	default_flushOutput(pContext,1);
 
 	fflush(stdout);
@@ -447,7 +444,7 @@ int default_cbDrawPicture(void* context,tPicture* picture,int mode)
 							for (x=lastx;x<=j;x++)
 							{
 								int p;
-								p=default_2bit_to_3bitconverstion(picture->halftones,picture->palette[(int)(picture->pixels[y*(picture->width)+x])]);
+								p=default_2bit_to_3bitconverstion(picture->pictureType,picture->palette[(int)(picture->pixels[y*(picture->width)+x])]);
 								redsum  +=(p>>8)&0xf;
 								greensum+=(p>>4)&0xf;
 								bluesum +=(p>>0)&0xf;
@@ -491,7 +488,7 @@ int default_cbDrawPicture(void* context,tPicture* picture,int mode)
 					accux+=pContext->columns;
 					if (accux>=picture->width || j==picture->width-1)
 					{
-						rgb=default_2bit_to_3bitconverstion(picture->halftones,picture->palette[(int)(picture->pixels[i*(picture->width)+j])]);
+						rgb=default_2bit_to_3bitconverstion(picture->pictureType,picture->palette[(int)(picture->pixels[i*(picture->width)+j])]);
 						if (rgb!=lastrgb)
 						{
 							int red,green,blue;
@@ -523,25 +520,6 @@ int default_cbDrawPicture(void* context,tPicture* picture,int mode)
 		int x,y;
 		int screenheight;
 		int screenwidth;
-		printf("\n\x1bPq\n");
-		for (i=0;i<16;i++)
-		{
-			int red,green,blue;
-			unsigned short rgb;
-			rgb=default_2bit_to_3bitconverstion(picture->halftones,picture->palette[i]);
-			red=(rgb>>8)&0xf;
-			green=(rgb>>4)&0xf;
-			blue=(rgb>>0)&0xf;
-
-			red*=100;green*=100;blue*=100;
-			red/=7;
-			green/=7;
-			blue/=7;
-
-			printf("#%02d;2;%d;%d;%d",i,red,green,blue);
-		}
-		printf("\n");
-
 		x=0;y=0;
 		accux=accuy=0;
 		screenheight=pContext->screenheight;
@@ -558,6 +536,48 @@ int default_cbDrawPicture(void* context,tPicture* picture,int mode)
 			screenwidth=(int)(ratiox*(float)picture->width);
 			screenheight=(int)(ratioy*(float)picture->height);
 		}
+
+		printf("\n\x1bPq\n");
+		if (picture->pictureType==PICTURE_C64)
+		{
+			// the C64 had a fixed colour palette.
+			// Brix suggested the following values as approximations:
+			printf("#00;2;0;0;0");		//   0   0   0	BLACK
+			printf("#01;2;100;100;100");	// 255 255 255	WHITE
+			printf("#02;2;50;20;21");	// 129  51  56	RED
+			printf("#03;2;45;80;78");	// 117 206 200	CYAN
+			printf("#04;2;55;23;59");	// 142  60 151	PURPLE
+			printf("#05;2;33;67;30");	//  86 172  77	GREEN
+			printf("#06;2;18;17;60");	//  46  44 155	BLUE
+			printf("#07;2;92;94;44");	// 237 241 113	YELLOW
+			printf("#08;2;55;31;16");	// 142  80  41	ORANGE
+			printf("#09;2;33;21;0");	//  85  56   0	BROWN
+			printf("#10;2;76;42;44");	// 196 108 113	LIGHT RED
+			printf("#11;2;29;29;29");	//  74  74  74	DARK GREY
+			printf("#12;2;48;48;48");	// 123 123 123	GREY
+			printf("#13;2;66;100;62");	// 169 255 159	LIGHT GREEN
+			printf("#14;2;43;42;92");	// 112 109 235	LIGHT BLUE
+			printf("#15;2;69;69;69");	// 178 178 178	LIGHT GREY
+		} else {
+			for (i=0;i<16;i++)
+			{
+				int red,green,blue;
+				unsigned short rgb;
+				rgb=default_2bit_to_3bitconverstion(picture->pictureType,picture->palette[i]);
+				red=(rgb>>8)&0xf;
+				green=(rgb>>4)&0xf;
+				blue=(rgb>>0)&0xf;
+
+				red*=100;green*=100;blue*=100;
+				red/=7;
+				green/=7;
+				blue/=7;
+
+				printf("#%02d;2;%d;%d;%d",i,red,green,blue);
+			}
+		}
+		printf("\n");
+
 
 		while (y<picture->height)
 		{
@@ -696,13 +716,13 @@ int default_open(void* hContext,FILE *f_inifile,int argc,char** argv)
 		if (retrievefromini(f_inifile,"[DEFAULTGUI]","mode",result,sizeof(result)))
 		{
 			if (strncmp(result,"none",4)==0) pContext->mode=eMODE_NONE;	
-			if (strncmp(result,"monochrome",10)==0) pContext->mode=eMODE_MONOCHROME;
-			if (strncmp(result,"monochrome_inv",14)==0) {pContext->mode=eMODE_MONOCHROME;pContext->monochrome_inverted=1;}
-			if (strncmp(result,"low_ansi",8)==0) pContext->mode=eMODE_LOW_ANSI;
-			if (strncmp(result,"low_ansi2",9)==0) pContext->mode=eMODE_LOW_ANSI2;
-			if (strncmp(result,"high_ansi2",10)==0) pContext->mode=eMODE_HIGH_ANSI2;
-			if (strncmp(result,"sixel",5)==0) pContext->mode=eMODE_SIXEL;
+			else if (strncmp(result,"monochrome_inv",14)==0) {pContext->mode=eMODE_MONOCHROME;pContext->monochrome_inverted=1;}
+			else if (strncmp(result,"monochrome",10)==0) pContext->mode=eMODE_MONOCHROME;
+			else if (strncmp(result,"low_ansi2",9)==0) pContext->mode=eMODE_LOW_ANSI2;
+			else if (strncmp(result,"low_ansi",8)==0) pContext->mode=eMODE_LOW_ANSI;
+			else if (strncmp(result,"high_ansi2",10)==0) pContext->mode=eMODE_HIGH_ANSI2;
 			else if (strncmp(result,"high_ansi",9)==0) pContext->mode=eMODE_HIGH_ANSI;
+			else if (strncmp(result,"sixel",5)==0) pContext->mode=eMODE_SIXEL;
 		}
 		if (retrievefromini(f_inifile,"[DEFAULTGUI]","align",result,sizeof(result)))
 		{
@@ -777,6 +797,7 @@ int default_open(void* hContext,FILE *f_inifile,int argc,char** argv)
 				printf("unknown parameter for -vmode. please use one of\n");
 				printf("none ");
 				printf("monochrome ");
+				printf("monochrome_inv ");
 				printf("low_ansi ");
 				printf("low_ansi2 ");
 				printf("high_ansi ");

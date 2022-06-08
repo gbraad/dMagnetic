@@ -31,14 +31,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "linea.h"
 #include <stdio.h>
 
-#define	READ_INT32ME(ptr,idx)	(\
-	(((tVM68k_ulong)((ptr)[((idx)+1)])&0xff)<<24)	|\
-	(((tVM68k_ulong)((ptr)[((idx)+0)])&0xff)<<16)	|\
-	(((tVM68k_ulong)((ptr)[((idx)+3)])&0xff)<< 8)	|\
-	(((tVM68k_ulong)((ptr)[((idx)+2)])&0xff)<< 0)	|\
-	0)
-
-
 typedef struct _tGFX2_properties
 {
 	tVM68k_bool is_animation;

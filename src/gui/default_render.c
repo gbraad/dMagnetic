@@ -143,8 +143,19 @@ int default_render_lowansi(char* allowed,tPicture* picture,int rows,int cols)
 	int maxpcnt,maxp;
 	int accux,accuy;
 	cnt0=0;
-	// step one:	// find a good substitute for the palette.	
-	default_palette(picture,maxplut);
+	// step one:	// find a good substitute for the palette.
+	if (picture->pictureType==PICTURE_C64)
+	{
+		// the c64 had a fixed palette.
+	
+		maxplut[ 0]=0x0;maxplut[ 1]=0xe;maxplut[ 2]=0x1;maxplut[ 3]=0x6;	// black, white, red, cyan
+		maxplut[ 4]=0x5;maxplut[ 5]=0x2;maxplut[ 6]=0x4;maxplut[ 7]=0xb;	// purple, green, blue, yellow
+		maxplut[ 8]=0x9;maxplut[ 9]=0x3;maxplut[10]=0xd;maxplut[11]=0x8;	// orange, brown, pink, dark grey
+		maxplut[12]=0x7;maxplut[13]=0xa;maxplut[14]=0xc;maxplut[15]=0xf;	// medium grey, light green, light blue, light grey
+		
+	} else {
+		default_palette(picture,maxplut);
+	}
 
 	// step 2: render the picture. use the color and the character that best represents a 8x8 block.
 	y=0;
@@ -200,16 +211,6 @@ int default_render_lowansi(char* allowed,tPicture* picture,int rows,int cols)
 						int x2,y2;
 						int line,row;
 
-/*
-// okay
-						row=k/8;
-						line=k%8;
-
-						x2=x+4-1*line;
-						y2=y+4-1*row;
-
-*/
-// okay
 						row=k/8;
 						line=k%8;
 
@@ -270,6 +271,8 @@ int default_render_lowansi2(char* allowed,tPicture* picture,int rows,int cols)
 	int lastx,lasty;
 	cnt0=0;
 	// render the picture. use the color and the character that best represents a 8x8 block.
+
+
 	y=0;
 	accux=accuy=0;
 	lasty=0;
@@ -299,19 +302,21 @@ int default_render_lowansi2(char* allowed,tPicture* picture,int rows,int cols)
 						for (l=lasty;l<=i;l++)
 						{
 							int p;
-							p=default_2bit_to_3bitconverstion(picture->halftones,picture->palette[(int)picture->pixels[k+l*picture->width]]);
+							p=default_2bit_to_3bitconverstion(picture->pictureType,picture->palette[(int)picture->pixels[k+l*picture->width]]);
 							redsum  +=(p>>8)&0xf;
 							greensum+=(p>>4)&0xf;
 							bluesum +=(p>>0)&0xf;
 							pixcnt++;
 						}
 					}
+					
 					lastx=j;
+
 					maxp2=default_findrgbcluster(redsum/pixcnt,greensum/pixcnt,bluesum/pixcnt);
 
 					
 
-					if (picture->halftones) mul=2;
+					if (picture->pictureType==PICTURE_HALFTONE) mul=2;
 					else mul=1;
 					scalex=(j-x)/(8*mul);
 					scaley=(i-y)/(8*mul);
@@ -408,7 +413,7 @@ int default_render_monochrome(char* greyscales,int inverted,tPicture* picture,in
 	int grey;
 	int mingrey,maxgrey;
 	int cnt;
-	int cnt2;
+	int pixcnt;
 	int p;
 	int scalenum=strlen(greyscales);
 	accux=accuy=0;
@@ -434,7 +439,7 @@ int default_render_monochrome(char* greyscales,int inverted,tPicture* picture,in
 					accux-=picture->width;		
 					// at this point, a rectangle between y_up,y_down, x_left,x_right contains the pixels that need to be greyscaled.
 					grey=0;
-					cnt2=0;
+					pixcnt=0;
 					for (k=y_up;k<y_down;k++)
 					{
 						for (l=x_left;l<x_right;l++)
@@ -443,10 +448,10 @@ int default_render_monochrome(char* greyscales,int inverted,tPicture* picture,in
 							grey+=(picture->palette[p]>>8)&0x7;	// red
 							grey+=(picture->palette[p]>>4)&0x7;	// green
 							grey+=(picture->palette[p]>>0)&0x7;	// blue
-							cnt2++;
+							pixcnt++;
 						}
 					}
-					grey/=cnt2;
+					grey/=pixcnt;
 						
 					if (cnt==0 || grey>maxgrey) maxgrey=grey;
 					if (cnt==0 || grey<mingrey) mingrey=grey;
@@ -481,7 +486,7 @@ int default_render_monochrome(char* greyscales,int inverted,tPicture* picture,in
 					
 					// at this point, a rectangle between y_up,y_down, x_left,x_right contains the pixels that need to be greyscaled.
 					grey=0;
-					cnt2=0;
+					pixcnt=0;
 					for (k=y_up;k<y_down;k++)
 					{
 						for (l=x_left;l<x_right;l++)
@@ -490,10 +495,10 @@ int default_render_monochrome(char* greyscales,int inverted,tPicture* picture,in
 							grey+=(picture->palette[p]>>8)&0x7;	// red
 							grey+=(picture->palette[p]>>4)&0x7;	// green
 							grey+=(picture->palette[p]>>0)&0x7;	// blue
-							cnt2++;
+							pixcnt++;
 						}
 					}
-					grey/=cnt2;
+					grey/=pixcnt;
 					grey-=mingrey;
 					grey*=(scalenum-1);
 					grey/=(maxgrey-mingrey);

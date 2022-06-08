@@ -22,49 +22,14 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, 
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
 */
+#ifndef	LOADER_D64_H
+#define	LOADER_D64_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "picture.h"
-#include "gfx1loader.h"
+int loader_d64(char* d64name,
+		char *magbuf,int* magsize,
+		char* gfxbuf,int* gfxsize);
 
-#define	MAXGFXSIZE	(1<<22)
-
-int main(int argc,char** argv)
-{
-	FILE *f;
-	int picnum;
-	int i,j;
-	void* gfxloader;
-	int gfxsize;
-#define	MAXXPM	(1<<20)
-	char* xpm;
-
-	tPicture picture;
-	fprintf(stderr,"*** dMagnetic- magtest\n");
-	fprintf(stderr,"*** Use at your own risk\n");
-	fprintf(stderr,"*** (C)opyright 2020 by dettus@dettus.net\n");
-	fprintf(stderr,"*****************************************\n");	
-	fprintf(stderr,"\n");
-
-
-	if (argc!=3)
-	{
-		fprintf(stderr,"please run with %s GFXFILE.gfx PICNUM >output.xpm\n",argv[0]);
-		return 0;
-	}
-	gfxloader=malloc(MAXGFXSIZE);
-	picnum=atoi(argv[2]);
-	f=fopen(argv[1],"rb");
-	gfxsize=fread(gfxloader,sizeof(char),MAXGFXSIZE,f);		
-	fclose(f);
-
-	gfxloader_unpackpic(gfxloader,gfxsize,0,picnum,NULL,&picture,0);
-	xpm=malloc(MAXXPM);
-	gfxloader_picture2xpm(&picture,xpm,MAXXPM);
-	printf("%s\n",xpm);
-	free(xpm);
-	return 0;
-}
+#endif

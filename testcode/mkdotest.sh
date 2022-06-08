@@ -1,47 +1,21 @@
 #!/bin/sh
 
-echo "-------------[ netbsd ]------------"
-echo	"\t cd \${WRKSRC}/testcode;  if [ true \\"
-for I in none monochrome low_ansi high_ansi sixel
-do
-	echo "\t\t-a \`echo Hello | ../dMagnetic -ini ../dMagnetic.ini \\"
-	echo "\t\t\t-mag minitest.mag -gfx minitest.gfx \\"
-	echo "\t\t\t-vmode "$I" -vcols 300 -vrows 300 \\"
-	echo -n "\t\t| md5 \`== "
-	echo -n `echo Hello | ../dMagnetic -ini ../dMagnetic.ini -mag minitest.mag -gfx minitest.gfx -vmode $I -vcols 300 -vrows 300 | md5sum | awk -F" " '{ print $1; }' -`
-	echo " \\"
-done
-echo "\t\t]; \\"
-echo "\t\tthen echo ok; else echo expected output not seen; exit 1; fi"
-echo
+export SHA256_CMD=sha256sum
+export ECHO_CMD=echo
+export AWK_CMD=awk
 
-echo "-------------[ openbsd ]------------"
-echo	"\t cd \${WRKSRC}/testcode;  if [ true \\"
-for I in none monochrome low_ansi high_ansi sixel
-do
-	echo "\t\t-a \`echo Hello | ../dMagnetic -ini ../dMagnetic.ini \\"
-	echo "\t\t\t-mag minitest.mag -gfx minitest.gfx \\"
-	echo "\t\t\t-vmode "$I" -vcols 300 -vrows 300 \\"
-	echo -n "\t\t| sha256 -b \`== "
-	echo -n `echo Hello | ../dMagnetic -ini ../dMagnetic.ini -mag minitest.mag -gfx minitest.gfx -vmode $I -vcols 300 -vrows 300 | sha256 -b | awk -F" " '{ print $1; }' -`
-	echo " \\"
-done
-echo "\t\t]; \\"
-echo "\t\tthen echo ok; else echo expected output not seen; exit 1; fi"
-echo
+echo "export SHA256_CMD="$SHA256_CMD
+echo "export ECHO_CMD="$ECHO_CMD
+echo "export AWK_CMD="$AWK_CMD
 
-echo "-------------[ freebsd ]------------"
-echo	"\t cd \${WRKSRC}/testcode;  if [ true \\"
-for I in none monochrome low_ansi high_ansi sixel
+echo "\tif [ true \\"
+for I in none monochrome monochrome_inv low_ansi low_ansi2 high_ansi high_ansi2 sixel
 do
-	echo "\t\t-a \`echo Hello | ../dMagnetic -ini ../dMagnetic.ini \\"
-	echo "\t\t\t-mag minitest.mag -gfx minitest.gfx \\"
-	echo "\t\t\t-vmode "$I" -vcols 300 -vrows 300 \\"
-	echo -n "\t\t| sha256 \`== "
-	echo -n `echo Hello | ../dMagnetic -ini ../dMagnetic.ini -mag minitest.mag -gfx minitest.gfx -vmode $I -vcols 300 -vrows 300 | sha256sum | awk -F" " '{ print $1; }' -`
-	echo " \\"
+	(
+		echo -n "\${ECHO_CMD} Hello | ./dMagnetic -ini dMagnetic.ini -vmode "$I" -vcols 300 -vrows 300 -vecho -sres 1024x768 -mag testcode/minitest.mag | \${SHA256_CMD} | \${AWK_CMD} -F' ' '{ print \$1; }' - "	
+	)	>tmp1.sh
+	export TEST_OUT=`sh tmp1.sh`
+	echo "\t\t-a \"\``cat tmp1.sh`\`\" = \""$TEST_OUT"\" \\"
 done
-echo "\t\t]; \\"
-echo "\t\tthen echo ok; else echo expected output not seen; exit 1; fi"
-echo
+echo "\t] ; then echo OK ; else echo \"expected output not seen\"; exit 1; fi"
 

@@ -34,12 +34,5 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // this function is extracting the picture from the .gfx file and converts it into something easier to handle.
 int gfxloader_unpackpic(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte version,int picnum,tVM68k_ubyte* picname,tPicture* pPicture,int egamode);
 
-
-// those function can convert the picture into an xpm.
-// this one calculates the space needed for the final picture
-int gfxloader_picture_calcxpmsize(tPicture* pPicture,int* xpmsize);
-// this one converts it.
-int gfxloader_picture2xpm(tPicture* pPicture,char* xpm,int xpmspace);
-
 #endif
 

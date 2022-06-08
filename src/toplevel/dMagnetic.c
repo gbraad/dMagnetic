@@ -38,6 +38,31 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define	MAXGFXSIZE	(1<<22)
 
 
+void dMagnetic_loaderfailed_message(char* argv0)
+{
+	fprintf(stderr,"Please run with %s [-ini dMagnetic.ini] GAME\n",argv0);
+	fprintf(stderr," where GAME is one of\n");
+	fprintf(stderr,"    pawn       To play \"The Pawn\"\n");
+	fprintf(stderr,"    guild      To play \"The Guild of Thieves\"\n");
+	fprintf(stderr,"    jinxter    To play \"Jinxter\"\n");
+	fprintf(stderr,"    corruption To play \"Corruption\"\n");
+	fprintf(stderr,"    fish       To play \"Fish!\"\n");
+	fprintf(stderr,"    myth       To play \"Myth\"\n");
+	fprintf(stderr,"    wonderland To play \"Wonderland\"\n");
+	fprintf(stderr,"\n");
+	fprintf(stderr,"or one of the following\n");
+	fprintf(stderr,"\n");
+	fprintf(stderr,"%s -mag MAGFILE.mag\n",argv0);
+	fprintf(stderr,"%s -msdosdir DIRECTORY/\n",argv0);
+	fprintf(stderr,"%s -tworsc DIRECTORY/TWO.RSC\n",argv0);
+	fprintf(stderr,"%s -d64 IMAGE1.d64,IMAGE2.d64\n",argv0);
+	fprintf(stderr,"\n");
+	fprintf(stderr,"You can get the .mag and .gfx files from\n");
+	fprintf(stderr," https://msmemorial.if-legends.org/\n");
+	fprintf(stderr,"\n");
+	fprintf(stderr,"To get a more detailed help, please run\n");
+	fprintf(stderr," %s --help\n",argv0);
+}
 int dMagnetic_init(void** hVM68k,void** hLineA,void* pSharedMem,int memsize,char* magbuf,int magsize,char* gfxbuf,int gfxsize)
 {
 	int sizevm68k;
@@ -159,23 +184,7 @@ int main(int argc,char** argv)
 	}	
 	if (argc<2)
 	{
-		fprintf(stderr,"Please run with %s [-ini dMagnetic.ini] GAME\n",argv[0]);
-		fprintf(stderr," where GAME is one of\n");
-		fprintf(stderr,"    pawn       To play \"The Pawn\"\n");
-		fprintf(stderr,"    guild      To play \"The Guild of Thieves\"\n");
-		fprintf(stderr,"    jinxter    To play \"Jinxter\"\n");
-		fprintf(stderr,"    corruption To play \"Corruption\"\n");
-		fprintf(stderr,"    fish       To play \"Fish!\"\n");
-		fprintf(stderr,"    myth       To play \"Myth\"\n");
-		fprintf(stderr,"    wonderland To play \"Wonderland\"\n");
-		fprintf(stderr,"or\n");
-		fprintf(stderr,"%s -mag MAGFILE.mag\n",argv[0]);
-		fprintf(stderr,"\n");
-		fprintf(stderr,"You can get the .mag and .gfx files from\n");
-		fprintf(stderr," https://msmemorial.if-legends.org/\n");
-		fprintf(stderr,"\n");
-		fprintf(stderr,"To get a more detailed help, please run\n");
-		fprintf(stderr," %s --help\n",argv[0]);
+		dMagnetic_loaderfailed_message(argv[0]);
 		return 0;		
 	}
 	if ((retrievefromcommandline(argc,argv,"--version",NULL,0))
@@ -236,6 +245,7 @@ int main(int argc,char** argv)
 		printf("-msdosdir DIR/      to provide the game binaries from MSDOS\n");
 		printf("-tworsc DIR/TWO.RSC to use resource files from Wonderland\n");
 		printf("                    or The Magnetic Scrolls Collection Vol.1\n");
+		printf("-d64 m1.d64,m2.d64  or use the D64 images. (Seperated by ,)\n");
 		printf("\n");
 		printf("OPTIONAL PARAMETERS\n");
 		printf("-rmode RANDOMMODE  where mode is one of\n  [");
@@ -273,29 +283,39 @@ int main(int argc,char** argv)
 	if ((retrievefromcommandline(argc,argv,"--helpini",NULL,0))
 	||  (retrievefromcommandline(argc,argv,"-helpini",NULL,0)))
 	{
-		printf("Maybe you need to create a file called dMagnetic.ini\n");
-		printf("Place it in your home directory, with the following content:\n");
-		printf("\n");
-		printf("--------------------------------------------------------------------------------\n");
+		printf(";Maybe you need to create a file called dMagnetic.ini\n");
+		printf(";Place it in your home directory, with the following content:\n");
+		printf(";\n");
+		printf(";-------------------------------------------------------------------------------\n");
 		printf(";you can download the files from https://msmemorial.if-legends.org/magnetic.php\n");
 		printf("[FILES]\n");
 		printf("pawnmag=/usr/local/share/games/magneticscrolls/pawn.mag\n");
 		printf("pawngfx=/usr/local/share/games/magneticscrolls/pawn.gfx\n");
 		printf(";pawnmsdos=/usr/local/share/games/magneticscrolls/msdosversions/PAWN\n");
+		printf(";pawnd64=/d64/PAWN1.d64,/d64/PAWN2.d64\n");
 		printf("guildmag=/usr/local/share/games/magneticscrolls/guild.mag\n");
 		printf("guildgfx=/usr/local/share/games/magneticscrolls/guild.gfx\n");
 		printf(";guildmsdos=/usr/local/share/games/magneticscrolls/msdosversions/GUILD\n");
 		printf(";guildtworsc=/usr/local/share/games/magneticscrolls/MSC/GTWO.RSC\n");
+		printf(";guild64=/d64/GUILD1.d64,/d64/GUILD2.d64\n");
 		printf("jinxtermag=/usr/local/share/games/magneticscrolls/jinxter.mag\n");
 		printf("jinxtergfx=/usr/local/share/games/magneticscrolls/jinxter.gfx\n");
+		printf(";jinxtermsdos=/usr/local/share/games/magneticscrolls/msdosversions/JINXTER\n");
+		printf(";jinxterd64=/d64/JINXTER1.d64,/d64/JINXTER2.d64\n");
 		printf("corruptionmag=/usr/local/share/games/magneticscrolls/ccorrupt.mag\n");
 		printf("corruptiongfx=/usr/local/share/games/magneticscrolls/ccorrupt.gfx\n");
+		printf(";corruptionmsdos=/usr/local/share/games/magneticscrolls/msdosversions/CORRUPT\n");
 		printf(";corruptiontworsc=/usr/local/share/games/magneticscrolls/MSC/CTWO.RSC\n");
+		printf(";corruptiond64=/d64/CORRUPT1.d64,/d64/CORRUPT2.d64\n");
 		printf("fishmag=/usr/local/share/games/magneticscrolls/fish.mag\n");
 		printf("fishgfx=/usr/local/share/games/magneticscrolls/fish.gfx\n");
+		printf(";fishmsdos=/usr/local/share/games/magneticscrolls/msdosversions/FISH\n");
 		printf(";fishtworsc=/usr/local/share/games/magneticscrolls/MSC/FTWO.RSC\n");
+		printf(";fishd64=/d64/FISH1.d64,/d64/FISH2.d64\n");
 		printf("mythmag=/usr/local/share/games/magneticscrolls/myth.mag\n");
 		printf("mythgfx=/usr/local/share/games/magneticscrolls/myth.gfx\n");
+		printf(";mythmsdos=/usr/local/share/games/magneticscrolls/msdosversions/MYTH\n");
+		printf(";mythd64=/usr/local/share/games/magneticscrolls/MYTH.d64\n");
 		printf("wonderlandmag=/usr/local/share/games/magneticscrolls/wonder.mag\n");
 		printf("wonderlandgfx=/usr/local/share/games/magneticscrolls/wonder.gfx\n");
 		printf(";wonderlandtworsc=/usr/local/share/games/magneticscrolls/WONDER/TWO.RSC\n");
@@ -315,12 +335,14 @@ int main(int argc,char** argv)
 		printf(";mode=monochrome\n");
 		printf(";mode=monochrome_inv\n");
 		printf(";mode=low_ansi\n");
-		printf(";mode=low_ansi2\n");
-		printf("mode=high_ansi\n");
+		printf("mode=low_ansi2\n");
+		printf(";mode=high_ansi\n");
 		printf(";mode=high_ansi2\n");
-		printf("low_ansi_characters=\\\\/|=\n");
+		printf(";mode=sixel\n");
+		printf("low_ansi_characters=\\\\/|=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\n");
 		printf("monochrome_characters= .-=+*x#@$X\n");
-		printf("--------------------------------------------------------------------------------\n");
+		printf("sixel_resolution=800x600\n");
+		printf(";-------------------------------------------------------------------------------\n");
 		return 1;
 	}
 	if (retrievefromcommandline(argc,argv,"-ini",inifilename,sizeof(inifilename))) 
@@ -440,6 +462,7 @@ int main(int argc,char** argv)
 		f_inifile=fopen(inifilename,"rb");
 		if (loader_init(argc,argv,f_inifile, magbuf,&magsize,gfxbuf,&gfxsize))
 		{
+			dMagnetic_loaderfailed_message(argv[0]);
 			return 1;
 		}
 

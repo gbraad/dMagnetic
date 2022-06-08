@@ -39,8 +39,8 @@ int gfxloader_gfx1(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte versio
 	int retval;
 
 	tVM68k_ulong picoffs;
-	tVM68k_uword height;
-	tVM68k_uword width;
+	tVM68k_uword	width;
+	tVM68k_uword	height;
 	tVM68k_uword tablesize;
 	tVM68k_ulong datasize;
 	
@@ -50,7 +50,7 @@ int gfxloader_gfx1(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte versio
 	tVM68k_ubyte curbyte;
 	tVM68k_ubyte curpixel;
 	
-	pPicture->halftones=0;	// only gfx3 offers halftone pictures
+	pPicture->pictureType=PICTURE_DEFAULT;
 	retval=0;
 	picnum&=0xffff;
 	picoffs=READ_INT32BE(gfxbuf,8+4*picnum);	// the .gfx file starts with the index pointers to the actual picture data.
@@ -98,10 +98,9 @@ int gfxloader_gfx1(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte versio
 				nxt=READ_INT16BE(gfxbuf,picoffs+0x42+2*tableidx);
 				if ((curbyte>>bitidx)&1)	// bit was set. read the higher 8 bits.
 				{
-					tableidx=(nxt>>8)&0xff;
-				} else {
-					tableidx=(nxt)&0xff;	// bit was not set. read the lower 8 bits.
+					nxt>>=8;
 				}
+				tableidx=(nxt)&0xff;	// bit was not set. read the lower 8 bits.
 				if (bitidx==0)
 				{
 					curbyte=READ_INT8BE(gfxbuf,byteidx);
@@ -133,14 +132,6 @@ int gfxloader_gfx1(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte versio
 
 }
 
-// the gfx2 format introduced MIXED ENDIAN. 
-#define READ_INT32ME(ptr,idx)   (\
-        (((tVM68k_ulong)((ptr)[((idx)+1)])&0xff)<<24)   |\
-        (((tVM68k_ulong)((ptr)[((idx)+0)])&0xff)<<16)   |\
-        (((tVM68k_ulong)((ptr)[((idx)+3)])&0xff)<< 8)   |\
-        (((tVM68k_ulong)((ptr)[((idx)+2)])&0xff)<< 0)   |\
-        0)
-
 int gfxloader_gfx2(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte version,tVM68k_ubyte* picname,tPicture* pPicture)
 {
         int directorysize;
@@ -153,7 +144,7 @@ int gfxloader_gfx2(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte versio
 
 	pPicture->width=0;
 	pPicture->height=0;
-	pPicture->halftones=0;	// only gfx3 offers halftone pictures
+	pPicture->pictureType=PICTURE_DEFAULT;	// only gfx3 offers halftone pictures
 	// the gfx2 buffer starts with the magic value, and then a directory
 	directorysize=READ_INT16BE(gfxbuf,4);
 
@@ -169,7 +160,6 @@ int gfxloader_gfx2(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte versio
 		j=0;
 		do
 		{
-
 			c1=gfxbuf[6+i+j];	
 			c2=picname[j];
 			if ((c1&0x5f)!=(c2&0x5f)) found=0;	// compare, uppercase
@@ -179,7 +169,6 @@ int gfxloader_gfx2(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte versio
 		if (found)
 		{
 			offset=READ_INT32BE(gfxbuf,i+6+8);		// this is the offset from the beginning of the gfxbuf
-//			length=READ_INT32BE(gfxbuf,i+6+12);
 		}
 	}
 	// TODO: sanity check. is length-48==height*width/2?
@@ -300,7 +289,7 @@ int gfxloader_gfx3(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte versio
 	if (!gfxsize) return 0;		// there is no picture data available. nothing to do.
 
 	picnum&=0xffff;
-	pPicture->halftones=1;	// this format offers half tones.
+	pPicture->pictureType=PICTURE_HALFTONE;	// this format offers half tones.
 
 	indexlen=READ_INT32BE(gfxbuf, 4);
 	disk1len=READ_INT32BE(gfxbuf, 8);
@@ -547,7 +536,7 @@ int gfxloader_gfx4(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte versio
 	int j;
 	pPicture->width=0;
 	pPicture->height=0;
-	pPicture->halftones=0;	// only gfx3 offers halftone pictures
+	pPicture->pictureType=PICTURE_DEFAULT;
 	// the gfx4 buffer starts with the magic value, and then a directory
 	retval=0;
 	found=0;
@@ -749,77 +738,249 @@ int gfxloader_gfx4(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte versio
 	return retval;
 }
 
+int gfxloader_gfx5(unsigned char* gfxbuf,int gfxsize,int version,int picnum,tPicture* pPicture)
+{
+	unsigned char tmpbuf[6080+760+760];	// maximum size for a picture. plus room for the threebuf
+	unsigned char colour[4]={0};
+	int format;
+	int i;
+	int offs;
+
+
+	unsigned char rgbvalues[16][3]={
+		{  0,  0,  0},
+		{255,255,255},
+		{129, 51, 56},
+		{117,206,200},
+
+		{142, 60,151},
+		{ 86,172,77},
+		{ 46, 44,155},
+		{237,241,113},
+
+		{142, 80, 41},
+		{ 85, 56,  0},
+		{196,108,113},
+		{ 74, 74, 74},
+
+		{123,123,123},
+		{169,255,159},
+		{112,109,235},
+		{178,178,178}
+	};
+
+
+	offs=READ_INT32BE(gfxbuf,4+4*picnum);
+	pPicture->width=160*2;	// make it twice as wide as it actually is.
+	pPicture->height=152;
+	pPicture->pictureType=PICTURE_C64;	// only gfx3 offers halftone pictures
+	format=0;
+
+	for (i=0;i<16;i++)
+	{
+		unsigned int red,green,blue;
+		red=rgbvalues[i][0];
+		green=rgbvalues[i][1];
+		blue=rgbvalues[i][2];
+
+		red*=8;green*=8;blue*=8;
+		red/=255;green/=255;blue/=255;
+		red&=0xf;green&=0xf;blue&=0xf;
+		pPicture->palette[i]=(red<<8)|(green<<4)|(blue);
+	}
+
+
+	///////////// dehuff /////////////
+	{
+		int outcnt;
+		int expected;
+		int treeidx;
+		int bitcnt;
+		int byteidx;
+		int threecnt;
+		int rlenum;
+		int rlecnt;
+		unsigned char rlebuf[256];
+		unsigned char threebuf[3]={0};
+		unsigned char* ptr;
+		unsigned char byte=0;
+		unsigned char rlechar;
+
+		treeidx=0;
+		expected=6080;
+		outcnt=-1;
+		bitcnt=0;
+		byteidx=127;
+		ptr=&gfxbuf[offs];
+		threecnt=0;
+		rlechar=0;
+
+		rlenum=0;
+		rlecnt=0;
+
+		while (outcnt<expected)
+		{
+			unsigned char branchl,branchr,branch;
+			if (bitcnt==0)
+			{
+				bitcnt=8;
+				byte=ptr[byteidx++];
+			}
+			branchl=ptr[2*treeidx+1];
+			branchr=ptr[2*treeidx+2];
+			branch=(byte&0x80)?branchl:branchr;
+			byte<<=1;bitcnt--;
+			if (branch&0x80)
+			{
+				treeidx=branch&0x7f;
+			} else {
+				treeidx=0;
+				if (threecnt==3)
+				{
+					int i;
+					threecnt=0;
+					for (i=0;i<3;i++) 
+					{
+						threebuf[i]|=((branch<<2)&0xc0);
+						branch<<=2;
+					}
+					if (outcnt==-1)
+					{
+						outcnt=0;
+						if (version==0) 	// PAWN specific
+						{
+							colour[0]=threebuf[0]&0xf;	// for when the bitmask is 00
+							colour[3]=threebuf[1]&0xf;	// for when the bitmask is 11
+							rlenum=threebuf[2];
+							expected=6144+760;
+						} else {
+							format=threebuf[0];
+							if (threebuf[0]==0x00)
+							{
+								expected=6080+380+760;	// after the bitmask comes the colourmap
+								rlenum=0;
+								rlecnt=0;
+								rlechar=tmpbuf[outcnt++]=threebuf[2];
+							} else {
+								colour[0]=threebuf[1]&0xf;	// for when the bitmask is 00
+								colour[3]=threebuf[1]&0xf;	// for when the bitmask is 11
+								expected=6080+760+760;	// after the bitmask comes the colourmap
+								rlecnt=0;
+								rlenum=threebuf[2];
+							}
+						}
+					} else {
+						for (i=0;i<3;i++)
+						{
+							if (rlecnt<rlenum) 
+							{
+								rlebuf[rlecnt++]=threebuf[i];
+							} else {
+								int j;
+								int rle;
+								rle=0;
+								for (j=0;j<rlecnt;j++)
+								{
+									if (rlebuf[j]==threebuf[i]) rle=(j+1);
+								}
+								if (rle)
+								{
+									for (j=0;j<rle;j++)
+									{
+										if (outcnt<expected) tmpbuf[outcnt++]=rlechar;
+									}
+								} else {
+									if (outcnt<expected) rlechar=tmpbuf[outcnt++]=threebuf[i];
+								}
+							}
+						}
+					}
+				} else {
+					threebuf[threecnt++]=branch;
+				}
+			}
+		}	
+	}
+
+	///////////// render the picture ///////////////
+
+	{
+		int colidx;
+		int maskidx;
+		int x,y;
+		int i,j;
+
+		x=0;
+		y=0;
+		for (maskidx=0,colidx=0;maskidx<6080;maskidx+=8,colidx++)
+		{
+			// prepare everything for rendering a 4x8 block
+			
+			if (version==0)
+			{
+				colour[1]=(tmpbuf[6144+colidx]>>4)&0xf;
+				colour[2]=(tmpbuf[6144+colidx]>>0)&0xf;
+			} else if (format==0x00) {
+				colour[1]=(tmpbuf[6080+380+colidx]>>4)&0xf;
+				colour[2]=(tmpbuf[6080+380+colidx]>>0)&0xf;
+				if ((colidx%2)==0)
+				{
+					colour[3]=(tmpbuf[6080+colidx/2]>>4)&0xf;
+				} else {
+					colour[3]=(tmpbuf[6080+colidx/2]>>0)&0xf;
+				}
+			} else {
+				colour[1]=(tmpbuf[6080+760+colidx]>>4)&0xf;
+				colour[2]=(tmpbuf[6080+760+colidx]>>0)&0xf;
+				colour[3]=(tmpbuf[6080+colidx]&0xf);
+			}
+			for (i=0;i<8;i++)
+			{
+				int y2;
+				unsigned char mask;
+				y2=y+i;
+				mask=tmpbuf[maskidx+i];
+				for (j=0;j<4;j++)
+				{
+					int x2;
+					unsigned char col;
+					x2=x+j;
+					col=colour[(mask>>6)&0x3];
+					pPicture->pixels[0+2*x2+y2*(pPicture->width)]=col;	// render the picture T W I C E as wide as it is.
+					pPicture->pixels[1+2*x2+y2*(pPicture->width)]=col;
+					mask<<=2;	
+				}
+			}
+			x+=4;
+			if (x==160) 
+			{
+				x=0;
+				y+=8;
+			}
+		}	
+	}
+	return 0;
+}
+
+
+
+
 int gfxloader_unpackpic(tVM68k_ubyte* gfxbuf,tVM68k_ulong gfxsize,tVM68k_ubyte version,int picnum,tVM68k_ubyte* picname,tPicture* pPicture,int egamode)
 {
 	int retval;
 
 	retval=0;
+	picnum&=0x3f;	// there are no more than 30 pictures in each game. except Wonderland. 
 
 	if (gfxbuf==NULL || pPicture==NULL) return -1;
-	if (gfxbuf[0]=='M' && gfxbuf[1]=='a' && gfxbuf[2]=='P' && gfxbuf[3]=='i') retval=gfxloader_gfx1(gfxbuf,gfxsize,version,picnum,pPicture);
-	if (gfxbuf[0]=='M' && gfxbuf[1]=='a' && gfxbuf[2]=='P' && gfxbuf[3]=='2') retval=gfxloader_gfx2(gfxbuf,gfxsize,version,picname,pPicture);
-	if (gfxbuf[0]=='M' && gfxbuf[1]=='a' && gfxbuf[2]=='P' && gfxbuf[3]=='3') retval=gfxloader_gfx3(gfxbuf,gfxsize,version,picnum,pPicture);
-	if (gfxbuf[0]=='M' && gfxbuf[1]=='a' && gfxbuf[2]=='P' && gfxbuf[3]=='4') retval=gfxloader_gfx4(gfxbuf,gfxsize,version,picname,pPicture,egamode);
+	if (gfxbuf[0]=='M' && gfxbuf[1]=='a' && gfxbuf[2]=='P')
+	{
+		if (gfxbuf[3]=='i') retval=gfxloader_gfx1(gfxbuf,gfxsize,version,picnum,pPicture);
+		if (gfxbuf[3]=='2') retval=gfxloader_gfx2(gfxbuf,gfxsize,version,picname,pPicture);
+		if (gfxbuf[3]=='3') retval=gfxloader_gfx3(gfxbuf,gfxsize,version,picnum,pPicture);
+		if (gfxbuf[3]=='4') retval=gfxloader_gfx4(gfxbuf,gfxsize,version,picname,pPicture,egamode);
+		if (gfxbuf[3]=='5') retval=gfxloader_gfx5(gfxbuf,gfxsize,version,picnum,pPicture);
+	}
 	return retval;
 }
-int gfxloader_picture_calcxpmsize(tPicture* pPicture,int* xpmsize)
-{
-	int calcsize;
 
-	if (pPicture==NULL || xpmsize==NULL) return -1;
-	calcsize=345;	// header of the xpm file, including the palette.
-	calcsize+=pPicture->height*(pPicture->width+1+1+2)+3;	// each line with the pixels starts and ends with "". in all but 1 cases, there is a ,\n at the end. the last line consists of a };\n\0. 
-	*xpmsize=calcsize;
-	return 0;
-
-}
-int gfxloader_picture2xpm(tPicture* pPicture,char* xpm,int xpmspace)
-{
-	int row;
-	int col;
-	int calcsize;
-	int pixelidx;
-	int xpmidx;
-	int i;
-	char *hex="0123456789abcdef";
-
-	if (xpm==NULL) return -1;	// invalid pointer
-	
-	if (gfxloader_picture_calcxpmsize(pPicture,&calcsize)) return -1;
-	if (xpmspace<calcsize) return -2;// too small
-
-	xpmidx=0;
-	snprintf(&xpm[xpmidx],76,"/* XPM */\nstatic char *xpm[] = {\n/* columns rows colors chars-per-pixel */\n");	// header
-	xpmidx+=75;
-	snprintf(&xpm[xpmidx],18,"\"%3d %3d 16 1 \",\n",pPicture->width,pPicture->height);	// the parameters
-	xpmidx+=17;
-	for (i=0;i<16;i++)
-	{
-		int red,green,blue;
-		red=(pPicture->palette[i]>>8)&0xf;
-		green=(pPicture->palette[i]>>4)&0xf;
-		blue=(pPicture->palette[i]>>0)&0xf;
-		snprintf(&xpm[xpmidx],19,"\"%c c #%02X%02X%02X\",\n",hex[i],0x20*red,0x20*green,0x20*blue);
-		xpmidx+=15;
-	}
-	snprintf(&xpm[xpmidx],14,"/* pixels */\n");
-	xpmidx+=13;
-	pixelidx=0;
-	for (row=0;row<pPicture->height;row++)
-	{
-		xpm[xpmidx++]='"';
-		for (col=0;col<pPicture->width;col++)
-		{
-			xpm[xpmidx++]=hex[(int)pPicture->pixels[pixelidx++]];
-		}
-		xpm[xpmidx++]='"';
-		if (row!=pPicture->height-1) xpm[xpmidx++]=',';
-		xpm[xpmidx++]='\n';
-	}
-	xpm[xpmidx++]='}';xpm[xpmidx++]=';';xpm[xpmidx++]='\n',xpm[xpmidx]=0;
-	if (xpmidx>=xpmspace) 
-	{
-		fprintf(stderr,"ERROR! POSSIBLE INTERNAL MEMORY VIOLATION DETECTED in gfxloader_picture2xpm\n");
-	}
-	return 0;
-}

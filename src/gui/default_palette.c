@@ -57,13 +57,13 @@ const unsigned short rgbcenters[16]={0x111,0x311,0x131,0x321,0x113,0x313,0x133,0
 
 
 
-unsigned short default_2bit_to_3bitconverstion(int halftones,unsigned short rgb)
+unsigned short default_2bit_to_3bitconverstion(ePictureType pictureType,unsigned short rgb)
 {
 	// halftone images have 2 bits per color channel. the others 3.
 	// the projection into the 3 bits in a linear fashion results in darkened colors.
 	int red,green,blue;
 	unsigned char halftonelut[4]={0,2,5,7};
-	if (!halftones) return rgb;
+	if (pictureType!=PICTURE_HALFTONE) return rgb;
 	
 	red  =halftonelut[(rgb>>8)&0x3];
 	green=halftonelut[(rgb>>4)&0x3];
@@ -127,7 +127,7 @@ int default_palette(tPicture* picture,unsigned char* maxplut)
 	for (i=0;i<16;i++)
 	{
 		unsigned short rgb;
-		rgb=default_2bit_to_3bitconverstion(picture->halftones,picture->palette[i]);
+		rgb=default_2bit_to_3bitconverstion(picture->pictureType,picture->palette[i]);
 
 
 		numcols[i]=0;
@@ -212,7 +212,7 @@ int default_palette(tPicture* picture,unsigned char* maxplut)
 		mask=1;
 		for (j=0;j<16;j++)
 		{
-			rgb=default_2bit_to_3bitconverstion(picture->halftones,picture->palette[j]);
+			rgb=default_2bit_to_3bitconverstion(picture->pictureType,picture->palette[j]);
 			if ((rgblut[i]&0xfff)==rgb)
 			{
 				unsigned char col;

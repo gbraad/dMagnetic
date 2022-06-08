@@ -71,7 +71,21 @@ The .mag and .gfx packages can be downloaded from https://msmemorial.if-legends.
 .Pp
 "Wonderland", and the "Magnetic Scrolls Collections" used a different framework, called "Magnetic Windows". This framework utilized a collection of resource files. By providing the name and the location of the second resource file "TWO.RSC", the names of the other ones can be computed.
 .Pp
-To avoid any form of misunderstanding, it is recommended to make sure that the .ini file is providing only one of the three methods. The other two should be commented out.
+Another option comes in the form of using .d64 images from the Commodore 64 release of the games. Those image files come in pairs, since the games occupied both sides of the floppy. A komma is used to seperate those two.
+.br
+;pawnd64=/games/d64/pawn1.d64,/games/d64/pawn2.d64
+.br
+;guildd64=/games/d64/guild1.d64,/games/d64/guild2.d64
+.br
+;jinxterd64=/games/d64/jinxter1.d64,/games/d64/jinxter2.d64
+.br
+;corruptiond64=/games/d64/corruption1.d64,/games/d64/corruption2.d64
+.br
+;fishd64=/games/d64/fish1.d64,/games/d64/fish2.d64
+.br
+;mythd64=/games/d64/myth.d64
+.Pp
+To avoid any form of misunderstanding, it is recommended to make sure that the .ini file is providing only one of the four methods. The other two should be commented out.
 .Sh SECTION [RANDOM]
 This section configures the random number generator.
 .Pp
@@ -142,6 +156,8 @@ pawngfx=/usr/local/share/games/magneticscrolls/pawn.gfx
 .br
 ;pawnmsdos=/usr/local/share/games/magneticscrolls/msdosversions/PAWN
 .br
+;pawnd64=/games/d64/pawn1.d64,/games/d64/pawn2.d64
+.br
 guildmag=/usr/local/share/games/magneticscrolls/guild.mag
 .br
 guildgfx=/usr/local/share/games/magneticscrolls/guild.gfx
@@ -150,9 +166,13 @@ guildgfx=/usr/local/share/games/magneticscrolls/guild.gfx
 .br
 ;guildtworsc=/games/magneticscrolls/MSC/GTWO.RSC
 .br
+;guildd64=/games/d64/guild1.d64,/games/d64/guild2.d64
+.br
 jinxtermag=/usr/local/share/games/magneticscrolls/jinxter.mag
 .br
 jinxtergfx=/usr/local/share/games/magneticscrolls/jinxter.gfx
+.br
+;jinxterd64=/games/d64/jinxter1.d64,/games/d64/jinxter2.d64
 .br
 corruptionmag=/usr/local/share/games/magneticscrolls/ccorrupt.mag
 .br
@@ -160,15 +180,21 @@ corruptiongfx=/usr/local/share/games/magneticscrolls/ccorrupt.gfx
 .br
 ;corruptiontworsc=/games/magneticscrolls/MSC/CTWO.RSC
 .br
+;corruptiond64=/games/d64/corruption1.d64,/games/d64/corruption2.d64
+.br
 fishmag=/usr/local/share/games/magneticscrolls/fish.mag
 .br
 fishgfx=/usr/local/share/games/magneticscrolls/fish.gfx
 .br
 ;fishtworsc=/games/magneticscrolls/MSC/FTWO.RSC
 .br
+;fishd64=/games/d64/fish1.d64,/games/d64/fish2.d64
+.br
 mythmag=/usr/local/share/games/magneticscrolls/myth.mag
 .br
 mythgfx=/usr/local/share/games/magneticscrolls/myth.gfx
+.br
+mythd64=/games/d64/myth.d64
 .br
 wonderlandmag=/usr/local/share/games/magneticscrolls/wonder.mag
 .br

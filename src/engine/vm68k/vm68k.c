@@ -148,6 +148,7 @@ int vm68k_singlestep(void *hVM68k,unsigned short opcode)
 	tVM68k_bool		direction;
 	
 	int retval;
+	int i;
 	
 	if (hVM68k==NULL) return VM68K_NOK_INVALID_PTR;
 	if (pVM68k->magic!=MAGICVALUE) return VM68K_NOK_INVALID_PARAMETER;
@@ -430,7 +431,6 @@ int vm68k_singlestep(void *hVM68k,unsigned short opcode)
 		case VM68K_INST_RTS:
 			retval=VM68K_OK;
 			POPLONGFROMSTACK(pVM68k,&next,next.pcr);
-			//next.pcr%=pVM68k->memsize;	// wonderland
 		break;
 		case VM68K_INST_ANDItoSR:
 		case VM68K_INST_EORItoSR:
@@ -487,7 +487,6 @@ int vm68k_singlestep(void *hVM68k,unsigned short opcode)
 			{
 				tVM68k_types datatype2;
 				tVM68k_uword bitmask;
-				int i;
 				datatype2=((opcode>>6)&1)?VM68K_LONG:VM68K_WORD;
 				retval=vm68k_resolve_ea(pVM68k,&next,datatype2,addrmode,reg2,VM68K_LEGAL_CONTROLALTERATEADDRESSING|VM68K_LEGAL_AM_PREDEC,&ea);
 				// special case: the memory decrement should only be performed when the bitmask says so
@@ -525,7 +524,6 @@ int vm68k_singlestep(void *hVM68k,unsigned short opcode)
 			{
 				tVM68k_types datatype2;
 				tVM68k_uword bitmask;
-				int i;
 				datatype2=((opcode>>6)&1)?VM68K_LONG:VM68K_WORD;
 				retval=vm68k_resolve_ea(pVM68k,&next,datatype2,addrmode,reg2,VM68K_LEGAL_CONTROLADDRESSING|VM68K_LEGAL_AM_POSTINC,&ea);
 				// special case: the memory increment should only be performed when the bitmask says so
@@ -612,7 +610,6 @@ int vm68k_singlestep(void *hVM68k,unsigned short opcode)
 			tVM68k_types datatype2;
 			tVM68k_ubyte count;
 			tVM68k_bool direction;
-			int i;
 			tVM68k_bool msb;
 			tVM68k_bool lsb;
 			tVM68k_ubyte bitnum;
@@ -738,9 +735,9 @@ int vm68k_singlestep(void *hVM68k,unsigned short opcode)
 				next.zflag=((operand2&operand1)==0);
 				switch (instruction)
 				{
-					case VM68K_INST_BCLRI:	result=~operand1&operand2;break;
-					case VM68K_INST_BSETB:	result=operand1|operand2;break;
-					case VM68K_INST_BCHGB:	result=operand1^operand2;break;
+					case VM68K_INST_BCLRI:	result=operand2&~operand1;break;
+					case VM68K_INST_BCHGB:	result=operand2^ operand1;break;
+					case VM68K_INST_BSETB:	result=operand2| operand1;break;
 					default:
 								result=0;
 								break;
@@ -844,7 +841,7 @@ int vm68k_singlestep(void *hVM68k,unsigned short opcode)
 		break;
 		default:
 		{
-			char tmp[16];
+			char tmp[32];
 			vm68k_get_instructionname(instruction,tmp);
 			printf("UNIMPLEMENTED opcode %04X = %s\n",opcode,tmp);
 			retval=VM68K_NOK_UNKNOWN_INSTRUCTION;
@@ -865,25 +862,13 @@ int vm68k_singlestep(void *hVM68k,unsigned short opcode)
 			pVM68k->sr|=(next.nflag)<<3;
 			pVM68k->sr|=(next.xflag)<<4;
 		}
-		pVM68k->a[0]=next.a[0];	
-		pVM68k->a[1]=next.a[1];	
-		pVM68k->a[2]=next.a[2];	
-		pVM68k->a[3]=next.a[3];	
-		pVM68k->a[4]=next.a[4];	
-		pVM68k->a[5]=next.a[5];	
-		pVM68k->a[6]=next.a[6];	
-		pVM68k->a[7]=next.a[7];	
-		pVM68k->d[0]=next.d[0];	
-		pVM68k->d[1]=next.d[1];	
-		pVM68k->d[2]=next.d[2];	
-		pVM68k->d[3]=next.d[3];	
-		pVM68k->d[4]=next.d[4];	
-		pVM68k->d[5]=next.d[5];	
-		pVM68k->d[6]=next.d[6];	
-		pVM68k->d[7]=next.d[7];	
+		for (i=0;i<8;i++)
+		{
+			pVM68k->a[i]=next.a[i];	
+			pVM68k->d[i]=next.d[i];	
+		}
 		if (next.mem_we)
 		{
-			int i;
 			for (i=0;i<next.mem_we;i++)
 			{
 #ifdef	DEBUG_PRINT
@@ -939,10 +924,6 @@ int vm68k_getNextOpcode(void* hVM68k,unsigned short* opcode)
 		printf(" --> %s\n",tmp);
 		fflush(stdout);
 	}
-
-	//if (*opcode==0x3031) breakme();
-	
-
 #endif
 
 	return VM68K_OK;	

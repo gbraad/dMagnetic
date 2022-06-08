@@ -42,8 +42,6 @@ gcc -g -c -o instmatcher.o instmatcher.c $INCFLAGS
 gcc -g -o instmatcher.app instmatcher.o $LDFLAGS -ldmagnetic
 gcc -g -c -o magtest.o magtest.c $INCFLAGS
 gcc -g -o magtest.app magtest.o $LDFLAGS -ldmagnetic
-gcc -g -c -o gfxtest.o gfxtest.c $INCFLAGS
-gcc -g -o gfxtest.app gfxtest.o $LDFLAGS -ldmagnetic
 
 md5sum *.app
 

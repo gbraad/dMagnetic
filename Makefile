@@ -38,8 +38,14 @@ INCFLAGS=-I$(PROJ_HOME)src/gui -I$(PROJ_HOME)src/toplevel -I$(PROJ_HOME)src/load
 OBJDIR=$(PROJ_HOME)obj/
 LINK=$(CC)
 LDFLAGS+="-L"$(OBJDIR)
+ECHO_CMD?=echo
+SHA256_CMD?=sha256
+AWK_CMD?=awk
 
 SOURCES_LOADER=	\
+	src/loader/loader_msdos.c	\
+	src/loader/loader_mw.c		\
+	src/loader/loader_d64.c		\
 	src/loader/maggfxloader.c
 
 SOURCES_LINEA=	\
@@ -93,8 +99,19 @@ install: all dMagnetic.1 dMagneticini.5
 
 
 dMagnetic:	$(OBJ_LOADER) $(OBJ_LINEA) $(OBJ_VM68K) $(OBJ_GUI) $(OBJ_TOPLEVEL)
-	$(LINK) -o $@ $(OBJ_LOADER) $(OBJ_LINEA) $(OBJ_VM68K) $(OBJ_GUI) $(OBJ_TOPLEVEL)
+	$(LINK) $(LDFLAGS) -o $@ $(OBJ_LOADER) $(OBJ_LINEA) $(OBJ_VM68K) $(OBJ_GUI) $(OBJ_TOPLEVEL)
 
 .c.o:
 	$(CC) $(CFLAGS) $(CFLAGS_EXTRA) $(INCFLAGS) -c -o $@ $<
 
+do-test:	dMagnetic
+	if [ true \
+		-a "`${ECHO_CMD} Hello | ./dMagnetic -ini dMagnetic.ini -vmode none -vcols 300 -vrows 300 -vecho -sres 1024x768 -mag testcode/minitest.mag | ${SHA256_CMD} | ${AWK_CMD} -F' ' '{ print $1; }' - `" = "70af45367a6ad1b612ceabd36fef309d4258abac275281a5541342ccf0a765cd" \
+		-a "`${ECHO_CMD} Hello | ./dMagnetic -ini dMagnetic.ini -vmode monochrome -vcols 300 -vrows 300 -vecho -sres 1024x768 -mag testcode/minitest.mag | ${SHA256_CMD} | ${AWK_CMD} -F' ' '{ print $1; }' - `" = "aae8070b0ca69ec099e3407859256765723c9daa9d18cc0e17916897febfa2f5" \
+		-a "`${ECHO_CMD} Hello | ./dMagnetic -ini dMagnetic.ini -vmode monochrome_inv -vcols 300 -vrows 300 -vecho -sres 1024x768 -mag testcode/minitest.mag | ${SHA256_CMD} | ${AWK_CMD} -F' ' '{ print $1; }' - `" = "5802834232c4bee199c0318b69a781c722a75b15486652bbcf3bb907c31eef8c" \
+		-a "`${ECHO_CMD} Hello | ./dMagnetic -ini dMagnetic.ini -vmode low_ansi -vcols 300 -vrows 300 -vecho -sres 1024x768 -mag testcode/minitest.mag | ${SHA256_CMD} | ${AWK_CMD} -F' ' '{ print $1; }' - `" = "b9795498b0ac1d458e39e6817142faafa99fec5e97b1dc450462f425d734d075" \
+		-a "`${ECHO_CMD} Hello | ./dMagnetic -ini dMagnetic.ini -vmode low_ansi2 -vcols 300 -vrows 300 -vecho -sres 1024x768 -mag testcode/minitest.mag | ${SHA256_CMD} | ${AWK_CMD} -F' ' '{ print $1; }' - `" = "aba97f906b979cb277211ee2f8bfe6a7b647c7b1fa5faaac5bdb242e9f179354" \
+		-a "`${ECHO_CMD} Hello | ./dMagnetic -ini dMagnetic.ini -vmode high_ansi -vcols 300 -vrows 300 -vecho -sres 1024x768 -mag testcode/minitest.mag | ${SHA256_CMD} | ${AWK_CMD} -F' ' '{ print $1; }' - `" = "91a443b46e40caa3a8f229144adafe8220f445f452cae6632e0f7dcd95e03b9f" \
+		-a "`${ECHO_CMD} Hello | ./dMagnetic -ini dMagnetic.ini -vmode high_ansi2 -vcols 300 -vrows 300 -vecho -sres 1024x768 -mag testcode/minitest.mag | ${SHA256_CMD} | ${AWK_CMD} -F' ' '{ print $1; }' - `" = "f322e2b9c1e3683e444e8174bc16329014d5b2fde33916f8b7f799010e83b5dd" \
+		-a "`${ECHO_CMD} Hello | ./dMagnetic -ini dMagnetic.ini -vmode sixel -vcols 300 -vrows 300 -vecho -sres 1024x768 -mag testcode/minitest.mag | ${SHA256_CMD} | ${AWK_CMD} -F' ' '{ print $1; }' - `" = "66c74ef9cf29839cec26639345e546705c87bacd95a7e47c1343cc9e8ffa8ccb" \
+	] ; then echo OK ; else echo "expected output not seen"; exit 1; fi
